@@ -46,7 +46,7 @@ class PetshopApp {
       try {
         await fetch(`${baseUrl}/api/health`);
       } catch {}
-    }, 10 * 60 * 1000);
+    }, 2 * 60 * 1000);
   }
 
   renderShell() {
