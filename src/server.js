@@ -16,6 +16,7 @@ const corsOrigin = process.env.CORS_ORIGIN || '*';
 
 app.use(cors({ origin: corsOrigin === '*' ? true : corsOrigin }));
 app.use(express.json({ limit: '1mb' }));
+app.use(express.static('src/public'));
 
 const baseFields = {
   id: { type: String, required: true, unique: true, index: true }
