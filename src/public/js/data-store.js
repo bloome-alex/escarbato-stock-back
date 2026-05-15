@@ -75,6 +75,35 @@ class IndexedDbStore {
     });
   }
 
+  async getDashboard() {
+    await this.loadAll();
+    const lowStockProducts = this.data.productos
+      .map(product => {
+        const qty = this.data.stock[product.id] || 0;
+        const minStock = product.minStock || 5;
+        return { id: product.id, nombre: product.nombre, qty, minStock, status: qty <= 0 ? 'Sin stock' : 'Stock bajo' };
+      })
+      .filter(product => product.qty <= product.minStock);
+
+    this.dashboard = {
+      totals: {
+        proveedores: this.data.proveedores.length,
+        tipos: this.data.tipos.length,
+        productos: this.data.productos.length,
+        lowStock: lowStockProducts.length
+      },
+      stockAlerts: lowStockProducts.slice(0, 8),
+      recentProducts: [...this.data.productos].reverse().slice(0, 5).map(product => {
+        const tipo = this.data.tipos.find(item => item.id === product.tipoId);
+        return { ...product, tipoNombre: tipo ? tipo.nombre : null };
+      }),
+      auditActivity: [...this.data.auditoria]
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 8)
+    };
+    return this.dashboard;
+  }
+
   async getPage(store, { page = 1, limit = 10 } = {}) {
     const list = store === 'stock'
       ? Object.entries(this.data.stock).map(([id, qty]) => ({ id, qty }))
@@ -104,7 +133,7 @@ class BackendStore {
 
   async init() {
     await this.ensureToken();
-    await this.loadAll();
+    this.dashboard = null;
   }
 
   async ensureToken() {
@@ -204,6 +233,11 @@ class BackendStore {
 
   async loadAll() {
     this.data = await this.request('/api/data');
+  }
+
+  async getDashboard() {
+    this.dashboard = await this.request('/api/dashboard');
+    return this.dashboard;
   }
 
   async getPage(store, { page = 1, limit = 10, q = '' } = {}) {

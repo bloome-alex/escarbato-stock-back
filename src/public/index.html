@@ -135,6 +135,12 @@
     text-align: left;
   }
   .nav-item:hover { background: var(--sage-light); color: var(--sage-dark); }
+  .nav-item:disabled {
+    cursor: not-allowed;
+    opacity: .45;
+    filter: grayscale(1);
+  }
+  .nav-item:disabled:hover { background: none; color: var(--text-soft); }
   .nav-item.active {
     background: var(--sage-dark);
     color: #fff;
@@ -358,6 +364,25 @@
   .audit-create { background: #DFF3E6; color: #236B3B; border-color: #A9D8B8; }
   .audit-edit { background: #FFF0CF; color: #8A5A00; border-color: #D7A84C; }
   .audit-delete { background: #FAD6D6; color: #9A2525; border-color: #E8A2A2; }
+
+  .skeleton-list { display: grid; gap: 10px; }
+  .skeleton-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+  }
+  .skeleton {
+    display: inline-block;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #EEE4D8 25%, #F8F1E8 37%, #EEE4D8 63%);
+    background-size: 400% 100%;
+    animation: skeleton-shimmer 1.2s ease-in-out infinite;
+  }
+  .skeleton-num { width: 54px; height: 30px; }
+  .skeleton-dot { width: 30px; height: 30px; flex: 0 0 auto; }
+  .skeleton-line { width: 100%; height: 14px; }
+  @keyframes skeleton-shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
 
   /* ── ABM SECTION ── */
   .section-header {
@@ -913,7 +938,7 @@
   <nav class="sidebar-nav">
     <div class="nav-section-label">Principal</div>
     <button class="nav-item active" data-nav="dashboard">
-      <span class="nav-icon">🏠</span> Dashboard
+      <span class="nav-icon">🏠</span> Panel
     </button>
 
     <div class="nav-section-label">Gestión</div>
@@ -942,7 +967,7 @@
   <header class="topbar">
     <div style="display:flex;align-items:center;gap:14px">
       <button class="hamburger" id="hamburgerBtn">☰</button>
-      <div class="topbar-title" id="topbarTitle">Dashboard</div>
+      <div class="topbar-title" id="topbarTitle">Panel</div>
     </div>
     <div class="topbar-right">
       <span class="badge" id="stockAlertBadge" style="display:none">⚠ Stock bajo</span>

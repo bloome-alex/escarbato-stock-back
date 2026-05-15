@@ -84,6 +84,10 @@ function getSort(store) {
   return { nombre: 1 };
 }
 
+function getStockQty(stockByProduct, productId) {
+  return stockByProduct.get(productId) || 0;
+}
+
 function requireAuth(req, res, next) {
   const [scheme, token] = (req.headers.authorization || '').split(' ');
   if (scheme !== 'Bearer' || !token) return res.status(401).json({ error: 'Token requerido' });
@@ -115,6 +119,63 @@ app.post('/api/auth/login', (req, res) => {
 });
 
 app.use('/api', requireAuth);
+
+app.get('/api/dashboard', async (req, res, next) => {
+  try {
+    const [proveedoresCount, tipos, productos, stockRecords, recentProducts, auditActivity] = await Promise.all([
+      Proveedor.countDocuments(),
+      Tipo.find().lean(),
+      Producto.find().lean(),
+      Stock.find().lean(),
+      Producto.find().sort({ _id: -1 }).limit(5).lean(),
+      Auditoria.find().sort({ createdAt: -1 }).limit(8).lean()
+    ]);
+
+    const stockByProduct = stockRecords.reduce((acc, record) => {
+      acc.set(record.id, record.qty);
+      return acc;
+    }, new Map());
+    const tipoById = tipos.reduce((acc, tipo) => {
+      acc.set(tipo.id, tipo.nombre);
+      return acc;
+    }, new Map());
+
+    const lowStockProducts = productos
+      .map(product => {
+        const qty = getStockQty(stockByProduct, product.id);
+        const minStock = product.minStock || 5;
+        return {
+          id: product.id,
+          nombre: product.nombre,
+          qty,
+          minStock,
+          status: qty <= 0 ? 'Sin stock' : 'Stock bajo'
+        };
+      })
+      .filter(product => product.qty <= product.minStock);
+
+    res.json({
+      totals: {
+        proveedores: proveedoresCount,
+        tipos: tipos.length,
+        productos: productos.length,
+        lowStock: lowStockProducts.length
+      },
+      stockAlerts: lowStockProducts.slice(0, 8),
+      recentProducts: sanitizeList(recentProducts).map(product => ({
+        id: product.id,
+        nombre: product.nombre,
+        tipoId: product.tipoId,
+        tipoNombre: tipoById.get(product.tipoId) || null,
+        precio: product.precio,
+        precioFinal: product.precioFinal
+      })),
+      auditActivity: sanitizeList(auditActivity)
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 app.get('/api/data', async (req, res, next) => {
   try {

@@ -25,6 +25,7 @@ class PetshopApp {
 
   async init() {
     this.renderShell();
+    this.setMenuDisabled(true);
     this.bindEvents();
     try {
       await this.store.init();
@@ -32,11 +33,29 @@ class PetshopApp {
       this.toasts.show(error.message || 'No se pudo inicializar la aplicación', 'error');
       throw error;
     }
-    this.components.productos.refreshTipoSelects();
-    this.components.productos.refreshProveedorSelects();
     this.renderSection('dashboard');
-    this.updateBadge();
+    this.preloadMenuData();
     this.startHealthCron();
+  }
+
+  async preloadMenuData() {
+    try {
+      await this.store.loadAll();
+      this.components.productos.refreshTipoSelects();
+      this.components.productos.refreshProveedorSelects();
+      this.setMenuDisabled(false);
+      this.updateBadge();
+    } catch (error) {
+      this.toasts.show(error.message || 'No se pudieron precargar las secciones', 'error');
+    }
+  }
+
+  setMenuDisabled(disabled) {
+    document.querySelectorAll('[data-nav]:not([data-nav="dashboard"])').forEach(item => {
+      item.disabled = disabled;
+      item.setAttribute('aria-disabled', String(disabled));
+      item.title = disabled ? 'Apartado deshabilitado: requiere precarga completa de datos' : '';
+    });
   }
 
   startHealthCron() {
@@ -171,7 +190,8 @@ class PetshopApp {
 
   updateBadge() {
     const badge = document.getElementById('stockAlertBadge');
-    badge.style.display = this.getLowStockProducts().length ? '' : 'none';
+    const lowStockCount = this.store.dashboard?.totals?.lowStock ?? this.getLowStockProducts().length;
+    badge.style.display = lowStockCount ? '' : 'none';
   }
 
   confirmDelete(entity, id, name) {

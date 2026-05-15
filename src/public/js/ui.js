@@ -30,7 +30,7 @@ export class NavigationManager {
   constructor(app) {
     this.app = app;
     this.sectionTitles = {
-      dashboard: 'Dashboard',
+      dashboard: 'Panel',
       proveedores: 'Proveedores',
       tipos: 'Tipos de Producto',
       productos: 'Productos',

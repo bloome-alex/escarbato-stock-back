@@ -1,6 +1,8 @@
 export class DashboardComponent {
   constructor(app) {
     this.app = app;
+    this.data = null;
+    this.loading = false;
   }
 
   template() {
@@ -30,33 +32,54 @@ export class DashboardComponent {
     return '';
   }
 
-  render() {
-    const data = this.app.store.data;
-    document.getElementById('stat-prov').textContent = data.proveedores.length;
-    document.getElementById('stat-tipos').textContent = data.tipos.length;
-    document.getElementById('stat-prod').textContent = data.productos.length;
+  renderSkeleton() {
+    document.querySelectorAll('.stat-num').forEach(el => {
+      el.innerHTML = '<span class="skeleton skeleton-num"></span>';
+    });
+    document.getElementById('dash-alerts').innerHTML = this.skeletonList(4);
+    document.getElementById('dash-recent').innerHTML = this.skeletonList(4);
+    document.getElementById('dash-audit').innerHTML = this.skeletonList(5);
+  }
 
-    const lowProducts = this.app.getLowStockProducts();
-    document.getElementById('stat-low').textContent = lowProducts.length;
+  skeletonList(count) {
+    return `<div class="skeleton-list">${Array.from({ length: count }, () => '<div class="skeleton-row"><span class="skeleton skeleton-dot"></span><span class="skeleton skeleton-line"></span></div>').join('')}</div>`;
+  }
+
+  async render() {
+    if (!this.data) {
+      this.renderSkeleton();
+      if (this.loading) return;
+      this.loading = true;
+      try {
+        this.data = await this.app.store.getDashboard();
+      } catch (error) {
+        this.app.toasts.show(error.message || 'No se pudo cargar el Panel', 'error');
+        return;
+      } finally {
+        this.loading = false;
+      }
+    }
+
+    const data = this.data;
+    document.getElementById('stat-prov').textContent = data.totals.proveedores;
+    document.getElementById('stat-tipos').textContent = data.totals.tipos;
+    document.getElementById('stat-prod').textContent = data.totals.productos;
+    document.getElementById('stat-low').textContent = data.totals.lowStock;
     this.app.updateBadge();
 
     const alertsEl = document.getElementById('dash-alerts');
-    alertsEl.innerHTML = lowProducts.length
-      ? lowProducts.slice(0, 5).map(product => {
-        const qty = data.stock[product.id] || 0;
-        const status = qty === 0 ? 'Sin stock' : 'Stock bajo';
-        return `<div class="alert-item"><span class="alert-icon">⚠️</span><span>${product.nombre} — <strong>${qty}</strong> unidades</span><span class="chip ${qty === 0 ? 'chip-out' : 'chip-low'}" style="margin-left:auto">${status}</span></div>`;
+    alertsEl.innerHTML = data.stockAlerts.length
+      ? data.stockAlerts.map(product => {
+        return `<div class="alert-item"><span class="alert-icon">⚠️</span><span>${product.nombre} — <strong>${product.qty}</strong> unidades</span><span class="chip ${product.qty === 0 ? 'chip-out' : 'chip-low'}" style="margin-left:auto">${product.status}</span></div>`;
       }).join('')
       : '<div class="empty-state" style="padding:24px"><p style="font-size:.85rem">Sin alertas 🎉</p></div>';
 
-    const recent = [...data.productos].reverse().slice(0, 5);
     const recentEl = document.getElementById('dash-recent');
-    recentEl.innerHTML = recent.length
-      ? recent.map(product => {
-        const tipo = data.tipos.find(item => item.id === product.tipoId);
+    recentEl.innerHTML = data.recentProducts.length
+      ? data.recentProducts.map(product => {
         const finalPrice = product.precioFinal ?? product.precio;
         const price = finalPrice || finalPrice === 0 ? '$' + Number(finalPrice).toLocaleString('es-AR') : '—';
-        return `<div class="recent-item"><div><div class="recent-name">${product.nombre}</div><div class="recent-sub">${tipo ? tipo.nombre : '—'}</div></div><span class="tag tag-green">${price}</span></div>`;
+        return `<div class="recent-item"><div><div class="recent-name">${product.nombre}</div><div class="recent-sub">${product.tipoNombre || '—'}</div></div><span class="tag tag-green">${price}</span></div>`;
       }).join('')
       : '<div class="empty-state" style="padding:24px"><p style="font-size:.85rem">Sin productos aún</p></div>';
 
@@ -67,9 +90,7 @@ export class DashboardComponent {
     const auditEl = document.getElementById('dash-audit');
     if (!auditEl) return;
 
-    const records = [...this.app.store.data.auditoria]
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, 8);
+    const records = this.data?.auditActivity || [];
 
     auditEl.innerHTML = records.length
       ? `<div class="audit-list">${records.map(record => `<div class="audit-item"><div class="audit-main"><span class="audit-action ${this.actionClass(record.action)}">${record.action}</span><strong>${record.entity}</strong><span>${record.detail}</span></div><time>${this.formatDate(record.createdAt)}</time></div>`).join('')}</div>`
