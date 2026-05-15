@@ -8,11 +8,7 @@ export class ModalManager {
   }
 
   bindOverlayClose() {
-    document.querySelectorAll('.modal-overlay').forEach(overlay => {
-      overlay.addEventListener('click', event => {
-        if (event.target === overlay) overlay.classList.remove('open');
-      });
-    });
+    // Modals must stay open when clicking outside; close only through explicit actions.
   }
 }
 
