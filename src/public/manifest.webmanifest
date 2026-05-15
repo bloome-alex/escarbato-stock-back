@@ -24,15 +24,15 @@
       "purpose": "any maskable"
     },
     {
-      "src": "/assets/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/assets/maskable-icon.svg",
+      "src": "/assets/icon-512.png",
       "sizes": "any",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "maskable"
     }
   ]
