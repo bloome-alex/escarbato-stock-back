@@ -149,6 +149,8 @@ class PetshopApp {
     this.setButtonLoading(button, true, loadingLabel);
     try {
       await action();
+    } catch (error) {
+      this.toasts.show(error.message || 'No se pudo completar la acción', 'error');
     } finally {
       this.setButtonLoading(button, false);
     }

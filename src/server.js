@@ -88,6 +88,35 @@ function getStockQty(stockByProduct, productId) {
   return stockByProduct.get(productId) || 0;
 }
 
+function getDuplicateKeyMessage(store, error) {
+  const keyPattern = error.keyPattern || {};
+  if (keyPattern.id) return 'Ya existe un registro con ese identificador';
+
+  if (store === 'proveedores') return 'Ya existe un proveedor con ese nombre';
+  if (store === 'tipos') return 'Ya existe un tipo de producto con ese nombre';
+  if (store === 'productos') return 'Ya existe un producto con ese nombre para el proveedor seleccionado';
+  return 'Ya existe un registro con esos datos';
+}
+
+async function validateUniqueName(store, payload) {
+  if (!['proveedores', 'tipos', 'productos'].includes(store)) return;
+
+  const nombre = String(payload.nombre || '').trim();
+  if (!nombre) return;
+
+  const Model = models[store];
+  const query = store === 'productos'
+    ? { nombre, proveedorId: payload.proveedorId || null, id: { $ne: payload.id } }
+    : { nombre, id: { $ne: payload.id } };
+
+  const exists = await Model.findOne(query).collation({ locale: 'es', strength: 2 }).lean();
+  if (!exists) return;
+
+  const error = new Error(getDuplicateKeyMessage(store, { keyPattern: { nombre: 1 } }));
+  error.statusCode = 400;
+  throw error;
+}
+
 function requireAuth(req, res, next) {
   const [scheme, token] = (req.headers.authorization || '').split(' ');
   if (scheme !== 'Bearer' || !token) return res.status(401).json({ error: 'Token requerido' });
@@ -249,6 +278,8 @@ app.put('/api/:store/:id', async (req, res, next) => {
     if (!Model) return res.status(404).json({ error: 'Store no encontrado' });
 
     const payload = { ...req.body, id: req.params.id };
+    await validateUniqueName(req.params.store, payload);
+
     const record = await Model.findOneAndUpdate(
       { id: req.params.id },
       payload,
@@ -273,7 +304,9 @@ app.delete('/api/:store/:id', async (req, res, next) => {
 
 app.use((error, req, res, next) => {
   console.error(error);
+  if (error.statusCode) return res.status(error.statusCode).json({ error: error.message });
   if (error.name === 'ValidationError') return res.status(400).json({ error: error.message });
+  if (error.code === 11000) return res.status(400).json({ error: getDuplicateKeyMessage(req.params.store, error) });
   res.status(500).json({ error: 'Error interno del servidor' });
 });
 

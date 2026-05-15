@@ -14,4 +14,6 @@ const productoSchema = new mongoose.Schema({
   desc: { type: String, default: '' }
 }, { versionKey: false });
 
+productoSchema.index({ proveedorId: 1, nombre: 1 }, { unique: true, collation: { locale: 'es', strength: 2 } });
+
 export const Producto = mongoose.model('Producto', productoSchema);

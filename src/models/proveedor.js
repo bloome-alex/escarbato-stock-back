@@ -10,4 +10,6 @@ const proveedorSchema = new mongoose.Schema({
   notas: { type: String, default: '' }
 }, { versionKey: false });
 
+proveedorSchema.index({ nombre: 1 }, { unique: true, collation: { locale: 'es', strength: 2 } });
+
 export const Proveedor = mongoose.model('Proveedor', proveedorSchema);

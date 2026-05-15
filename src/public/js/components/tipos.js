@@ -1,6 +1,8 @@
 import { form } from '../ui.js';
 import { DEFAULT_PAGE_SIZE, getPageItems, loadingTemplate, paginationTemplate } from '../pagination.js';
 
+const normalizeUniqueName = value => value.trim().toLocaleLowerCase('es');
+
 export class TiposComponent {
   constructor(app) {
     this.app = app;
@@ -104,6 +106,9 @@ export class TiposComponent {
     if (!nombre) return this.app.toasts.show('El nombre es obligatorio', 'error');
 
     const id = form.value('tipo-id') || this.app.store.createId();
+    const duplicated = this.app.store.data.tipos.some(item => item.id !== id && normalizeUniqueName(item.nombre || '') === normalizeUniqueName(nombre));
+    if (duplicated) return this.app.toasts.show('Ya existe un tipo de producto con ese nombre', 'error');
+
     const tipo = { id, nombre, desc: form.trim('tipo-desc') };
     await this.app.store.put('tipos', tipo);
     const list = this.app.store.data.tipos;

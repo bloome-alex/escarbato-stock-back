@@ -1,6 +1,8 @@
 import { form } from '../ui.js';
 import { DEFAULT_PAGE_SIZE, getPageItems, loadingTemplate, paginationTemplate } from '../pagination.js';
 
+const normalizeUniqueName = value => value.trim().toLocaleLowerCase('es');
+
 export class ProductosComponent {
   constructor(app) {
     this.app = app;
@@ -240,8 +242,12 @@ export class ProductosComponent {
     if (precioFinal === '' || Number(precioFinal) < 0) return this.app.toasts.show('Ingresá un precio final válido', 'error');
 
     const id = form.value('prod-id') || this.app.store.createId();
+    const proveedorId = form.value('prod-proveedor') || null;
+    const duplicated = this.app.store.data.productos.some(item => item.id !== id && item.proveedorId === proveedorId && normalizeUniqueName(item.nombre || '') === normalizeUniqueName(nombre));
+    if (duplicated) return this.app.toasts.show('Ya existe un producto con ese nombre para el proveedor seleccionado', 'error');
+
     const precio = this.calculatePrice(costo, porcentaje);
-    const producto = { id, nombre, tipoId, proveedorId: form.value('prod-proveedor') || null, costo: Number(costo), porcentaje: Number(porcentaje), precio, precioFinal: Number(precioFinal), minStock: Number(form.value('prod-min-stock')) || 5, desc: form.trim('prod-desc') };
+    const producto = { id, nombre, tipoId, proveedorId, costo: Number(costo), porcentaje: Number(porcentaje), precio, precioFinal: Number(precioFinal), minStock: Number(form.value('prod-min-stock')) || 5, desc: form.trim('prod-desc') };
     await this.app.store.put('productos', producto);
     const list = this.app.store.data.productos;
     const index = list.findIndex(item => item.id === id);

@@ -7,4 +7,6 @@ const tipoSchema = new mongoose.Schema({
   desc: { type: String, default: '' }
 }, { versionKey: false });
 
+tipoSchema.index({ nombre: 1 }, { unique: true, collation: { locale: 'es', strength: 2 } });
+
 export const Tipo = mongoose.model('Tipo', tipoSchema);

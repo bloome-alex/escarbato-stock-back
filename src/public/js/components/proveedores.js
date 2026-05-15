@@ -1,6 +1,8 @@
 import { form } from '../ui.js';
 import { DEFAULT_PAGE_SIZE, getPageItems, loadingTemplate, paginationTemplate } from '../pagination.js';
 
+const normalizeUniqueName = value => value.trim().toLocaleLowerCase('es');
+
 export class ProveedoresComponent {
   constructor(app) {
     this.app = app;
@@ -108,6 +110,9 @@ export class ProveedoresComponent {
     if (!nombre) return this.app.toasts.show('El nombre es obligatorio', 'error');
 
     const id = form.value('prov-id') || this.app.store.createId();
+    const duplicated = this.app.store.data.proveedores.some(item => item.id !== id && normalizeUniqueName(item.nombre || '') === normalizeUniqueName(nombre));
+    if (duplicated) return this.app.toasts.show('Ya existe un proveedor con ese nombre', 'error');
+
     const prov = { id, nombre, contacto: form.trim('prov-contacto'), telefono: form.trim('prov-telefono'), email: form.trim('prov-email'), notas: form.trim('prov-notas') };
     await this.app.store.put('proveedores', prov);
     const list = this.app.store.data.proveedores;
