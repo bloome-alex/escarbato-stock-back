@@ -117,6 +117,18 @@ async function validateUniqueName(store, payload) {
   throw error;
 }
 
+function validateProductoPayload(payload) {
+  const proveedorId = String(payload.proveedorId || '').trim();
+  if (proveedorId) {
+    payload.proveedorId = proveedorId;
+    return;
+  }
+
+  const error = new Error('Seleccioná un proveedor');
+  error.statusCode = 400;
+  throw error;
+}
+
 function requireAuth(req, res, next) {
   const [scheme, token] = (req.headers.authorization || '').split(' ');
   if (scheme !== 'Bearer' || !token) return res.status(401).json({ error: 'Token requerido' });
@@ -278,7 +290,10 @@ app.put('/api/:store/:id', async (req, res, next) => {
     if (!Model) return res.status(404).json({ error: 'Store no encontrado' });
 
     const payload = { ...req.body, id: req.params.id };
-    if (req.params.store === 'productos') payload.updatedAt = new Date();
+    if (req.params.store === 'productos') {
+      validateProductoPayload(payload);
+      payload.updatedAt = new Date();
+    }
     await validateUniqueName(req.params.store, payload);
 
     const record = await Model.findOneAndUpdate(

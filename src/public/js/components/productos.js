@@ -38,7 +38,7 @@ export class ProductosComponent {
   }
 
   modalTemplate() {
-    return `<div class="modal-overlay" id="modal-prod"><div class="modal"><div class="modal-title"><span id="modal-prod-title">Nuevo Producto</span><button class="modal-close" data-close-modal="prod">✕</button></div><input type="hidden" id="prod-id"><div class="form-group"><label>Nombre del producto *</label><input type="text" id="prod-nombre" placeholder="Ej: Croquetas Premium Perro Adulto 10kg"></div><div class="form-row"><div class="form-group"><label>Tipo *</label><select id="prod-tipo"><option value="">Seleccionar tipo…</option></select></div><div class="form-group"><label>Proveedor</label><select id="prod-proveedor"><option value="">Sin proveedor</option></select></div></div><div class="form-row"><div class="form-group"><label>Costo ($) *</label><input type="number" id="prod-costo" placeholder="0.00" min="0" step="0.01"></div><div class="form-group"><label>Porcentaje de ganancia (%) *</label><input type="number" id="prod-porcentaje" placeholder="0" min="0" step="0.01"></div></div><div class="form-row"><div class="form-group"><label>Precio calculado ($)</label><input type="number" id="prod-precio" placeholder="0.00" min="0" step="0.01" readonly></div><div class="form-group"><label>Precio final ($) *</label><input type="number" id="prod-precio-final" placeholder="Redondeado a mano" min="0" step="0.01"></div></div><div class="form-row"><div class="form-group"><label>Stock mínimo</label><input type="number" id="prod-min-stock" placeholder="5" min="0"></div></div><div class="form-group"><label>Descripción</label><textarea id="prod-desc" placeholder="Detalle del producto…"></textarea></div><div class="modal-actions"><button class="btn btn-ghost" data-close-modal="prod">Cancelar</button><button class="btn btn-primary" data-action="save-producto">💾 Guardar</button></div></div></div>`;
+    return `<div class="modal-overlay" id="modal-prod"><div class="modal"><div class="modal-title"><span id="modal-prod-title">Nuevo Producto</span><button class="modal-close" data-close-modal="prod">✕</button></div><input type="hidden" id="prod-id"><div class="form-group"><label>Nombre del producto *</label><input type="text" id="prod-nombre" placeholder="Ej: Croquetas Premium Perro Adulto 10kg"></div><div class="form-row"><div class="form-group"><label>Tipo *</label><select id="prod-tipo"><option value="">Seleccionar tipo…</option></select></div><div class="form-group"><label>Proveedor *</label><select id="prod-proveedor"><option value="">Seleccionar proveedor…</option></select></div></div><div class="form-row"><div class="form-group"><label>Costo ($) *</label><input type="number" id="prod-costo" placeholder="0.00" min="0" step="0.01"></div><div class="form-group"><label>Porcentaje de ganancia (%) *</label><input type="number" id="prod-porcentaje" placeholder="0" min="0" step="0.01"></div></div><div class="form-row"><div class="form-group"><label>Precio calculado ($)</label><input type="number" id="prod-precio" placeholder="0.00" min="0" step="0.01" readonly></div><div class="form-group"><label>Precio final ($) *</label><input type="number" id="prod-precio-final" placeholder="Redondeado a mano" min="0" step="0.01"></div></div><div class="form-row"><div class="form-group"><label>Stock mínimo</label><input type="number" id="prod-min-stock" placeholder="5" min="0"></div></div><div class="form-group"><label>Descripción</label><textarea id="prod-desc" placeholder="Detalle del producto…"></textarea></div><div class="modal-actions"><button class="btn btn-ghost" data-close-modal="prod">Cancelar</button><button class="btn btn-primary" data-action="save-producto">💾 Guardar</button></div></div></div>`;
   }
 
   bind() {
@@ -87,7 +87,7 @@ export class ProductosComponent {
       .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
       .map(prov => `<option value="${prov.id}">${prov.nombre}</option>`)
       .join('');
-    document.getElementById('prod-proveedor').innerHTML = '<option value="">Sin proveedor</option>' + opts;
+    document.getElementById('prod-proveedor').innerHTML = '<option value="">Seleccionar proveedor…</option>' + opts;
     document.getElementById('filterProveedor').innerHTML = '<option value="">Todos los proveedores</option><option value="sin-proveedor">Sin proveedor</option>' + opts;
     if (selectedFilter) filter.value = selectedFilter;
   }
@@ -241,17 +241,18 @@ export class ProductosComponent {
   async save() {
     const nombre = form.trim('prod-nombre');
     const tipoId = form.value('prod-tipo');
+    const proveedorId = form.value('prod-proveedor');
     const costo = form.value('prod-costo');
     const porcentaje = form.value('prod-porcentaje');
     const precioFinal = form.value('prod-precio-final');
     if (!nombre) return this.app.toasts.show('El nombre es obligatorio', 'error');
     if (!tipoId) return this.app.toasts.show('Seleccioná un tipo de producto', 'error');
+    if (!proveedorId) return this.app.toasts.show('Seleccioná un proveedor', 'error');
     if (costo === '' || Number(costo) < 0) return this.app.toasts.show('Ingresá un costo válido', 'error');
     if (porcentaje === '' || Number(porcentaje) < 0) return this.app.toasts.show('Ingresá un porcentaje válido', 'error');
     if (precioFinal === '' || Number(precioFinal) < 0) return this.app.toasts.show('Ingresá un precio final válido', 'error');
 
     const id = form.value('prod-id') || this.app.store.createId();
-    const proveedorId = form.value('prod-proveedor') || null;
     const duplicated = this.app.store.data.productos.some(item => item.id !== id && item.proveedorId === proveedorId && normalizeUniqueName(item.nombre || '') === normalizeUniqueName(nombre));
     if (duplicated) return this.app.toasts.show('Ya existe un producto con ese nombre para el proveedor seleccionado', 'error');
 

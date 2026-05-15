@@ -5,7 +5,7 @@ const productoSchema = new mongoose.Schema({
   ...baseFields,
   nombre: { type: String, required: true, trim: true },
   tipoId: { type: String, required: true },
-  proveedorId: { type: String, default: null },
+  proveedorId: { type: String, required: true, trim: true },
   costo: { type: Number, required: true, min: 0 },
   porcentaje: { type: Number, required: true, min: 0 },
   precio: { type: Number, required: true, min: 0 },
