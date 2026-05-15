@@ -62,7 +62,10 @@ export class ProductosComponent {
   refreshTipoSelects() {
     const filter = document.getElementById('filterTipo');
     const selectedFilter = filter ? filter.value : '';
-    const opts = this.app.store.data.tipos.map(tipo => `<option value="${tipo.id}">${tipo.nombre}</option>`).join('');
+    const opts = [...this.app.store.data.tipos]
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
+      .map(tipo => `<option value="${tipo.id}">${tipo.nombre}</option>`)
+      .join('');
     document.getElementById('prod-tipo').innerHTML = '<option value="">Seleccionar tipo…</option>' + opts;
     document.getElementById('filterTipo').innerHTML = '<option value="">Todos los tipos</option>' + opts;
     if (selectedFilter) filter.value = selectedFilter;

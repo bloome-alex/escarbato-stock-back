@@ -51,7 +51,7 @@ export class TiposComponent {
       const count = data.productos.filter(producto => producto.tipoId === tipo.id).length;
       return tipo.nombre.toLowerCase().includes(q)
         && (!uso || (uso === 'con-productos' && count > 0) || (uso === 'sin-productos' && count === 0));
-    });
+    }).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
     document.getElementById('wrap-tipos').innerHTML = `<table class="data-table"><thead><tr><th>Nombre</th><th>Descripción</th><th>Productos</th><th>Acciones</th></tr></thead><tbody id="tbl-tipos"></tbody></table><div id="empty-tipos" class="empty-state" style="display:none"><div class="empty-icon">🏷️</div><p>Aún no hay tipos de producto</p></div>`;
     const tbody = document.getElementById('tbl-tipos');
     const empty = document.getElementById('empty-tipos');
