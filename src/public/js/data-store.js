@@ -92,7 +92,7 @@ class IndexedDbStore {
         productos: this.data.productos.length,
         lowStock: lowStockProducts.length
       },
-      stockAlerts: lowStockProducts.slice(0, 8),
+      stockAlerts: lowStockProducts.slice(0, 5),
       recentProducts: [...this.data.productos].reverse().slice(0, 5).map(product => {
         const tipo = this.data.tipos.find(item => item.id === product.tipoId);
         return { ...product, tipoNombre: tipo ? tipo.nombre : null };

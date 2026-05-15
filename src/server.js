@@ -161,7 +161,7 @@ app.get('/api/dashboard', async (req, res, next) => {
         productos: productos.length,
         lowStock: lowStockProducts.length
       },
-      stockAlerts: lowStockProducts.slice(0, 8),
+      stockAlerts: lowStockProducts.slice(0, 5),
       recentProducts: sanitizeList(recentProducts).map(product => ({
         id: product.id,
         nombre: product.nombre,
