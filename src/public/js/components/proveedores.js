@@ -3,6 +3,12 @@ import { DEFAULT_PAGE_SIZE, getPageItems, loadingTemplate, paginationTemplate } 
 
 const normalizeUniqueName = value => value.trim().toLocaleLowerCase('es');
 
+const getProductCountsByProvider = productos => productos.reduce((counts, producto) => {
+  if (!producto.proveedorId) return counts;
+  counts.set(producto.proveedorId, (counts.get(producto.proveedorId) || 0) + 1);
+  return counts;
+}, new Map());
+
 export class ProveedoresComponent {
   constructor(app) {
     this.app = app;
@@ -14,7 +20,7 @@ export class ProveedoresComponent {
     return `<section class="section" id="sec-proveedores">
       <div class="section-header"><div class="section-heading">🚚 <span>Proveedores</span></div><button class="btn btn-primary" data-action="new-proveedor">+ Nuevo proveedor</button></div>
       <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar proveedor…" id="searchProv"></div><select id="filterProvInfo" class="filter-control"><option value="">Todos</option><option value="contacto">Con contacto</option><option value="sin-contacto">Sin contacto</option><option value="email">Con email</option><option value="sin-email">Sin email</option></select></div>
-      <div class="table-wrap" id="wrap-proveedores"><table class="data-table"><thead><tr><th>Nombre</th><th>Contacto</th><th>Teléfono</th><th>Email</th><th>Acciones</th></tr></thead><tbody id="tbl-proveedores"></tbody></table><div id="empty-proveedores" class="empty-state" style="display:none"><div class="empty-icon">🚚</div><p>Aún no hay proveedores registrados</p></div></div><div id="pager-proveedores"></div>
+      <div class="table-wrap" id="wrap-proveedores"><table class="data-table"><thead><tr><th>Nombre</th><th>Contacto</th><th>Teléfono</th><th>Email</th><th>Productos</th><th>Acciones</th></tr></thead><tbody id="tbl-proveedores"></tbody></table><div id="empty-proveedores" class="empty-state" style="display:none"><div class="empty-icon">🚚</div><p>Aún no hay proveedores registrados</p></div></div><div id="pager-proveedores"></div>
     </section>`;
   }
 
@@ -57,9 +63,7 @@ export class ProveedoresComponent {
         || (info === 'sin-email' && !prov.email);
       return matchesSearch && matchesInfo;
     });
-    const tbody = document.getElementById('tbl-proveedores');
-    const empty = document.getElementById('empty-proveedores');
-    document.getElementById('wrap-proveedores').innerHTML = `<table class="data-table"><thead><tr><th>Nombre</th><th>Contacto</th><th>Teléfono</th><th>Email</th><th>Acciones</th></tr></thead><tbody id="tbl-proveedores"></tbody></table><div id="empty-proveedores" class="empty-state" style="display:none"><div class="empty-icon">🚚</div><p>Aún no hay proveedores registrados</p></div>`;
+    document.getElementById('wrap-proveedores').innerHTML = `<table class="data-table"><thead><tr><th>Nombre</th><th>Contacto</th><th>Teléfono</th><th>Email</th><th>Productos</th><th>Acciones</th></tr></thead><tbody id="tbl-proveedores"></tbody></table><div id="empty-proveedores" class="empty-state" style="display:none"><div class="empty-icon">🚚</div><p>Aún no hay proveedores registrados</p></div>`;
     const pageState = getPageItems(list, this.page, DEFAULT_PAGE_SIZE);
     this.page = pageState.page;
     const pageItems = pageState.items;
@@ -73,8 +77,12 @@ export class ProveedoresComponent {
       return;
     }
 
+    const productCounts = getProductCountsByProvider(this.app.store.data.productos);
     nextEmpty.style.display = 'none';
-    nextTbody.innerHTML = pageItems.map(prov => `<tr><td><strong>${prov.nombre}</strong></td><td>${prov.contacto || '—'}</td><td>${prov.telefono || '—'}</td><td>${prov.email || '—'}</td><td><div class="td-actions"><button class="btn btn-ghost btn-sm btn-icon" data-action="view-proveedor" data-id="${prov.id}" aria-label="Visualizar proveedor" title="Visualizar">👁️</button><button class="btn btn-ghost btn-sm btn-icon" data-action="edit-proveedor" data-id="${prov.id}" aria-label="Editar proveedor" title="Editar">✏️</button><button class="btn btn-danger btn-sm btn-icon" data-action="delete" data-entity="prov" data-id="${prov.id}" data-name="${prov.nombre}" aria-label="Eliminar proveedor" title="Eliminar">🗑️</button></div></td></tr>`).join('');
+    nextTbody.innerHTML = pageItems.map(prov => {
+      const count = productCounts.get(prov.id) || 0;
+      return `<tr><td><strong>${prov.nombre}</strong></td><td>${prov.contacto || '—'}</td><td>${prov.telefono || '—'}</td><td>${prov.email || '—'}</td><td><span class="chip chip-ok">${count} prod.</span></td><td><div class="td-actions"><button class="btn btn-ghost btn-sm btn-icon" data-action="view-proveedor" data-id="${prov.id}" aria-label="Visualizar proveedor" title="Visualizar">👁️</button><button class="btn btn-ghost btn-sm btn-icon" data-action="edit-proveedor" data-id="${prov.id}" aria-label="Editar proveedor" title="Editar">✏️</button><button class="btn btn-danger btn-sm btn-icon" data-action="delete" data-entity="prov" data-id="${prov.id}" data-name="${prov.nombre}" aria-label="Eliminar proveedor" title="Eliminar">🗑️</button></div></td></tr>`;
+    }).join('');
     document.getElementById('pager-proveedores').innerHTML = paginationTemplate('proveedores', pageState);
   }
 
@@ -82,7 +90,8 @@ export class ProveedoresComponent {
     const prov = this.app.store.data.proveedores.find(item => item.id === id);
     if (!prov) return this.app.toasts.show('No se encontró el proveedor', 'error');
 
-    this.app.showDetail('Proveedor', `<div class="detail-list"><div><span>Nombre</span><strong>${prov.nombre}</strong></div><div><span>Contacto</span><strong>${prov.contacto || '—'}</strong></div><div><span>Teléfono</span><strong>${prov.telefono || '—'}</strong></div><div><span>Email</span><strong>${prov.email || '—'}</strong></div><div><span>Notas</span><strong>${prov.notas || '—'}</strong></div></div>`);
+    const count = this.app.store.data.productos.filter(producto => producto.proveedorId === prov.id).length;
+    this.app.showDetail('Proveedor', `<div class="detail-list"><div><span>Nombre</span><strong>${prov.nombre}</strong></div><div><span>Contacto</span><strong>${prov.contacto || '—'}</strong></div><div><span>Teléfono</span><strong>${prov.telefono || '—'}</strong></div><div><span>Email</span><strong>${prov.email || '—'}</strong></div><div><span>Productos asociados</span><strong>${count}</strong></div><div><span>Notas</span><strong>${prov.notas || '—'}</strong></div></div>`);
   }
 
   openNew() {
