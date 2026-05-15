@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Escarbato</title>
+  <desc id="desc">Icono de Escarbato Petshop</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#fffdf9"/>
+      <stop offset="0.52" stop-color="#fdf8f0"/>
+      <stop offset="1" stop-color="#ddeedb"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#5c3d2e" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <circle cx="104" cy="94" r="52" fill="#f4a535" opacity="0.2"/>
+  <circle cx="418" cy="102" r="74" fill="#7bae7f" opacity="0.18"/>
+  <g filter="url(#shadow)">
+    <circle cx="256" cy="294" r="108" fill="#4e8055"/>
+    <ellipse cx="162" cy="214" rx="44" ry="58" fill="#4e8055" transform="rotate(-28 162 214)"/>
+    <ellipse cx="226" cy="148" rx="42" ry="58" fill="#4e8055" transform="rotate(-8 226 148)"/>
+    <ellipse cx="286" cy="148" rx="42" ry="58" fill="#4e8055" transform="rotate(8 286 148)"/>
+    <ellipse cx="350" cy="214" rx="44" ry="58" fill="#4e8055" transform="rotate(28 350 214)"/>
+  </g>
+  <path d="M202 308c26 28 82 28 108 0" fill="none" stroke="#fffdf9" stroke-width="22" stroke-linecap="round"/>
+  <circle cx="216" cy="260" r="14" fill="#fffdf9"/>
+  <circle cx="296" cy="260" r="14" fill="#fffdf9"/>
+  <path d="M256 278l-16 22h32z" fill="#f4a535"/>
+</svg>

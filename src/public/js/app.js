@@ -27,6 +27,7 @@ class PetshopApp {
     this.renderShell();
     this.setMenuDisabled(true);
     this.bindEvents();
+    this.registerServiceWorker();
     try {
       await this.store.init();
     } catch (error) {
@@ -66,6 +67,16 @@ class PetshopApp {
         await fetch(`${baseUrl}/api/health`);
       } catch {}
     }, 2 * 60 * 1000);
+  }
+
+  registerServiceWorker() {
+    if (!('serviceWorker' in navigator)) return;
+
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(() => {
+        // La app sigue funcionando aunque el navegador rechace el registro PWA.
+      });
+    });
   }
 
   renderShell() {
