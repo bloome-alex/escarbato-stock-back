@@ -113,7 +113,7 @@ export class ProductosComponent {
         || (proveedorId === 'sin-proveedor' && !producto.proveedorId)
         || producto.proveedorId === proveedorId;
       return producto.nombre.toLowerCase().includes(q) && (!tipoId || producto.tipoId === tipoId) && matchesProveedor && matchesStock;
-    });
+    }).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
     document.getElementById('wrap-productos').innerHTML = `<table class="data-table"><thead><tr><th>Producto</th><th>Tipo</th><th>Proveedor</th><th>Costo</th><th>Porcentaje</th><th>Precio</th><th>Precio final</th><th>Acciones</th></tr></thead><tbody id="tbl-productos"></tbody></table><div id="empty-productos" class="empty-state" style="display:none"><div class="empty-icon">📦</div><p>Aún no hay productos registrados</p></div>`;
     const tbody = document.getElementById('tbl-productos');
     const empty = document.getElementById('empty-productos');
