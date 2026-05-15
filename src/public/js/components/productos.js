@@ -14,6 +14,13 @@ export class ProductosComponent {
     return value || value === 0 ? '$' + Number(value).toLocaleString('es-AR') : '—';
   }
 
+  formatDate(value) {
+    if (!value) return '—';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '—';
+    return date.toLocaleDateString('es-AR');
+  }
+
   getProductPrice(producto) {
     return producto.precioFinal ?? producto.precio;
   }
@@ -26,7 +33,7 @@ export class ProductosComponent {
     return `<section class="section" id="sec-productos">
       <div class="section-header"><div class="section-heading">📦 <span>Productos</span></div><button class="btn btn-primary" data-action="new-producto">+ Nuevo producto</button></div>
       <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar producto…" id="searchProd"></div><select id="filterTipo" class="filter-control"><option value="">Todos los tipos</option></select><select id="filterProveedor" class="filter-control"><option value="">Todos los proveedores</option></select><select id="filterStockProd" class="filter-control"><option value="">Todo stock</option><option value="disponible">Disponible</option><option value="bajo">Stock bajo</option><option value="sin-stock">Sin stock</option></select></div>
-      <div class="table-wrap" id="wrap-productos"><table class="data-table"><thead><tr><th>Producto</th><th>Tipo</th><th>Proveedor</th><th>Costo</th><th>Porcentaje</th><th>Precio</th><th>Precio final</th><th>Acciones</th></tr></thead><tbody id="tbl-productos"></tbody></table><div id="empty-productos" class="empty-state" style="display:none"><div class="empty-icon">📦</div><p>Aún no hay productos registrados</p></div></div><div id="pager-productos"></div>
+      <div class="table-wrap" id="wrap-productos"><table class="data-table"><thead><tr><th>Producto</th><th>Tipo</th><th>Proveedor</th><th>Costo</th><th>Porcentaje</th><th>Precio</th><th>Precio final</th><th>Última actualización</th><th>Acciones</th></tr></thead><tbody id="tbl-productos"></tbody></table><div id="empty-productos" class="empty-state" style="display:none"><div class="empty-icon">📦</div><p>Aún no hay productos registrados</p></div></div><div id="pager-productos"></div>
     </section>`;
   }
 
@@ -122,7 +129,7 @@ export class ProductosComponent {
         || producto.proveedorId === proveedorId;
       return producto.nombre.toLowerCase().includes(q) && (!tipoId || producto.tipoId === tipoId) && matchesProveedor && matchesStock;
     }).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
-    document.getElementById('wrap-productos').innerHTML = `<table class="data-table"><thead><tr><th>Producto</th><th>Tipo</th><th>Proveedor</th><th>Costo</th><th>Porcentaje</th><th>Precio</th><th>Precio final</th><th>Acciones</th></tr></thead><tbody id="tbl-productos"></tbody></table><div id="empty-productos" class="empty-state" style="display:none"><div class="empty-icon">📦</div><p>Aún no hay productos registrados</p></div>`;
+    document.getElementById('wrap-productos').innerHTML = `<table class="data-table"><thead><tr><th>Producto</th><th>Tipo</th><th>Proveedor</th><th>Costo</th><th>Porcentaje</th><th>Precio</th><th>Precio final</th><th>Última actualización</th><th>Acciones</th></tr></thead><tbody id="tbl-productos"></tbody></table><div id="empty-productos" class="empty-state" style="display:none"><div class="empty-icon">📦</div><p>Aún no hay productos registrados</p></div>`;
     const tbody = document.getElementById('tbl-productos');
     const empty = document.getElementById('empty-productos');
     const pageState = getPageItems(list, this.page, DEFAULT_PAGE_SIZE);
@@ -144,7 +151,7 @@ export class ProductosComponent {
       const porcentaje = producto.porcentaje ?? 0;
       const precio = this.formatMoney(producto.precio);
       const precioFinal = this.getProductPrice(producto) ?? 0;
-      return `<tr data-product-row="${producto.id}"><td><div style="font-weight:800">${producto.nombre}</div>${producto.desc ? `<div style="font-size:.78rem;color:var(--text-soft)">${producto.desc.slice(0, 60)}${producto.desc.length > 60 ? '…' : ''}</div>` : ''}</td><td>${tipo ? `<span class="chip chip-ok">${tipo.nombre}</span>` : '—'}</td><td>${prov ? prov.nombre : '—'}</td><td><input class="inline-table-input" type="number" min="0" step="0.01" value="${costo}" data-product-field="costo" data-id="${producto.id}" aria-label="Costo de ${producto.nombre}"></td><td><input class="inline-table-input" type="number" min="0" step="0.01" value="${porcentaje}" data-product-field="porcentaje" data-id="${producto.id}" aria-label="Porcentaje de ${producto.nombre}"></td><td class="price-value" data-inline-price>${precio}</td><td><input class="inline-table-input" type="number" min="0" step="0.01" value="${precioFinal}" data-product-field="precioFinal" data-id="${producto.id}" aria-label="Precio final de ${producto.nombre}"></td><td><div class="td-actions"><button class="btn btn-ghost btn-sm btn-icon" data-action="view-producto" data-id="${producto.id}" aria-label="Visualizar producto" title="Visualizar">👁️</button><button class="btn btn-ghost btn-sm btn-icon" data-action="edit-producto" data-id="${producto.id}" aria-label="Editar producto" title="Editar">✏️</button><button class="btn btn-danger btn-sm btn-icon" data-action="delete" data-entity="prod" data-id="${producto.id}" data-name="${producto.nombre}" aria-label="Eliminar producto" title="Eliminar">🗑️</button></div></td></tr>`;
+      return `<tr data-product-row="${producto.id}"><td><div style="font-weight:800">${producto.nombre}</div>${producto.desc ? `<div style="font-size:.78rem;color:var(--text-soft)">${producto.desc.slice(0, 60)}${producto.desc.length > 60 ? '…' : ''}</div>` : ''}</td><td>${tipo ? `<span class="chip chip-ok">${tipo.nombre}</span>` : '—'}</td><td>${prov ? prov.nombre : '—'}</td><td><input class="inline-table-input" type="number" min="0" step="0.01" value="${costo}" data-product-field="costo" data-id="${producto.id}" aria-label="Costo de ${producto.nombre}"></td><td><input class="inline-table-input" type="number" min="0" step="0.01" value="${porcentaje}" data-product-field="porcentaje" data-id="${producto.id}" aria-label="Porcentaje de ${producto.nombre}"></td><td class="price-value" data-inline-price>${precio}</td><td><input class="inline-table-input" type="number" min="0" step="0.01" value="${precioFinal}" data-product-field="precioFinal" data-id="${producto.id}" aria-label="Precio final de ${producto.nombre}"></td><td data-product-updated-at>${this.formatDate(producto.updatedAt)}</td><td><div class="td-actions"><button class="btn btn-ghost btn-sm btn-icon" data-action="view-producto" data-id="${producto.id}" aria-label="Visualizar producto" title="Visualizar">👁️</button><button class="btn btn-ghost btn-sm btn-icon" data-action="edit-producto" data-id="${producto.id}" aria-label="Editar producto" title="Editar">✏️</button><button class="btn btn-danger btn-sm btn-icon" data-action="delete" data-entity="prod" data-id="${producto.id}" data-name="${producto.nombre}" aria-label="Eliminar producto" title="Eliminar">🗑️</button></div></td></tr>`;
     }).join('');
     document.getElementById('pager-productos').innerHTML = paginationTemplate('productos', pageState);
   }
@@ -178,7 +185,9 @@ export class ProductosComponent {
     producto.porcentaje = Number(porcentaje);
     producto.precio = this.calculatePrice(costo, porcentaje);
     producto.precioFinal = Number(precioFinal);
+    producto.updatedAt = new Date().toISOString();
     row.querySelector('[data-inline-price]').textContent = this.formatMoney(producto.precio);
+    row.querySelector('[data-product-updated-at]').textContent = this.formatDate(producto.updatedAt);
     await this.app.store.put('productos', producto);
     await this.app.audit('Edición', 'Productos', `${producto.nombre} (precios)`);
     this.app.toasts.show('Producto actualizado ✅');
@@ -196,7 +205,7 @@ export class ProductosComponent {
     const data = this.app.store.data;
     const tipo = data.tipos.find(item => item.id === producto.tipoId);
     const prov = data.proveedores.find(item => item.id === producto.proveedorId);
-    this.app.showDetail('Producto', `<div class="detail-list"><div><span>Nombre</span><strong>${producto.nombre}</strong></div><div><span>Tipo</span><strong>${tipo ? tipo.nombre : '—'}</strong></div><div><span>Proveedor</span><strong>${prov ? prov.nombre : '—'}</strong></div><div><span>Costo</span><strong class="price-value">${this.formatMoney(producto.costo ?? producto.precio)}</strong></div><div><span>Porcentaje de ganancia</span><strong>${producto.porcentaje ?? 0}%</strong></div><div><span>Precio calculado</span><strong class="price-value">${this.formatMoney(producto.precio)}</strong></div><div><span>Precio final</span><strong class="price-value">${this.formatMoney(this.getProductPrice(producto))}</strong></div><div><span>Stock mínimo</span><strong>${producto.minStock || 5} u.</strong></div><div><span>Descripción</span><strong>${producto.desc || '—'}</strong></div></div>`);
+    this.app.showDetail('Producto', `<div class="detail-list"><div><span>Nombre</span><strong>${producto.nombre}</strong></div><div><span>Tipo</span><strong>${tipo ? tipo.nombre : '—'}</strong></div><div><span>Proveedor</span><strong>${prov ? prov.nombre : '—'}</strong></div><div><span>Costo</span><strong class="price-value">${this.formatMoney(producto.costo ?? producto.precio)}</strong></div><div><span>Porcentaje de ganancia</span><strong>${producto.porcentaje ?? 0}%</strong></div><div><span>Precio calculado</span><strong class="price-value">${this.formatMoney(producto.precio)}</strong></div><div><span>Precio final</span><strong class="price-value">${this.formatMoney(this.getProductPrice(producto))}</strong></div><div><span>Stock mínimo</span><strong>${producto.minStock || 5} u.</strong></div><div><span>Última actualización</span><strong>${this.formatDate(producto.updatedAt)}</strong></div><div><span>Descripción</span><strong>${producto.desc || '—'}</strong></div></div>`);
   }
 
   openNew() {
@@ -247,7 +256,7 @@ export class ProductosComponent {
     if (duplicated) return this.app.toasts.show('Ya existe un producto con ese nombre para el proveedor seleccionado', 'error');
 
     const precio = this.calculatePrice(costo, porcentaje);
-    const producto = { id, nombre, tipoId, proveedorId, costo: Number(costo), porcentaje: Number(porcentaje), precio, precioFinal: Number(precioFinal), minStock: Number(form.value('prod-min-stock')) || 5, desc: form.trim('prod-desc') };
+    const producto = { id, nombre, tipoId, proveedorId, costo: Number(costo), porcentaje: Number(porcentaje), precio, precioFinal: Number(precioFinal), minStock: Number(form.value('prod-min-stock')) || 5, updatedAt: new Date().toISOString(), desc: form.trim('prod-desc') };
     await this.app.store.put('productos', producto);
     const list = this.app.store.data.productos;
     const index = list.findIndex(item => item.id === id);

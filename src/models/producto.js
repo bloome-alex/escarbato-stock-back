@@ -11,6 +11,7 @@ const productoSchema = new mongoose.Schema({
   precio: { type: Number, required: true, min: 0 },
   precioFinal: { type: Number, required: true, min: 0 },
   minStock: { type: Number, default: 5, min: 0 },
+  updatedAt: { type: Date, default: Date.now },
   desc: { type: String, default: '' }
 }, { versionKey: false });
 

@@ -278,6 +278,7 @@ app.put('/api/:store/:id', async (req, res, next) => {
     if (!Model) return res.status(404).json({ error: 'Store no encontrado' });
 
     const payload = { ...req.body, id: req.params.id };
+    if (req.params.store === 'productos') payload.updatedAt = new Date();
     await validateUniqueName(req.params.store, payload);
 
     const record = await Model.findOneAndUpdate(
