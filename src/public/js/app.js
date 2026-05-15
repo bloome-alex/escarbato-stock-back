@@ -88,33 +88,64 @@ class PetshopApp {
     this.navigation.bind();
     this.modals.bindOverlayClose();
 
-    document.addEventListener('click', event => {
+    document.addEventListener('click', async event => {
       const closeButton = event.target.closest('[data-close-modal]');
       if (closeButton) this.modals.close(closeButton.dataset.closeModal);
 
       const actionButton = event.target.closest('[data-action]');
       if (!actionButton) return;
+      if (actionButton.disabled) return;
 
       const { action, id, entity, name, delta } = actionButton.dataset;
-      if (action === 'save-proveedor') this.components.proveedores.save();
+      if (action === 'save-proveedor') return this.runButtonAction(actionButton, () => this.components.proveedores.save(), 'Guardando');
       if (action === 'view-proveedor') this.components.proveedores.view(id);
       if (action === 'edit-proveedor') this.components.proveedores.edit(id);
-      if (action === 'save-tipo') this.components.tipos.save();
+      if (action === 'save-tipo') return this.runButtonAction(actionButton, () => this.components.tipos.save(), 'Guardando');
       if (action === 'view-tipo') this.components.tipos.view(id);
       if (action === 'edit-tipo') this.components.tipos.edit(id);
-      if (action === 'save-producto') this.components.productos.save();
+      if (action === 'save-producto') return this.runButtonAction(actionButton, () => this.components.productos.save(), 'Guardando');
       if (action === 'view-producto') this.components.productos.view(id);
       if (action === 'edit-producto') this.components.productos.edit(id);
-      if (action === 'change-stock') this.components.stock.change(id, Number(delta));
+      if (action === 'change-stock') return this.runButtonAction(actionButton, () => this.components.stock.change(id, Number(delta)), '');
       if (action === 'edit-stock') this.components.stock.edit(id);
-      if (action === 'save-stock') this.components.stock.save();
+      if (action === 'save-stock') return this.runButtonAction(actionButton, () => this.components.stock.save(), 'Guardando');
       if (action === 'add-venta-item') this.components.ventas.addItem();
       if (action === 'remove-venta-item') this.components.ventas.removeItem(actionButton.dataset.index);
       if (action === 'view-venta') this.components.ventas.view(id);
       if (action === 'edit-venta') this.components.ventas.edit(id);
-      if (action === 'save-venta') this.components.ventas.save();
+      if (action === 'save-venta') return this.runButtonAction(actionButton, () => this.components.ventas.save(), 'Guardando');
       if (action === 'delete') this.confirmDelete(entity, id, name);
     });
+  }
+
+  async runButtonAction(button, action, loadingLabel) {
+    this.setButtonLoading(button, true, loadingLabel);
+    try {
+      await action();
+    } finally {
+      this.setButtonLoading(button, false);
+    }
+  }
+
+  setButtonLoading(button, loading, loadingLabel = 'Cargando') {
+    if (!button) return;
+    if (loading) {
+      button.dataset.originalHtml = button.innerHTML;
+      button.disabled = true;
+      button.classList.add('is-loading');
+      button.setAttribute('aria-busy', 'true');
+      const label = loadingLabel ? `<span>${loadingLabel}</span>` : '';
+      button.innerHTML = `<span class="loading-spinner" aria-hidden="true"></span>${label}`;
+      return;
+    }
+
+    if (button.dataset.originalHtml) {
+      button.innerHTML = button.dataset.originalHtml;
+      delete button.dataset.originalHtml;
+    }
+    button.disabled = false;
+    button.classList.remove('is-loading');
+    button.removeAttribute('aria-busy');
   }
 
   renderSection(section) {
@@ -137,7 +168,8 @@ class PetshopApp {
 
   confirmDelete(entity, id, name) {
     document.getElementById('confirm-text').textContent = `¿Eliminar "${name}"? Esta acción no se puede deshacer.`;
-    document.getElementById('confirm-btn').onclick = () => this.deleteEntity(entity, id);
+    const confirmButton = document.getElementById('confirm-btn');
+    confirmButton.onclick = () => this.runButtonAction(confirmButton, () => this.deleteEntity(entity, id), 'Eliminando');
     this.modals.open('confirm');
   }
 
