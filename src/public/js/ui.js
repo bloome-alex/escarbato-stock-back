@@ -42,26 +42,34 @@ export class NavigationManager {
 
     document.getElementById('hamburgerBtn').addEventListener('click', () => this.toggleSidebar());
     document.getElementById('sidebarOverlay').addEventListener('click', () => this.closeSidebar());
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') this.closeSidebar();
+    });
   }
 
   go(section) {
     document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('[data-nav]').forEach(el => el.classList.remove('active'));
     document.getElementById('sec-' + section).classList.add('active');
-    document.querySelector(`[data-nav="${section}"]`).classList.add('active');
+    document.querySelectorAll(`[data-nav="${section}"]`).forEach(el => el.classList.add('active'));
     document.getElementById('topbarTitle').textContent = this.sectionTitles[section];
     this.closeSidebar();
     this.app.renderSection(section);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   toggleSidebar() {
-    document.getElementById('sidebar').classList.toggle('open');
-    document.getElementById('sidebarOverlay').classList.toggle('open');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const isOpen = sidebar.classList.toggle('open');
+    overlay.classList.toggle('open', isOpen);
+    document.getElementById('hamburgerBtn').setAttribute('aria-expanded', String(isOpen));
   }
 
   closeSidebar() {
     document.getElementById('sidebar').classList.remove('open');
     document.getElementById('sidebarOverlay').classList.remove('open');
+    document.getElementById('hamburgerBtn').setAttribute('aria-expanded', 'false');
   }
 }
 

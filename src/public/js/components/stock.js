@@ -13,7 +13,7 @@ export class StockComponent {
   template() {
     return `<section class="section" id="sec-stock">
       <div class="section-header"><div class="section-heading">📊 <span>Gestión de Stock</span></div></div>
-      <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar producto en stock…" id="searchStock"></div><select id="filterStockStatus" style="padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:Inter,sans-serif;font-size:.9rem;background:var(--card);outline:none;"><option value="">Todos</option><option value="ok">Disponible</option><option value="low">Stock bajo</option><option value="out">Sin stock</option></select></div>
+      <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar producto en stock…" id="searchStock"></div><select id="filterStockStatus" class="filter-control"><option value="">Todos</option><option value="ok">Disponible</option><option value="low">Stock bajo</option><option value="out">Sin stock</option></select></div>
       <div class="table-wrap" id="stock-list"><table class="data-table"><thead><tr><th>Producto</th><th>Tipo de producto</th><th>Proveedor</th><th>Mínimo</th><th>Stock</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="tbl-stock"></tbody></table></div><div id="empty-stock" class="empty-state" style="display:none"><div class="empty-icon">📊</div><p>Agregá productos para gestionar el stock</p></div><div id="pager-stock"></div>
     </section>`;
   }
@@ -82,7 +82,7 @@ export class StockComponent {
       const status = this.getStatus(qty, min);
       const tipo = data.tipos.find(item => item.id === producto.tipoId);
       const proveedor = data.proveedores.find(item => item.id === producto.proveedorId);
-      return `<tr><td><strong>${producto.nombre}</strong></td><td>${tipo ? tipo.nombre : '—'}</td><td>${proveedor ? proveedor.nombre : '—'}</td><td>${min} u.</td><td><div class="stock-controls"><button class="stock-btn minus" data-action="change-stock" data-id="${producto.id}" data-delta="-1">−</button><div class="stock-qty">${qty}</div><button class="stock-btn plus" data-action="change-stock" data-id="${producto.id}" data-delta="1">+</button></div></td><td><span class="chip ${this.statusChip[status]}">${this.statusLabel[status]}</span></td><td><button class="btn btn-ghost btn-sm" data-action="edit-stock" data-id="${producto.id}">Editar</button></td></tr>`;
+      return `<tr><td data-label="Producto"><strong>${producto.nombre}</strong></td><td data-label="Tipo">${tipo ? tipo.nombre : '—'}</td><td data-label="Proveedor">${proveedor ? proveedor.nombre : '—'}</td><td data-label="Mínimo">${min} u.</td><td data-label="Stock"><div class="stock-controls"><button class="stock-btn minus" data-action="change-stock" data-id="${producto.id}" data-delta="-1">−</button><div class="stock-qty">${qty}</div><button class="stock-btn plus" data-action="change-stock" data-id="${producto.id}" data-delta="1">+</button></div></td><td data-label="Estado"><span class="chip ${this.statusChip[status]}">${this.statusLabel[status]}</span></td><td data-label="Acciones"><button class="btn btn-ghost btn-sm" data-action="edit-stock" data-id="${producto.id}">Editar</button></td></tr>`;
     }).join('');
     document.getElementById('pager-stock').innerHTML = paginationTemplate('stock', pageState);
   }

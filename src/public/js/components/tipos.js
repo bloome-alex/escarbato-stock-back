@@ -71,7 +71,7 @@ export class TiposComponent {
     empty.style.display = 'none';
     tbody.innerHTML = pageItems.map(tipo => {
       const count = data.productos.filter(producto => producto.tipoId === tipo.id).length;
-      return `<tr><td><strong>${tipo.nombre}</strong></td><td>${tipo.desc || '—'}</td><td><span class="chip chip-ok">${count} prod.</span></td><td><div class="td-actions"><button class="btn btn-ghost btn-sm btn-icon" data-action="view-tipo" data-id="${tipo.id}" aria-label="Visualizar tipo" title="Visualizar">👁️</button><button class="btn btn-ghost btn-sm btn-icon" data-action="edit-tipo" data-id="${tipo.id}" aria-label="Editar tipo" title="Editar">✏️</button><button class="btn btn-danger btn-sm btn-icon" data-action="delete" data-entity="tipo" data-id="${tipo.id}" data-name="${tipo.nombre}" aria-label="Eliminar tipo" title="Eliminar">🗑️</button></div></td></tr>`;
+      return `<tr><td data-label="Nombre"><strong>${tipo.nombre}</strong></td><td data-label="Descripción">${tipo.desc || '—'}</td><td data-label="Productos"><span class="chip chip-ok">${count} prod.</span></td><td data-label="Acciones"><div class="td-actions"><button class="btn btn-ghost btn-sm btn-icon" data-action="view-tipo" data-id="${tipo.id}" aria-label="Visualizar tipo" title="Visualizar">👁️</button><button class="btn btn-ghost btn-sm btn-icon" data-action="edit-tipo" data-id="${tipo.id}" aria-label="Editar tipo" title="Editar">✏️</button><button class="btn btn-danger btn-sm btn-icon" data-action="delete" data-entity="tipo" data-id="${tipo.id}" data-name="${tipo.nombre}" aria-label="Eliminar tipo" title="Eliminar">🗑️</button></div></td></tr>`;
     }).join('');
     document.getElementById('pager-tipos').innerHTML = paginationTemplate('tipos', pageState);
   }
