@@ -569,6 +569,45 @@
   .empty-state .empty-icon { font-size: 3rem; margin-bottom: 12px; }
   .empty-state p { font-weight: 600; }
 
+  .section-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 180px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    color: var(--text-soft);
+    font-weight: 800;
+  }
+  .pagination-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 14px;
+    padding: 12px 14px;
+    background: rgba(255,253,249,0.86);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow);
+  }
+  .pagination-info {
+    color: var(--text-soft);
+    font-size: .84rem;
+    font-weight: 800;
+  }
+  .pagination-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--brown);
+    font-size: .84rem;
+    font-weight: 800;
+  }
+
   /* ── MODAL ── */
   .modal-overlay {
     display: none;
@@ -844,6 +883,8 @@
     .audit-item { align-items: flex-start; flex-direction: column; }
     .audit-main { align-items: flex-start; flex-direction: column; }
     .audit-main span:last-child { white-space: normal; }
+    .pagination-bar { align-items: stretch; flex-direction: column; }
+    .pagination-actions { justify-content: space-between; }
   }
 
   @media (max-width: 420px) {

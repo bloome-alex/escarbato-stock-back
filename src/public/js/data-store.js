@@ -75,6 +75,19 @@ class IndexedDbStore {
     });
   }
 
+  async getPage(store, { page = 1, limit = 10 } = {}) {
+    const list = store === 'stock'
+      ? Object.entries(this.data.stock).map(([id, qty]) => ({ id, qty }))
+      : [...(this.data[store] || [])];
+    const totalPages = Math.max(1, Math.ceil(list.length / limit));
+    const currentPage = Math.min(Math.max(1, page), totalPages);
+    const start = (currentPage - 1) * limit;
+    return {
+      data: list.slice(start, start + limit),
+      pagination: { page: currentPage, limit, total: list.length, totalPages }
+    };
+  }
+
   createId() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   }
@@ -191,6 +204,12 @@ class BackendStore {
 
   async loadAll() {
     this.data = await this.request('/api/data');
+  }
+
+  async getPage(store, { page = 1, limit = 10, q = '' } = {}) {
+    const params = new URLSearchParams({ page, limit });
+    if (q) params.set('q', q);
+    return this.request(`/api/${store}?${params.toString()}`);
   }
 
   async put(store, obj) {

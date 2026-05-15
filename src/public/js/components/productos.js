@@ -1,8 +1,11 @@
 import { form } from '../ui.js';
+import { DEFAULT_PAGE_SIZE, getPageItems, loadingTemplate, paginationTemplate } from '../pagination.js';
 
 export class ProductosComponent {
   constructor(app) {
     this.app = app;
+    this.page = 1;
+    this.loadingTimer = null;
   }
 
   formatMoney(value) {
@@ -21,7 +24,7 @@ export class ProductosComponent {
     return `<section class="section" id="sec-productos">
       <div class="section-header"><div class="section-heading">📦 <span>Productos</span></div><button class="btn btn-primary" data-action="new-producto">+ Nuevo producto</button></div>
       <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar producto…" id="searchProd"></div><select id="filterTipo" class="filter-control"><option value="">Todos los tipos</option></select><select id="filterProveedor" class="filter-control"><option value="">Todos los proveedores</option></select><select id="filterStockProd" class="filter-control"><option value="">Todo stock</option><option value="disponible">Disponible</option><option value="bajo">Stock bajo</option><option value="sin-stock">Sin stock</option></select></div>
-      <div class="table-wrap"><table class="data-table"><thead><tr><th>Producto</th><th>Tipo</th><th>Proveedor</th><th>Costo</th><th>Porcentaje</th><th>Precio</th><th>Precio final</th><th>Acciones</th></tr></thead><tbody id="tbl-productos"></tbody></table><div id="empty-productos" class="empty-state" style="display:none"><div class="empty-icon">📦</div><p>Aún no hay productos registrados</p></div></div>
+      <div class="table-wrap" id="wrap-productos"><table class="data-table"><thead><tr><th>Producto</th><th>Tipo</th><th>Proveedor</th><th>Costo</th><th>Porcentaje</th><th>Precio</th><th>Precio final</th><th>Acciones</th></tr></thead><tbody id="tbl-productos"></tbody></table><div id="empty-productos" class="empty-state" style="display:none"><div class="empty-icon">📦</div><p>Aún no hay productos registrados</p></div></div><div id="pager-productos"></div>
     </section>`;
   }
 
@@ -30,17 +33,17 @@ export class ProductosComponent {
   }
 
   bind() {
-    document.getElementById('searchProd').addEventListener('input', () => this.render());
-    document.getElementById('filterTipo').addEventListener('change', () => this.render());
-    document.getElementById('filterProveedor').addEventListener('change', () => this.render());
-    document.getElementById('filterStockProd').addEventListener('change', () => this.render());
+    document.getElementById('searchProd').addEventListener('input', () => this.resetAndRender());
+    document.getElementById('filterTipo').addEventListener('change', () => this.resetAndRender());
+    document.getElementById('filterProveedor').addEventListener('change', () => this.resetAndRender());
+    document.getElementById('filterStockProd').addEventListener('change', () => this.resetAndRender());
     document.querySelector('[data-action="new-producto"]').addEventListener('click', () => this.openNew());
     document.getElementById('prod-costo').addEventListener('input', () => this.updateCalculatedPrice());
     document.getElementById('prod-porcentaje').addEventListener('input', () => this.updateCalculatedPrice());
-    document.getElementById('tbl-productos').addEventListener('input', event => {
+    document.getElementById('wrap-productos').addEventListener('input', event => {
       if (event.target.matches('[data-product-field="costo"], [data-product-field="porcentaje"]')) this.updateInlineCalculatedPrice(event.target);
     });
-    document.getElementById('tbl-productos').addEventListener('change', event => {
+    document.getElementById('wrap-productos').addEventListener('change', event => {
       if (event.target.matches('[data-product-field]')) this.saveInline(event.target.dataset.id);
     });
   }
@@ -75,6 +78,23 @@ export class ProductosComponent {
   }
 
   render() {
+    clearTimeout(this.loadingTimer);
+    document.getElementById('wrap-productos').innerHTML = loadingTemplate('Cargando productos...');
+    document.getElementById('pager-productos').innerHTML = '';
+    this.loadingTimer = setTimeout(() => this.renderList(), 120);
+  }
+
+  resetAndRender() {
+    this.page = 1;
+    this.render();
+  }
+
+  setPage(page) {
+    this.page = page;
+    this.render();
+  }
+
+  renderList() {
     this.refreshTipoSelects();
     this.refreshProveedorSelects();
     const data = this.app.store.data;
@@ -94,17 +114,22 @@ export class ProductosComponent {
         || producto.proveedorId === proveedorId;
       return producto.nombre.toLowerCase().includes(q) && (!tipoId || producto.tipoId === tipoId) && matchesProveedor && matchesStock;
     });
+    document.getElementById('wrap-productos').innerHTML = `<table class="data-table"><thead><tr><th>Producto</th><th>Tipo</th><th>Proveedor</th><th>Costo</th><th>Porcentaje</th><th>Precio</th><th>Precio final</th><th>Acciones</th></tr></thead><tbody id="tbl-productos"></tbody></table><div id="empty-productos" class="empty-state" style="display:none"><div class="empty-icon">📦</div><p>Aún no hay productos registrados</p></div>`;
     const tbody = document.getElementById('tbl-productos');
     const empty = document.getElementById('empty-productos');
+    const pageState = getPageItems(list, this.page, DEFAULT_PAGE_SIZE);
+    this.page = pageState.page;
+    const pageItems = pageState.items;
 
-    if (!list.length) {
+    if (!pageItems.length) {
       tbody.innerHTML = '';
       empty.style.display = '';
+      document.getElementById('pager-productos').innerHTML = '';
       return;
     }
 
     empty.style.display = 'none';
-    tbody.innerHTML = list.map(producto => {
+    tbody.innerHTML = pageItems.map(producto => {
       const tipo = data.tipos.find(item => item.id === producto.tipoId);
       const prov = data.proveedores.find(item => item.id === producto.proveedorId);
       const costo = producto.costo ?? producto.precio ?? 0;
@@ -113,6 +138,7 @@ export class ProductosComponent {
       const precioFinal = this.getProductPrice(producto) ?? 0;
       return `<tr data-product-row="${producto.id}"><td><div style="font-weight:800">${producto.nombre}</div>${producto.desc ? `<div style="font-size:.78rem;color:var(--text-soft)">${producto.desc.slice(0, 60)}${producto.desc.length > 60 ? '…' : ''}</div>` : ''}</td><td>${tipo ? `<span class="chip chip-ok">${tipo.nombre}</span>` : '—'}</td><td>${prov ? prov.nombre : '—'}</td><td><input class="inline-table-input" type="number" min="0" step="0.01" value="${costo}" data-product-field="costo" data-id="${producto.id}" aria-label="Costo de ${producto.nombre}"></td><td><input class="inline-table-input" type="number" min="0" step="0.01" value="${porcentaje}" data-product-field="porcentaje" data-id="${producto.id}" aria-label="Porcentaje de ${producto.nombre}"></td><td class="price-value" data-inline-price>${precio}</td><td><input class="inline-table-input" type="number" min="0" step="0.01" value="${precioFinal}" data-product-field="precioFinal" data-id="${producto.id}" aria-label="Precio final de ${producto.nombre}"></td><td><div class="td-actions"><button class="btn btn-ghost btn-sm btn-icon" data-action="view-producto" data-id="${producto.id}" aria-label="Visualizar producto" title="Visualizar">👁️</button><button class="btn btn-ghost btn-sm btn-icon" data-action="edit-producto" data-id="${producto.id}" aria-label="Editar producto" title="Editar">✏️</button><button class="btn btn-danger btn-sm btn-icon" data-action="delete" data-entity="prod" data-id="${producto.id}" data-name="${producto.nombre}" aria-label="Eliminar producto" title="Eliminar">🗑️</button></div></td></tr>`;
     }).join('');
+    document.getElementById('pager-productos').innerHTML = paginationTemplate('productos', pageState);
   }
 
   updateInlineCalculatedPrice(input) {

@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
+import { Auditoria, Producto, Proveedor, Stock, Tipo, Venta } from './models/index.js';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -18,67 +19,6 @@ app.use(cors({ origin: corsOrigin === '*' ? true : corsOrigin }));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.static('src/public'));
 
-const baseFields = {
-  id: { type: String, required: true, unique: true, index: true }
-};
-
-const Proveedor = mongoose.model('Proveedor', new mongoose.Schema({
-  ...baseFields,
-  nombre: { type: String, required: true, trim: true },
-  contacto: { type: String, default: '' },
-  telefono: { type: String, default: '' },
-  email: { type: String, default: '' },
-  notas: { type: String, default: '' }
-}, { versionKey: false }));
-
-const Tipo = mongoose.model('Tipo', new mongoose.Schema({
-  ...baseFields,
-  nombre: { type: String, required: true, trim: true },
-  desc: { type: String, default: '' }
-}, { versionKey: false }));
-
-const Producto = mongoose.model('Producto', new mongoose.Schema({
-  ...baseFields,
-  nombre: { type: String, required: true, trim: true },
-  tipoId: { type: String, required: true },
-  proveedorId: { type: String, default: null },
-  costo: { type: Number, required: true, min: 0 },
-  porcentaje: { type: Number, required: true, min: 0 },
-  precio: { type: Number, required: true, min: 0 },
-  precioFinal: { type: Number, required: true, min: 0 },
-  minStock: { type: Number, default: 5, min: 0 },
-  desc: { type: String, default: '' }
-}, { versionKey: false }));
-
-const Stock = mongoose.model('Stock', new mongoose.Schema({
-  ...baseFields,
-  qty: { type: Number, required: true, min: 0 }
-}, { versionKey: false }));
-
-const Venta = mongoose.model('Venta', new mongoose.Schema({
-  ...baseFields,
-  cliente: { type: String, default: '' },
-  items: [{
-    _id: false,
-    productId: { type: String, required: true },
-    productName: { type: String, required: true },
-    qty: { type: Number, required: true, min: 0 },
-    price: { type: Number, required: true, min: 0 },
-    subtotal: { type: Number, required: true, min: 0 }
-  }],
-  calculatedTotal: { type: Number, required: true, min: 0 },
-  finalTotal: { type: Number, required: true, min: 0 },
-  createdAt: { type: String, required: true }
-}, { versionKey: false }));
-
-const Auditoria = mongoose.model('Auditoria', new mongoose.Schema({
-  ...baseFields,
-  action: { type: String, required: true },
-  entity: { type: String, required: true },
-  detail: { type: String, required: true },
-  createdAt: { type: String, required: true }
-}, { versionKey: false }));
-
 const models = {
   proveedores: Proveedor,
   tipos: Tipo,
@@ -86,6 +26,14 @@ const models = {
   stock: Stock,
   ventas: Venta,
   auditoria: Auditoria
+};
+
+const searchableFields = {
+  proveedores: ['nombre', 'contacto', 'email', 'telefono'],
+  tipos: ['nombre', 'desc'],
+  productos: ['nombre', 'desc'],
+  stock: ['id'],
+  ventas: ['cliente', 'items.productName']
 };
 
 function credentialHash() {
@@ -103,6 +51,37 @@ function sanitizeList(records) {
     delete record._id;
     return record;
   });
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function buildListQuery(store, queryParams) {
+  const query = {};
+  const q = String(queryParams.q || '').trim();
+  if (q && searchableFields[store]) {
+    const regex = new RegExp(escapeRegExp(q), 'i');
+    query.$or = searchableFields[store].map(field => ({ [field]: regex }));
+  }
+
+  ['tipoId', 'proveedorId', 'id'].forEach(field => {
+    if (queryParams[field]) query[field] = queryParams[field];
+  });
+
+  return query;
+}
+
+function getPagination(query) {
+  const page = Math.max(1, Number.parseInt(query.page, 10) || 1);
+  const limit = Math.min(100, Math.max(1, Number.parseInt(query.limit, 10) || 10));
+  return { page, limit, skip: (page - 1) * limit };
+}
+
+function getSort(store) {
+  if (store === 'ventas' || store === 'auditoria') return { createdAt: -1 };
+  if (store === 'stock') return { id: 1 };
+  return { nombre: 1 };
 }
 
 function requireAuth(req, res, next) {
@@ -166,16 +145,38 @@ app.get('/api/data', async (req, res, next) => {
   }
 });
 
-app.get('/api/health', (req, res) => {
-  res.json({ ok: true });
-});
-
 app.get('/api/:store', async (req, res, next) => {
   try {
     const Model = models[req.params.store];
     if (!Model) return res.status(404).json({ error: 'Store no encontrado' });
-    const records = await Model.find().lean();
-    res.json(sanitizeList(records));
+    const { page, limit, skip } = getPagination(req.query);
+    const query = buildListQuery(req.params.store, req.query);
+    const [records, total] = await Promise.all([
+      Model.find(query).sort(getSort(req.params.store)).skip(skip).limit(limit).lean(),
+      Model.countDocuments(query)
+    ]);
+
+    res.json({
+      data: sanitizeList(records),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / limit))
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/:store/:id', async (req, res, next) => {
+  try {
+    const Model = models[req.params.store];
+    if (!Model) return res.status(404).json({ error: 'Store no encontrado' });
+    const record = await Model.findOne({ id: req.params.id });
+    if (!record) return res.status(404).json({ error: 'Registro no encontrado' });
+    res.json(sanitize(record));
   } catch (error) {
     next(error);
   }

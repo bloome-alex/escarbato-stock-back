@@ -1,17 +1,20 @@
 import { form } from '../ui.js';
+import { DEFAULT_PAGE_SIZE, getPageItems, loadingTemplate, paginationTemplate } from '../pagination.js';
 
 export class StockComponent {
   constructor(app) {
     this.app = app;
     this.statusLabel = { ok: 'Disponible', low: 'Stock bajo', out: 'Sin stock' };
     this.statusChip = { ok: 'chip-ok', low: 'chip-low', out: 'chip-out' };
+    this.page = 1;
+    this.loadingTimer = null;
   }
 
   template() {
     return `<section class="section" id="sec-stock">
       <div class="section-header"><div class="section-heading">📊 <span>Gestión de Stock</span></div></div>
       <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar producto en stock…" id="searchStock"></div><select id="filterStockStatus" style="padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:Inter,sans-serif;font-size:.9rem;background:var(--card);outline:none;"><option value="">Todos</option><option value="ok">Disponible</option><option value="low">Stock bajo</option><option value="out">Sin stock</option></select></div>
-      <div id="stock-list"></div><div id="empty-stock" class="empty-state" style="display:none"><div class="empty-icon">📊</div><p>Agregá productos para gestionar el stock</p></div>
+      <div id="stock-list"></div><div id="empty-stock" class="empty-state" style="display:none"><div class="empty-icon">📊</div><p>Agregá productos para gestionar el stock</p></div><div id="pager-stock"></div>
     </section>`;
   }
 
@@ -20,8 +23,8 @@ export class StockComponent {
   }
 
   bind() {
-    document.getElementById('searchStock').addEventListener('input', () => this.render());
-    document.getElementById('filterStockStatus').addEventListener('change', () => this.render());
+    document.getElementById('searchStock').addEventListener('input', () => this.resetAndRender());
+    document.getElementById('filterStockStatus').addEventListener('change', () => this.resetAndRender());
   }
 
   getStatus(qty, min) {
@@ -31,6 +34,24 @@ export class StockComponent {
   }
 
   render() {
+    clearTimeout(this.loadingTimer);
+    document.getElementById('stock-list').innerHTML = loadingTemplate('Cargando stock...');
+    document.getElementById('empty-stock').style.display = 'none';
+    document.getElementById('pager-stock').innerHTML = '';
+    this.loadingTimer = setTimeout(() => this.renderList(), 120);
+  }
+
+  resetAndRender() {
+    this.page = 1;
+    this.render();
+  }
+
+  setPage(page) {
+    this.page = page;
+    this.render();
+  }
+
+  renderList() {
     const data = this.app.store.data;
     const q = (form.value('searchStock') || '').toLowerCase();
     const filter = form.value('filterStockStatus');
@@ -43,20 +64,25 @@ export class StockComponent {
 
     const listEl = document.getElementById('stock-list');
     const emptyEl = document.getElementById('empty-stock');
-    if (!list.length) {
+    const pageState = getPageItems(list, this.page, DEFAULT_PAGE_SIZE);
+    this.page = pageState.page;
+    const pageItems = pageState.items;
+    if (!pageItems.length) {
       listEl.innerHTML = '';
       emptyEl.style.display = '';
+      document.getElementById('pager-stock').innerHTML = '';
       return;
     }
 
     emptyEl.style.display = 'none';
-    listEl.innerHTML = list.map(producto => {
+    listEl.innerHTML = pageItems.map(producto => {
       const qty = data.stock[producto.id] || 0;
       const min = producto.minStock || 5;
       const status = this.getStatus(qty, min);
       const tipo = data.tipos.find(item => item.id === producto.tipoId);
       return `<div class="stock-card"><div style="font-size:1.6rem">${status === 'out' ? '📭' : status === 'low' ? '📉' : '📦'}</div><div class="stock-prod-info"><div class="stock-prod-name">${producto.nombre}</div><div class="stock-prod-type">${tipo ? tipo.nombre : '—'} · Mínimo: ${min} u.</div></div><div class="stock-controls"><button class="stock-btn minus" data-action="change-stock" data-id="${producto.id}" data-delta="-1">−</button><div class="stock-qty">${qty}</div><button class="stock-btn plus" data-action="change-stock" data-id="${producto.id}" data-delta="1">+</button></div><button class="btn btn-ghost btn-sm" data-action="edit-stock" data-id="${producto.id}">Editar</button><div class="stock-status"><span class="chip ${this.statusChip[status]}">${this.statusLabel[status]}</span></div></div>`;
     }).join('');
+    document.getElementById('pager-stock').innerHTML = paginationTemplate('stock', pageState);
   }
 
   edit(id) {

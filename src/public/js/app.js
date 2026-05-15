@@ -116,6 +116,14 @@ class PetshopApp {
       if (action === 'save-venta') return this.runButtonAction(actionButton, () => this.components.ventas.save(), 'Guardando');
       if (action === 'delete') this.confirmDelete(entity, id, name);
     });
+
+    document.addEventListener('click', event => {
+      const pageButton = event.target.closest('[data-pagination] [data-page]');
+      if (!pageButton || pageButton.disabled) return;
+      const componentName = pageButton.closest('[data-pagination]').dataset.pagination;
+      const component = this.components[componentName];
+      if (component?.setPage) component.setPage(Number(pageButton.dataset.page));
+    });
   }
 
   async runButtonAction(button, action, loadingLabel) {

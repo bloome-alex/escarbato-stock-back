@@ -1,9 +1,12 @@
 import { form } from '../ui.js';
+import { DEFAULT_PAGE_SIZE, getPageItems, loadingTemplate, paginationTemplate } from '../pagination.js';
 
 export class VentasComponent {
   constructor(app) {
     this.app = app;
     this.cart = [];
+    this.page = 1;
+    this.loadingTimer = null;
   }
 
   formatMoney(value) {
@@ -64,7 +67,7 @@ export class VentasComponent {
     return `<section class="section" id="sec-ventas">
       <div class="section-header"><div class="section-heading">🧾 <span>Ventas</span></div><button class="btn btn-primary" data-action="new-venta">+ Nueva venta</button></div>
       <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar venta por cliente o producto…" id="searchVenta"></div><select id="filterVentaCliente" class="filter-control"><option value="">Todos los clientes</option><option value="con-cliente">Con cliente</option><option value="mostrador">Mostrador</option></select><label class="filter-field"><span>Desde</span><input type="date" id="filterVentaDesde" class="filter-control"></label><label class="filter-field"><span>Hasta</span><input type="date" id="filterVentaHasta" class="filter-control"></label><select id="filterVentaTotal" class="filter-control"><option value="">Todos los totales</option><option value="igual">Final igual al calculado</option><option value="diferente">Final modificado</option></select></div>
-      <div class="table-wrap"><table class="data-table"><thead><tr><th>Fecha y hora</th><th>Cliente</th><th>Productos</th><th>Total calculado</th><th>Total final</th><th>Acciones</th></tr></thead><tbody id="tbl-ventas"></tbody></table><div id="empty-ventas" class="empty-state" style="display:none"><div class="empty-icon">🧾</div><p>Aún no hay ventas cargadas</p></div></div>
+      <div class="table-wrap" id="wrap-ventas"><table class="data-table"><thead><tr><th>Fecha y hora</th><th>Cliente</th><th>Productos</th><th>Total calculado</th><th>Total final</th><th>Acciones</th></tr></thead><tbody id="tbl-ventas"></tbody></table><div id="empty-ventas" class="empty-state" style="display:none"><div class="empty-icon">🧾</div><p>Aún no hay ventas cargadas</p></div></div><div id="pager-ventas"></div>
     </section>`;
   }
 
@@ -73,11 +76,11 @@ export class VentasComponent {
   }
 
   bind() {
-    document.getElementById('searchVenta').addEventListener('input', () => this.render());
-    document.getElementById('filterVentaCliente').addEventListener('change', () => this.render());
-    document.getElementById('filterVentaDesde').addEventListener('change', () => this.render());
-    document.getElementById('filterVentaHasta').addEventListener('change', () => this.render());
-    document.getElementById('filterVentaTotal').addEventListener('change', () => this.render());
+    document.getElementById('searchVenta').addEventListener('input', () => this.resetAndRender());
+    document.getElementById('filterVentaCliente').addEventListener('change', () => this.resetAndRender());
+    document.getElementById('filterVentaDesde').addEventListener('change', () => this.resetAndRender());
+    document.getElementById('filterVentaHasta').addEventListener('change', () => this.resetAndRender());
+    document.getElementById('filterVentaTotal').addEventListener('change', () => this.resetAndRender());
     document.querySelector('[data-action="new-venta"]').addEventListener('click', () => this.openNew());
     document.getElementById('venta-producto').addEventListener('change', () => this.updateSelectedProductPrice());
   }
@@ -94,6 +97,23 @@ export class VentasComponent {
   }
 
   render() {
+    clearTimeout(this.loadingTimer);
+    document.getElementById('wrap-ventas').innerHTML = loadingTemplate('Cargando ventas...');
+    document.getElementById('pager-ventas').innerHTML = '';
+    this.loadingTimer = setTimeout(() => this.renderList(), 120);
+  }
+
+  resetAndRender() {
+    this.page = 1;
+    this.render();
+  }
+
+  setPage(page) {
+    this.page = page;
+    this.render();
+  }
+
+  renderList() {
     const q = (form.value('searchVenta') || '').toLowerCase();
     const clienteFilter = form.value('filterVentaCliente');
     const desde = form.value('filterVentaDesde');
@@ -116,21 +136,27 @@ export class VentasComponent {
         return matchesSearch && matchesCliente && matchesDesde && matchesHasta && matchesTotal;
       })
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    document.getElementById('wrap-ventas').innerHTML = `<table class="data-table"><thead><tr><th>Fecha y hora</th><th>Cliente</th><th>Productos</th><th>Total calculado</th><th>Total final</th><th>Acciones</th></tr></thead><tbody id="tbl-ventas"></tbody></table><div id="empty-ventas" class="empty-state" style="display:none"><div class="empty-icon">🧾</div><p>Aún no hay ventas cargadas</p></div>`;
     const tbody = document.getElementById('tbl-ventas');
     const empty = document.getElementById('empty-ventas');
+    const pageState = getPageItems(list, this.page, DEFAULT_PAGE_SIZE);
+    this.page = pageState.page;
+    const pageItems = pageState.items;
 
-    if (!list.length) {
+    if (!pageItems.length) {
       tbody.innerHTML = '';
       empty.style.display = '';
+      document.getElementById('pager-ventas').innerHTML = '';
       return;
     }
 
     empty.style.display = 'none';
-    tbody.innerHTML = list.map(venta => {
+    tbody.innerHTML = pageItems.map(venta => {
       const products = venta.items.map(item => `${item.productName} x ${item.qty}`).join(', ');
       const name = `${venta.cliente || 'Cliente mostrador'} - ${this.formatDate(venta.createdAt)}`;
       return `<tr><td><strong>${this.formatDate(venta.createdAt)}</strong></td><td>${venta.cliente || 'Cliente mostrador'}</td><td>${products}</td><td>${this.formatMoney(venta.calculatedTotal)}</td><td class="price-value">${this.formatMoney(venta.finalTotal)}</td><td><div class="td-actions"><button class="btn btn-ghost btn-sm btn-icon" data-action="view-venta" data-id="${venta.id}" aria-label="Visualizar venta" title="Visualizar">👁️</button><button class="btn btn-ghost btn-sm btn-icon" data-action="edit-venta" data-id="${venta.id}" aria-label="Editar venta" title="Editar">✏️</button><button class="btn btn-danger btn-sm btn-icon" data-action="delete" data-entity="venta" data-id="${venta.id}" data-name="${name}" aria-label="Eliminar venta" title="Eliminar">🗑️</button></div></td></tr>`;
     }).join('');
+    document.getElementById('pager-ventas').innerHTML = paginationTemplate('ventas', pageState);
   }
 
   view(id) {

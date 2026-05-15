@@ -1,15 +1,18 @@
 import { form } from '../ui.js';
+import { DEFAULT_PAGE_SIZE, getPageItems, loadingTemplate, paginationTemplate } from '../pagination.js';
 
 export class ProveedoresComponent {
   constructor(app) {
     this.app = app;
+    this.page = 1;
+    this.loadingTimer = null;
   }
 
   template() {
     return `<section class="section" id="sec-proveedores">
       <div class="section-header"><div class="section-heading">🚚 <span>Proveedores</span></div><button class="btn btn-primary" data-action="new-proveedor">+ Nuevo proveedor</button></div>
       <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar proveedor…" id="searchProv"></div><select id="filterProvInfo" class="filter-control"><option value="">Todos</option><option value="contacto">Con contacto</option><option value="sin-contacto">Sin contacto</option><option value="email">Con email</option><option value="sin-email">Sin email</option></select></div>
-      <div class="table-wrap"><table class="data-table"><thead><tr><th>Nombre</th><th>Contacto</th><th>Teléfono</th><th>Email</th><th>Acciones</th></tr></thead><tbody id="tbl-proveedores"></tbody></table><div id="empty-proveedores" class="empty-state" style="display:none"><div class="empty-icon">🚚</div><p>Aún no hay proveedores registrados</p></div></div>
+      <div class="table-wrap" id="wrap-proveedores"><table class="data-table"><thead><tr><th>Nombre</th><th>Contacto</th><th>Teléfono</th><th>Email</th><th>Acciones</th></tr></thead><tbody id="tbl-proveedores"></tbody></table><div id="empty-proveedores" class="empty-state" style="display:none"><div class="empty-icon">🚚</div><p>Aún no hay proveedores registrados</p></div></div><div id="pager-proveedores"></div>
     </section>`;
   }
 
@@ -18,12 +21,29 @@ export class ProveedoresComponent {
   }
 
   bind() {
-    document.getElementById('searchProv').addEventListener('input', () => this.render());
-    document.getElementById('filterProvInfo').addEventListener('change', () => this.render());
+    document.getElementById('searchProv').addEventListener('input', () => this.resetAndRender());
+    document.getElementById('filterProvInfo').addEventListener('change', () => this.resetAndRender());
     document.querySelector('[data-action="new-proveedor"]').addEventListener('click', () => this.openNew());
   }
 
   render() {
+    clearTimeout(this.loadingTimer);
+    document.getElementById('wrap-proveedores').innerHTML = loadingTemplate('Cargando proveedores...');
+    document.getElementById('pager-proveedores').innerHTML = '';
+    this.loadingTimer = setTimeout(() => this.renderList(), 120);
+  }
+
+  resetAndRender() {
+    this.page = 1;
+    this.render();
+  }
+
+  setPage(page) {
+    this.page = page;
+    this.render();
+  }
+
+  renderList() {
     const q = (form.value('searchProv') || '').toLowerCase();
     const info = form.value('filterProvInfo');
     const list = this.app.store.data.proveedores.filter(prov => {
@@ -37,15 +57,23 @@ export class ProveedoresComponent {
     });
     const tbody = document.getElementById('tbl-proveedores');
     const empty = document.getElementById('empty-proveedores');
+    document.getElementById('wrap-proveedores').innerHTML = `<table class="data-table"><thead><tr><th>Nombre</th><th>Contacto</th><th>Teléfono</th><th>Email</th><th>Acciones</th></tr></thead><tbody id="tbl-proveedores"></tbody></table><div id="empty-proveedores" class="empty-state" style="display:none"><div class="empty-icon">🚚</div><p>Aún no hay proveedores registrados</p></div>`;
+    const pageState = getPageItems(list, this.page, DEFAULT_PAGE_SIZE);
+    this.page = pageState.page;
+    const pageItems = pageState.items;
+    const nextTbody = document.getElementById('tbl-proveedores');
+    const nextEmpty = document.getElementById('empty-proveedores');
 
-    if (!list.length) {
-      tbody.innerHTML = '';
-      empty.style.display = '';
+    if (!pageItems.length) {
+      nextTbody.innerHTML = '';
+      nextEmpty.style.display = '';
+      document.getElementById('pager-proveedores').innerHTML = '';
       return;
     }
 
-    empty.style.display = 'none';
-    tbody.innerHTML = list.map(prov => `<tr><td><strong>${prov.nombre}</strong></td><td>${prov.contacto || '—'}</td><td>${prov.telefono || '—'}</td><td>${prov.email || '—'}</td><td><div class="td-actions"><button class="btn btn-ghost btn-sm btn-icon" data-action="view-proveedor" data-id="${prov.id}" aria-label="Visualizar proveedor" title="Visualizar">👁️</button><button class="btn btn-ghost btn-sm btn-icon" data-action="edit-proveedor" data-id="${prov.id}" aria-label="Editar proveedor" title="Editar">✏️</button><button class="btn btn-danger btn-sm btn-icon" data-action="delete" data-entity="prov" data-id="${prov.id}" data-name="${prov.nombre}" aria-label="Eliminar proveedor" title="Eliminar">🗑️</button></div></td></tr>`).join('');
+    nextEmpty.style.display = 'none';
+    nextTbody.innerHTML = pageItems.map(prov => `<tr><td><strong>${prov.nombre}</strong></td><td>${prov.contacto || '—'}</td><td>${prov.telefono || '—'}</td><td>${prov.email || '—'}</td><td><div class="td-actions"><button class="btn btn-ghost btn-sm btn-icon" data-action="view-proveedor" data-id="${prov.id}" aria-label="Visualizar proveedor" title="Visualizar">👁️</button><button class="btn btn-ghost btn-sm btn-icon" data-action="edit-proveedor" data-id="${prov.id}" aria-label="Editar proveedor" title="Editar">✏️</button><button class="btn btn-danger btn-sm btn-icon" data-action="delete" data-entity="prov" data-id="${prov.id}" data-name="${prov.nombre}" aria-label="Eliminar proveedor" title="Eliminar">🗑️</button></div></td></tr>`).join('');
+    document.getElementById('pager-proveedores').innerHTML = paginationTemplate('proveedores', pageState);
   }
 
   view(id) {
