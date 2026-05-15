@@ -74,7 +74,10 @@ export class ProductosComponent {
   refreshProveedorSelects() {
     const filter = document.getElementById('filterProveedor');
     const selectedFilter = filter ? filter.value : '';
-    const opts = this.app.store.data.proveedores.map(prov => `<option value="${prov.id}">${prov.nombre}</option>`).join('');
+    const opts = [...this.app.store.data.proveedores]
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
+      .map(prov => `<option value="${prov.id}">${prov.nombre}</option>`)
+      .join('');
     document.getElementById('prod-proveedor').innerHTML = '<option value="">Sin proveedor</option>' + opts;
     document.getElementById('filterProveedor').innerHTML = '<option value="">Todos los proveedores</option><option value="sin-proveedor">Sin proveedor</option>' + opts;
     if (selectedFilter) filter.value = selectedFilter;
