@@ -84,6 +84,11 @@ function getSort(store) {
   return { nombre: 1 };
 }
 
+function getSortCollation(store) {
+  if (store === 'ventas' || store === 'auditoria') return null;
+  return { locale: 'es', numericOrdering: true, strength: 2 };
+}
+
 function getStockQty(stockByProduct, productId) {
   return stockByProduct.get(productId) || 0;
 }
@@ -253,8 +258,11 @@ app.get('/api/:store', async (req, res, next) => {
     if (!Model) return res.status(404).json({ error: 'Store no encontrado' });
     const { page, limit, skip } = getPagination(req.query);
     const query = buildListQuery(req.params.store, req.query);
+    const collation = getSortCollation(req.params.store);
+    const recordsQuery = Model.find(query).sort(getSort(req.params.store)).skip(skip).limit(limit);
+    if (collation) recordsQuery.collation(collation);
     const [records, total] = await Promise.all([
-      Model.find(query).sort(getSort(req.params.store)).skip(skip).limit(limit).lean(),
+      recordsQuery.lean(),
       Model.countDocuments(query)
     ]);
 

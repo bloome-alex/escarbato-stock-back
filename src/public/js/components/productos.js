@@ -1,5 +1,6 @@
 import { form } from '../ui.js';
 import { DEFAULT_PAGE_SIZE, getPageItems, loadingTemplate, paginationTemplate } from '../pagination.js';
+import { compareByName } from '../sort.js';
 
 const normalizeUniqueName = value => value.trim().toLocaleLowerCase('es');
 
@@ -72,7 +73,7 @@ export class ProductosComponent {
     const filter = document.getElementById('filterTipo');
     const selectedFilter = filter ? filter.value : '';
     const opts = [...this.app.store.data.tipos]
-      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
+      .sort(compareByName)
       .map(tipo => `<option value="${tipo.id}">${tipo.nombre}</option>`)
       .join('');
     document.getElementById('prod-tipo').innerHTML = '<option value="">Seleccionar tipo…</option>' + opts;
@@ -84,7 +85,7 @@ export class ProductosComponent {
     const filter = document.getElementById('filterProveedor');
     const selectedFilter = filter ? filter.value : '';
     const opts = [...this.app.store.data.proveedores]
-      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
+      .sort(compareByName)
       .map(prov => `<option value="${prov.id}">${prov.nombre}</option>`)
       .join('');
     document.getElementById('prod-proveedor').innerHTML = '<option value="">Seleccionar proveedor…</option>' + opts;
@@ -128,7 +129,7 @@ export class ProductosComponent {
         || (proveedorId === 'sin-proveedor' && !producto.proveedorId)
         || producto.proveedorId === proveedorId;
       return producto.nombre.toLowerCase().includes(q) && (!tipoId || producto.tipoId === tipoId) && matchesProveedor && matchesStock;
-    }).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
+    }).sort(compareByName);
     document.getElementById('wrap-productos').innerHTML = `<table class="data-table"><thead><tr><th>Producto</th><th>Tipo</th><th>Proveedor</th><th>Costo</th><th>Porcentaje</th><th>Precio</th><th>Precio final</th><th>Última actualización</th><th>Acciones</th></tr></thead><tbody id="tbl-productos"></tbody></table><div id="empty-productos" class="empty-state" style="display:none"><div class="empty-icon">📦</div><p>Aún no hay productos registrados</p></div>`;
     const tbody = document.getElementById('tbl-productos');
     const empty = document.getElementById('empty-productos');

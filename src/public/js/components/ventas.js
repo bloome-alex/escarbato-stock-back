@@ -1,5 +1,6 @@
 import { form } from '../ui.js';
 import { DEFAULT_PAGE_SIZE, getPageItems, loadingTemplate, paginationTemplate } from '../pagination.js';
+import { compareByName } from '../sort.js';
 
 export class VentasComponent {
   constructor(app) {
@@ -88,7 +89,7 @@ export class VentasComponent {
   refreshProductSelect() {
     const select = document.getElementById('venta-producto');
     const selected = select ? select.value : '';
-    const opts = this.app.store.data.productos.map(producto => {
+    const opts = [...this.app.store.data.productos].sort(compareByName).map(producto => {
       const status = this.getStockStatus(producto);
       return `<option value="${producto.id}">${producto.nombre} - ${status.label} (${status.qty} u.)</option>`;
     }).join('');

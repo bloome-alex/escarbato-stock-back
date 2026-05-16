@@ -1,5 +1,6 @@
 import { form } from '../ui.js';
 import { DEFAULT_PAGE_SIZE, getPageItems, loadingTemplate, paginationTemplate } from '../pagination.js';
+import { compareByName } from '../sort.js';
 
 export class StockComponent {
   constructor(app) {
@@ -60,7 +61,7 @@ export class StockComponent {
       const min = producto.minStock || 5;
       const status = this.getStatus(qty, min);
       return producto.nombre.toLowerCase().includes(q) && (!filter || status === filter);
-    });
+    }).sort(compareByName);
 
     const listEl = document.getElementById('stock-list');
     const emptyEl = document.getElementById('empty-stock');
