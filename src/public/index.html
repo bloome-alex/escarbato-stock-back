@@ -555,8 +555,6 @@
 
   .td-actions { display: flex; gap: 8px; justify-content: flex-end; }
 
-  .mobile-bottom-nav { display: none; }
-
   .price-value {
     color: var(--success);
     font-weight: 800;
@@ -949,7 +947,7 @@
       filter: drop-shadow(0 3px 8px rgba(92,61,46,0.12));
     }
     .content {
-      padding: 18px 14px 96px;
+      padding: 18px 14px 24px;
       max-width: 560px;
       width: 100%;
       margin: 0 auto;
@@ -1197,57 +1195,13 @@
     .toast-container {
       left: 12px;
       right: 12px;
-      bottom: calc(76px + env(safe-area-inset-bottom));
+      bottom: calc(16px + env(safe-area-inset-bottom));
     }
     .toast { min-width: 0; width: 100%; justify-content: center; }
-
-    .mobile-bottom-nav {
-      position: fixed;
-      left: 10px;
-      right: 10px;
-      bottom: calc(10px + env(safe-area-inset-bottom));
-      z-index: 90;
-      display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      gap: 4px;
-      padding: 8px;
-      border: 1px solid rgba(232,221,208,0.92);
-      border-radius: 24px;
-      background: rgba(255,253,249,0.92);
-      box-shadow: 0 14px 42px rgba(92,61,46,0.18);
-      backdrop-filter: blur(18px);
-    }
-    .mobile-nav-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 2px;
-      min-width: 0;
-      min-height: 50px;
-      border: none;
-      border-radius: 17px;
-      background: transparent;
-      color: var(--text-soft);
-      font: inherit;
-      font-size: .62rem;
-      font-weight: 900;
-      cursor: pointer;
-    }
-    .mobile-nav-item .nav-icon { width: auto; font-size: 1rem; }
-    .mobile-nav-item.active {
-      color: #fff;
-      background: linear-gradient(160deg, var(--sage-dark), var(--sage));
-      box-shadow: 0 8px 16px rgba(78,128,85,0.24);
-    }
-    .mobile-nav-item:disabled { opacity: .42; cursor: not-allowed; filter: grayscale(1); }
   }
 
   @media (max-width: 420px) {
     .stats-grid { grid-template-columns: 1fr; }
-    .mobile-bottom-nav { grid-template-columns: repeat(3, 1fr); }
-    .content { padding-bottom: 154px; }
-    .toast-container { bottom: calc(134px + env(safe-area-inset-bottom)); }
   }
 
   /* scrollbar */
@@ -1312,15 +1266,6 @@
   <div class="content" id="sectionsRoot">
   </div><!-- /content -->
 </main>
-
-<nav class="mobile-bottom-nav" aria-label="Navegación principal mobile">
-  <button class="mobile-nav-item active" data-nav="dashboard"><span class="nav-icon">🏠</span><span>Panel</span></button>
-  <button class="mobile-nav-item" data-nav="proveedores"><span class="nav-icon">🚚</span><span>Provee.</span></button>
-  <button class="mobile-nav-item" data-nav="tipos"><span class="nav-icon">🏷️</span><span>Tipos</span></button>
-  <button class="mobile-nav-item" data-nav="productos"><span class="nav-icon">📦</span><span>Prod.</span></button>
-  <button class="mobile-nav-item" data-nav="ventas"><span class="nav-icon">🧾</span><span>Ventas</span></button>
-  <button class="mobile-nav-item" data-nav="stock"><span class="nav-icon">📊</span><span>Stock</span></button>
-</nav>
 
 <div id="modalsRoot"></div>
 <div class="toast-container" id="toastContainer"></div>
