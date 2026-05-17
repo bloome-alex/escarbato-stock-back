@@ -1,12 +1,12 @@
 import { appConfig } from './config.js';
 
-const emptyData = () => ({ proveedores: [], tipos: [], productos: [], metodosPago: [], stock: {}, ventas: [], auditoria: [] });
+const emptyData = () => ({ proveedores: [], tipos: [], productos: [], metodosPago: [], stock: {}, ventas: [], cajas: [], auditoria: [] });
 
 class IndexedDbStore {
   constructor(app) {
     this.app = app;
     this.dbName = 'EscarbatoDB';
-    this.dbVersion = 4;
+    this.dbVersion = 5;
     this.db = null;
     this.data = emptyData();
   }
@@ -21,7 +21,7 @@ class IndexedDbStore {
       const req = indexedDB.open(this.dbName, this.dbVersion);
       req.onupgradeneeded = event => {
         const db = event.target.result;
-        ['proveedores', 'tipos', 'productos', 'metodosPago', 'stock', 'ventas', 'auditoria'].forEach(store => {
+        ['proveedores', 'tipos', 'productos', 'metodosPago', 'stock', 'ventas', 'cajas', 'auditoria'].forEach(store => {
           if (!db.objectStoreNames.contains(store)) {
             db.createObjectStore(store, { keyPath: 'id' });
           }
@@ -68,6 +68,7 @@ class IndexedDbStore {
     this.data.productos = await this.getAll('productos');
     this.data.metodosPago = await this.getAll('metodosPago');
     this.data.ventas = await this.getAll('ventas');
+    this.data.cajas = await this.getAll('cajas');
     this.data.auditoria = await this.getAll('auditoria');
     const stockRecords = await this.getAll('stock');
     this.data.stock = {};

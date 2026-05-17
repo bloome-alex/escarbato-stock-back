@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
-import { Auditoria, MetodoPago, Producto, Proveedor, Stock, Tipo, Venta } from './models/index.js';
+import { Auditoria, Caja, MetodoPago, Producto, Proveedor, Stock, Tipo, Venta } from './models/index.js';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -26,6 +26,7 @@ const models = {
   metodosPago: MetodoPago,
   stock: Stock,
   ventas: Venta,
+  cajas: Caja,
   auditoria: Auditoria
 };
 
@@ -35,7 +36,8 @@ const searchableFields = {
   productos: ['nombre', 'desc'],
   metodosPago: ['nombre'],
   stock: ['id'],
-  ventas: ['cliente', 'items.productName', 'metodoPago.nombre']
+  ventas: ['cliente', 'items.productName', 'metodoPago.nombre'],
+  cajas: ['status', 'initialAmounts.metodoPagoNombre']
 };
 
 function credentialHash() {
@@ -81,13 +83,13 @@ function getPagination(query) {
 }
 
 function getSort(store) {
-  if (store === 'ventas' || store === 'auditoria') return { createdAt: -1 };
+  if (store === 'ventas' || store === 'auditoria' || store === 'cajas') return { createdAt: -1 };
   if (store === 'stock') return { id: 1 };
   return { nombre: 1 };
 }
 
 function getSortCollation(store) {
-  if (store === 'ventas' || store === 'auditoria') return null;
+  if (store === 'ventas' || store === 'auditoria' || store === 'cajas') return null;
   return { locale: 'es', numericOrdering: true, strength: 2 };
 }
 
@@ -144,7 +146,7 @@ function buildUpdatePayload(store, payload) {
     return serverPayload;
   }
 
-  if (store === 'ventas' || store === 'auditoria') {
+  if (store === 'ventas' || store === 'auditoria' || store === 'cajas') {
     delete serverPayload.createdAt;
     return {
       $set: serverPayload,
@@ -153,6 +155,49 @@ function buildUpdatePayload(store, payload) {
   }
 
   return serverPayload;
+}
+
+async function validateCajaPayload(payload) {
+  const status = payload.status === 'cerrada' ? 'cerrada' : 'abierta';
+  payload.status = status;
+  payload.initialAmounts = Array.isArray(payload.initialAmounts) ? payload.initialAmounts : [];
+  payload.initialAmounts = payload.initialAmounts.map(amount => ({
+    metodoPagoId: String(amount.metodoPagoId || '').trim(),
+    metodoPagoNombre: String(amount.metodoPagoNombre || '').trim(),
+    monto: Math.max(0, Number(amount.monto || 0))
+  })).filter(amount => amount.metodoPagoId && amount.metodoPagoNombre);
+
+  if (status === 'abierta') {
+    const openCaja = await Caja.findOne({ status: 'abierta', id: { $ne: payload.id } }).lean();
+    if (openCaja) {
+      const error = new Error('Ya hay una caja abierta. Cerrala antes de abrir otra.');
+      error.statusCode = 400;
+      throw error;
+    }
+    payload.openedAt = payload.openedAt || new Date().toISOString();
+    payload.closedAt = '';
+    return;
+  }
+
+  const existing = await Caja.findOne({ id: payload.id }).lean();
+  if (!existing) {
+    const error = new Error('No se encontró la caja a cerrar');
+    error.statusCode = 404;
+    throw error;
+  }
+  payload.openedAt = existing.openedAt;
+  payload.initialAmounts = existing.initialAmounts || [];
+  payload.closedAt = payload.closedAt || new Date().toISOString();
+}
+
+async function validateVentaPayload(payload) {
+  const openCaja = await Caja.findOne({ status: 'abierta' }).lean();
+  if (!openCaja) {
+    const error = new Error('No hay una caja abierta. Abrí una caja antes de realizar ventas.');
+    error.statusCode = 400;
+    throw error;
+  }
+  payload.cajaId = openCaja.id;
 }
 
 function requireAuth(req, res, next) {
@@ -246,13 +291,14 @@ app.get('/api/dashboard', async (req, res, next) => {
 
 app.get('/api/data', async (req, res, next) => {
   try {
-    const [proveedores, tipos, productos, metodosPago, stockRecords, ventas, auditoria] = await Promise.all([
+    const [proveedores, tipos, productos, metodosPago, stockRecords, ventas, cajas, auditoria] = await Promise.all([
       Proveedor.find().lean(),
       Tipo.find().lean(),
       Producto.find().lean(),
       MetodoPago.find().lean(),
       Stock.find().lean(),
       Venta.find().lean(),
+      Caja.find().lean(),
       Auditoria.find().lean()
     ]);
 
@@ -268,6 +314,7 @@ app.get('/api/data', async (req, res, next) => {
       metodosPago: sanitizeList(metodosPago),
       stock,
       ventas: sanitizeList(ventas),
+      cajas: sanitizeList(cajas),
       auditoria: sanitizeList(auditoria)
     });
   } catch (error) {
@@ -323,6 +370,12 @@ app.put('/api/:store/:id', async (req, res, next) => {
     const payload = { ...req.body, id: req.params.id };
     if (req.params.store === 'productos') {
       validateProductoPayload(payload);
+    }
+    if (req.params.store === 'cajas') {
+      await validateCajaPayload(payload);
+    }
+    if (req.params.store === 'ventas') {
+      await validateVentaPayload(payload);
     }
     await validateUniqueName(req.params.store, payload);
     const updatePayload = buildUpdatePayload(req.params.store, payload);

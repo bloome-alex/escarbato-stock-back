@@ -18,6 +18,7 @@ const ventaSchema = new mongoose.Schema({
     descuento: { type: Number, default: 0, min: 0 },
     bonificacion: { type: Number, default: 0, min: 0 }
   },
+  cajaId: { type: String, default: '', index: true },
   calculatedTotal: { type: Number, required: true, min: 0 },
   finalTotal: { type: Number, required: true, min: 0 },
   createdAt: { type: String, required: true, default: () => new Date().toISOString() }

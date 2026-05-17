@@ -18,6 +18,7 @@ export class MostradorComponent {
   template() {
     return `<section class="section" id="sec-mostrador">
       <div class="section-header"><div class="section-heading">🛒 <span>Mostrador</span></div></div>
+      <div id="counter-caja-status"></div>
       <div class="counter-shell">
         <div class="counter-client form-group"><label>Cliente</label><input type="text" id="mostrador-cliente" value="${DEFAULT_CLIENT}" autocomplete="off"></div>
         <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar producto…" id="searchMostrador"></div><select id="filterMostradorTipo" class="filter-control"><option value="">Todos los tipos</option></select><select id="filterMostradorProveedor" class="filter-control"><option value="">Todos los proveedores</option></select><select id="filterMostradorStock" class="filter-control"><option value="">Todos</option><option value="disponible">Disponible</option><option value="sin-stock">Sin stock</option></select></div>
@@ -82,6 +83,10 @@ export class MostradorComponent {
     return (this.app.store.data.metodosPago || []).find(method => method.id === id) || null;
   }
 
+  getOpenCaja() {
+    return this.app.components.cajas?.getOpenCaja() || null;
+  }
+
   getPaymentTotals(method = this.getSelectedPaymentMethod()) {
     const subtotal = this.getTotal();
     const descuento = Number(method?.descuento || 0);
@@ -124,8 +129,18 @@ export class MostradorComponent {
   render() {
     this.refreshFilters();
     this.refreshPaymentMethods();
+    this.renderCajaStatus();
     this.renderProducts();
     this.renderCart();
+  }
+
+  renderCajaStatus() {
+    const container = document.getElementById('counter-caja-status');
+    if (!container) return;
+    const openCaja = this.getOpenCaja();
+    container.innerHTML = openCaja
+      ? `<div class="detail-list" style="margin-bottom:14px"><div><span>Caja</span><strong>Abierta desde ${new Date(openCaja.openedAt).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })}</strong></div></div>`
+      : `<div class="detail-list" style="margin-bottom:14px"><div><span>Caja</span><strong>No hay caja abierta. No se pueden realizar ventas.</strong></div></div>`;
   }
 
   resetProducts() {
@@ -286,6 +301,8 @@ export class MostradorComponent {
   }
 
   async finishSale() {
+    const openCaja = this.getOpenCaja();
+    if (!openCaja) return this.app.toasts.show('Abrí una caja antes de realizar ventas', 'error');
     if (!this.cart.length) return this.app.toasts.show('Agregá al menos un producto al carrito', 'error');
     const method = this.getSelectedPaymentMethod();
     if (!method) return this.app.toasts.show('Seleccioná un método de pago', 'error');
@@ -305,6 +322,7 @@ export class MostradorComponent {
         descuento: totals.descuento,
         bonificacion: totals.bonificacion
       },
+      cajaId: openCaja.id,
       calculatedTotal: totals.subtotal,
       finalTotal: totals.finalTotal,
       createdAt: new Date().toISOString()
@@ -328,6 +346,7 @@ export class MostradorComponent {
     this.render();
     this.app.components.ventas.render();
     this.app.components.stock.render();
+    this.app.components.cajas.render();
     this.app.updateBadge();
     this.app.toasts.show('Venta guardada ✅');
   }

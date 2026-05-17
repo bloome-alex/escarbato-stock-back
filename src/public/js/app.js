@@ -8,6 +8,7 @@ import { StockComponent } from './components/stock.js';
 import { VentasComponent } from './components/ventas.js';
 import { MostradorComponent } from './components/mostrador.js?v=20260516-3';
 import { MetodosPagoComponent } from './components/metodos-pago.js';
+import { CajasComponent } from './components/cajas.js';
 
 class PetshopApp {
   constructor() {
@@ -24,6 +25,7 @@ class PetshopApp {
       tipos: new TiposComponent(this),
       productos: new ProductosComponent(this),
       metodosPago: new MetodosPagoComponent(this),
+      cajas: new CajasComponent(this),
       stock: new StockComponent(this),
       ventas: new VentasComponent(this),
       mostrador: new MostradorComponent(this)
@@ -104,6 +106,7 @@ class PetshopApp {
       this.components.tipos.template(),
       this.components.productos.template(),
       this.components.metodosPago.template(),
+      this.components.cajas.template(),
       this.components.stock.template(),
       this.components.ventas.template(),
       this.components.mostrador.template()
@@ -123,6 +126,7 @@ class PetshopApp {
     this.components.tipos.bind();
     this.components.productos.bind();
     this.components.metodosPago.bind();
+    this.components.cajas.bind();
     this.components.stock.bind();
     this.components.ventas.bind();
     this.components.mostrador.bind();
@@ -166,6 +170,9 @@ class PetshopApp {
       if (action === 'edit-stock') this.components.stock.edit(id);
       if (action === 'save-stock') return this.runButtonAction(actionButton, () => this.components.stock.save(), 'Guardando');
       if (action === 'view-venta') this.components.ventas.view(id);
+      if (action === 'open-caja') return this.runButtonAction(actionButton, () => this.components.cajas.open(), 'Abriendo');
+      if (action === 'close-caja') return this.runButtonAction(actionButton, () => this.components.cajas.close(id), 'Cerrando');
+      if (action === 'view-caja') this.components.cajas.view(id);
       if (action === 'open-counter-cart') this.components.mostrador.openCart();
       if (action === 'close-counter-cart') this.components.mostrador.closeCart();
       if (action === 'add-counter-item') this.components.mostrador.addItem(id);
@@ -329,6 +336,7 @@ class PetshopApp {
       this.modals.close('confirm');
       this.components.ventas.render();
       this.components.stock.render();
+      this.components.cajas.render();
     }
 
     this.toasts.show('Eliminado correctamente');

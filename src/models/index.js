@@ -5,3 +5,4 @@ export { Stock } from './stock.js';
 export { Venta } from './venta.js';
 export { Auditoria } from './auditoria.js';
 export { MetodoPago } from './metodo-pago.js';
+export { Caja } from './caja.js';

@@ -31,6 +31,7 @@ export class NavigationManager {
       tipos: 'Tipos de Producto',
       productos: 'Productos',
       metodosPago: 'Metodos de pago',
+      cajas: 'Cajas',
       stock: 'Stock',
       ventas: 'Ventas',
       mostrador: 'Mostrador'
