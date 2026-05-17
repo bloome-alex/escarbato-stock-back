@@ -25,24 +25,34 @@ export class VentasComponent {
     return venta.metodoPago?.nombre || 'Sin método';
   }
 
+  refreshPaymentMethodFilter() {
+    const select = document.getElementById('filterVentaMetodoPago');
+    if (!select) return;
+
+    const selected = select.value;
+    const methods = [...(this.app.store.data.metodosPago || [])].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+    select.innerHTML = `<option value="">Todos los métodos</option>${methods.map(method => `<option value="${method.id}">${method.nombre}</option>`).join('')}`;
+    select.value = methods.some(method => method.id === selected) ? selected : '';
+  }
+
   template() {
     return `<section class="section" id="sec-ventas">
       <div class="section-header"><div class="section-heading">🧾 <span>Ventas</span></div></div>
-      <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar venta por cliente, producto o método…" id="searchVenta"></div><select id="filterVentaCliente" class="filter-control"><option value="">Todos los clientes</option><option value="con-cliente">Con cliente</option><option value="mostrador">Mostrador</option></select><label class="filter-field"><span>Desde</span><input type="date" id="filterVentaDesde" class="filter-control"></label><label class="filter-field"><span>Hasta</span><input type="date" id="filterVentaHasta" class="filter-control"></label><select id="filterVentaTotal" class="filter-control"><option value="">Todos los totales</option><option value="igual">Final igual al calculado</option><option value="diferente">Final modificado</option></select></div>
+      <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar venta por cliente, producto o método…" id="searchVenta"></div><select id="filterVentaMetodoPago" class="filter-control"><option value="">Todos los métodos</option></select><label class="filter-field"><span>Desde</span><input type="date" id="filterVentaDesde" class="filter-control"></label><label class="filter-field"><span>Hasta</span><input type="date" id="filterVentaHasta" class="filter-control"></label></div>
       <div class="table-wrap" id="wrap-ventas"><table class="data-table"><thead><tr><th>Fecha y hora</th><th>Cliente</th><th>Método de pago</th><th>Productos</th><th>Total calculado</th><th>Total final</th><th>Acciones</th></tr></thead><tbody id="tbl-ventas"></tbody></table><div id="empty-ventas" class="empty-state" style="display:none"><div class="empty-icon">🧾</div><p>Aún no hay ventas cargadas</p></div></div><div id="pager-ventas"></div>
     </section>`;
   }
 
   bind() {
     document.getElementById('searchVenta').addEventListener('input', () => this.resetAndRender());
-    document.getElementById('filterVentaCliente').addEventListener('change', () => this.resetAndRender());
+    document.getElementById('filterVentaMetodoPago').addEventListener('change', () => this.resetAndRender());
     document.getElementById('filterVentaDesde').addEventListener('change', () => this.resetAndRender());
     document.getElementById('filterVentaHasta').addEventListener('change', () => this.resetAndRender());
-    document.getElementById('filterVentaTotal').addEventListener('change', () => this.resetAndRender());
   }
 
   render() {
     clearTimeout(this.loadingTimer);
+    this.refreshPaymentMethodFilter();
     document.getElementById('wrap-ventas').innerHTML = loadingTemplate('Cargando ventas...');
     document.getElementById('pager-ventas').innerHTML = '';
     this.loadingTimer = setTimeout(() => this.renderList(), 120);
@@ -60,25 +70,17 @@ export class VentasComponent {
 
   renderList() {
     const q = (form.value('searchVenta') || '').toLowerCase();
-    const clienteFilter = form.value('filterVentaCliente');
+    const methodFilter = form.value('filterVentaMetodoPago');
     const desde = form.value('filterVentaDesde');
     const hasta = form.value('filterVentaHasta');
-    const totalFilter = form.value('filterVentaTotal');
     const list = [...this.app.store.data.ventas]
       .filter(venta => {
         const ventaDate = new Date(venta.createdAt);
         const matchesSearch = (venta.cliente || '').toLowerCase().includes(q) || this.paymentLabel(venta).toLowerCase().includes(q) || venta.items.some(item => item.productName.toLowerCase().includes(q));
-        const matchesCliente = !clienteFilter
-          || (clienteFilter === 'con-cliente' && Boolean(venta.cliente))
-          || (clienteFilter === 'mostrador' && !venta.cliente);
+        const matchesPaymentMethod = !methodFilter || venta.metodoPago?.id === methodFilter;
         const matchesDesde = !desde || ventaDate >= new Date(`${desde}T00:00:00`);
         const matchesHasta = !hasta || ventaDate <= new Date(`${hasta}T23:59:59`);
-        const calculatedTotal = Number(venta.calculatedTotal || 0);
-        const finalTotal = Number(venta.finalTotal || 0);
-        const matchesTotal = !totalFilter
-          || (totalFilter === 'igual' && finalTotal === calculatedTotal)
-          || (totalFilter === 'diferente' && finalTotal !== calculatedTotal);
-        return matchesSearch && matchesCliente && matchesDesde && matchesHasta && matchesTotal;
+        return matchesSearch && matchesPaymentMethod && matchesDesde && matchesHasta;
       })
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     document.getElementById('wrap-ventas').innerHTML = `<table class="data-table"><thead><tr><th>Fecha y hora</th><th>Cliente</th><th>Método de pago</th><th>Productos</th><th>Total calculado</th><th>Total final</th><th>Acciones</th></tr></thead><tbody id="tbl-ventas"></tbody></table><div id="empty-ventas" class="empty-state" style="display:none"><div class="empty-icon">🧾</div><p>Aún no hay ventas cargadas</p></div>`;
