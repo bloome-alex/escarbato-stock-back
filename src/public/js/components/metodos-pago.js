@@ -1,5 +1,5 @@
 import { form } from '../ui.js';
-import { DEFAULT_PAGE_SIZE, getPageItems, loadingTemplate, paginationTemplate } from '../pagination.js';
+import { DEFAULT_PAGE_SIZE, getResponsivePageItems, loadingTemplate, paginationTemplate } from '../pagination.js';
 
 const normalizeUniqueName = value => value.trim().toLocaleLowerCase('es');
 
@@ -14,6 +14,7 @@ export class MetodosPagoComponent {
   constructor(app) {
     this.app = app;
     this.page = 1;
+    this.totalPages = 1;
     this.loadingTimer = null;
   }
 
@@ -59,8 +60,9 @@ export class MetodosPagoComponent {
     document.getElementById('wrap-metodos-pago').innerHTML = `<table class="data-table"><thead><tr><th>Nombre</th><th>Descuento</th><th>Bonificación</th><th>Acciones</th></tr></thead><tbody id="tbl-metodos-pago"></tbody></table><div id="empty-metodos-pago" class="empty-state" style="display:none"><div class="empty-icon">💳</div><p>Aún no hay métodos de pago</p></div>`;
     const tbody = document.getElementById('tbl-metodos-pago');
     const empty = document.getElementById('empty-metodos-pago');
-    const pageState = getPageItems(list, this.page, DEFAULT_PAGE_SIZE);
+    const pageState = getResponsivePageItems(list, this.page, DEFAULT_PAGE_SIZE);
     this.page = pageState.page;
+    this.totalPages = pageState.totalPages;
 
     if (!pageState.items.length) {
       tbody.innerHTML = '';

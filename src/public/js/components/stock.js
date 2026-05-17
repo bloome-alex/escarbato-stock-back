@@ -1,5 +1,5 @@
 import { form } from '../ui.js';
-import { DEFAULT_PAGE_SIZE, getPageItems, loadingTemplate, paginationTemplate } from '../pagination.js';
+import { DEFAULT_PAGE_SIZE, getResponsivePageItems, loadingTemplate, paginationTemplate } from '../pagination.js';
 import { compareByName } from '../sort.js';
 
 export class StockComponent {
@@ -8,6 +8,7 @@ export class StockComponent {
     this.statusLabel = { ok: 'Disponible', low: 'Stock bajo', out: 'Sin stock' };
     this.statusChip = { ok: 'chip-ok', low: 'chip-low', out: 'chip-out' };
     this.page = 1;
+    this.totalPages = 1;
     this.loadingTimer = null;
   }
 
@@ -65,8 +66,9 @@ export class StockComponent {
 
     const listEl = document.getElementById('stock-list');
     const emptyEl = document.getElementById('empty-stock');
-    const pageState = getPageItems(list, this.page, DEFAULT_PAGE_SIZE);
+    const pageState = getResponsivePageItems(list, this.page, DEFAULT_PAGE_SIZE);
     this.page = pageState.page;
+    this.totalPages = pageState.totalPages;
     const pageItems = pageState.items;
     if (!pageItems.length) {
       listEl.innerHTML = '';

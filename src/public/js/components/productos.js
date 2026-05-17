@@ -1,5 +1,5 @@
 import { form } from '../ui.js';
-import { DEFAULT_PAGE_SIZE, getPageItems, loadingTemplate, paginationTemplate } from '../pagination.js';
+import { DEFAULT_PAGE_SIZE, getResponsivePageItems, loadingTemplate, paginationTemplate } from '../pagination.js';
 import { compareByName } from '../sort.js';
 
 const normalizeUniqueName = value => value.trim().toLocaleLowerCase('es');
@@ -8,6 +8,7 @@ export class ProductosComponent {
   constructor(app) {
     this.app = app;
     this.page = 1;
+    this.totalPages = 1;
     this.loadingTimer = null;
   }
 
@@ -133,8 +134,9 @@ export class ProductosComponent {
     document.getElementById('wrap-productos').innerHTML = `<table class="data-table"><thead><tr><th>Producto</th><th>Tipo</th><th>Proveedor</th><th>Costo</th><th>Porcentaje</th><th>Precio</th><th>Precio final</th><th>Última actualización</th><th>Acciones</th></tr></thead><tbody id="tbl-productos"></tbody></table><div id="empty-productos" class="empty-state" style="display:none"><div class="empty-icon">📦</div><p>Aún no hay productos registrados</p></div>`;
     const tbody = document.getElementById('tbl-productos');
     const empty = document.getElementById('empty-productos');
-    const pageState = getPageItems(list, this.page, DEFAULT_PAGE_SIZE);
+    const pageState = getResponsivePageItems(list, this.page, DEFAULT_PAGE_SIZE);
     this.page = pageState.page;
+    this.totalPages = pageState.totalPages;
     const pageItems = pageState.items;
 
     if (!pageItems.length) {

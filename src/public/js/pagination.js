@@ -1,4 +1,9 @@
 export const DEFAULT_PAGE_SIZE = 10;
+export const MOBILE_LIST_BREAKPOINT = 700;
+
+export function isMobileListView() {
+  return window.matchMedia(`(max-width: ${MOBILE_LIST_BREAKPOINT}px)`).matches;
+}
 
 export function getPageItems(list, page, pageSize = DEFAULT_PAGE_SIZE) {
   const totalPages = Math.max(1, Math.ceil(list.length / pageSize));
@@ -13,12 +18,33 @@ export function getPageItems(list, page, pageSize = DEFAULT_PAGE_SIZE) {
   };
 }
 
+export function getResponsivePageItems(list, page, pageSize = DEFAULT_PAGE_SIZE) {
+  if (!isMobileListView()) return getPageItems(list, page, pageSize);
+
+  const totalPages = Math.max(1, Math.ceil(list.length / pageSize));
+  const currentPage = Math.min(Math.max(1, page), totalPages);
+  return {
+    items: list.slice(0, currentPage * pageSize),
+    page: currentPage,
+    pageSize,
+    total: list.length,
+    totalPages
+  };
+}
+
 export function loadingTemplate(message = 'Cargando registros...') {
   return `<div class="section-loading"><span class="loading-spinner" aria-hidden="true"></span><span>${message}</span></div>`;
 }
 
 export function paginationTemplate(component, state) {
   if (!state || state.totalPages <= 1) return '';
+
+  if (isMobileListView()) {
+    const loader = state.page < state.totalPages
+      ? '<div class="pagination-actions"><span class="loading-spinner" aria-hidden="true"></span><span>Cargando más registros...</span></div>'
+      : '';
+    return `<div class="pagination-bar pagination-scroll-status" data-pagination="${component}"><div class="pagination-info">Mostrando ${state.items.length} de ${state.total} registros</div>${loader}</div>`;
+  }
 
   const firstPageButton = state.page > 1
     ? `<button class="btn btn-ghost btn-sm" data-page="1">Inicio</button>`

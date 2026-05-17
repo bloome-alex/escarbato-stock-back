@@ -9,6 +9,7 @@ import { VentasComponent } from './components/ventas.js';
 import { MostradorComponent } from './components/mostrador.js?v=20260516-3';
 import { MetodosPagoComponent } from './components/metodos-pago.js';
 import { CajasComponent } from './components/cajas.js';
+import { isMobileListView } from './pagination.js';
 
 class PetshopApp {
   constructor() {
@@ -19,6 +20,7 @@ class PetshopApp {
     this.theme = new ThemeManager();
     this.dataReady = false;
     this.preloadPromise = null;
+    this.onWindowScroll = () => this.handleMobileListScroll();
     this.components = {
       dashboard: new DashboardComponent(this),
       proveedores: new ProveedoresComponent(this),
@@ -144,6 +146,7 @@ class PetshopApp {
     this.navigation.bind();
     this.theme.bind();
     this.modals.bindOverlayClose();
+    window.addEventListener('scroll', this.onWindowScroll, { passive: true });
 
     document.addEventListener('click', async event => {
       const closeButton = event.target.closest('[data-close-modal]');
@@ -190,6 +193,21 @@ class PetshopApp {
       const component = this.components[componentName];
       if (component?.setPage) component.setPage(Number(pageButton.dataset.page));
     });
+  }
+
+  handleMobileListScroll() {
+    if (!isMobileListView()) return;
+    const activeSection = document.querySelector('.section.active');
+    if (!activeSection) return;
+    const componentName = activeSection.id.replace('sec-', '');
+    if (componentName === 'mostrador') return;
+    const component = this.components[componentName];
+    if (!component?.renderList || !component.totalPages || component.page >= component.totalPages) return;
+    const nearBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 520;
+    if (!nearBottom) return;
+
+    component.page += 1;
+    component.renderList();
   }
 
   async runButtonAction(button, action, loadingLabel) {

@@ -1,10 +1,11 @@
 import { form } from '../ui.js';
-import { DEFAULT_PAGE_SIZE, getPageItems, loadingTemplate, paginationTemplate } from '../pagination.js';
+import { DEFAULT_PAGE_SIZE, getResponsivePageItems, loadingTemplate, paginationTemplate } from '../pagination.js';
 
 export class VentasComponent {
   constructor(app) {
     this.app = app;
     this.page = 1;
+    this.totalPages = 1;
     this.loadingTimer = null;
   }
 
@@ -83,8 +84,9 @@ export class VentasComponent {
     document.getElementById('wrap-ventas').innerHTML = `<table class="data-table"><thead><tr><th>Fecha y hora</th><th>Cliente</th><th>Método de pago</th><th>Productos</th><th>Total calculado</th><th>Total final</th><th>Acciones</th></tr></thead><tbody id="tbl-ventas"></tbody></table><div id="empty-ventas" class="empty-state" style="display:none"><div class="empty-icon">🧾</div><p>Aún no hay ventas cargadas</p></div>`;
     const tbody = document.getElementById('tbl-ventas');
     const empty = document.getElementById('empty-ventas');
-    const pageState = getPageItems(list, this.page, DEFAULT_PAGE_SIZE);
+    const pageState = getResponsivePageItems(list, this.page, DEFAULT_PAGE_SIZE);
     this.page = pageState.page;
+    this.totalPages = pageState.totalPages;
     const pageItems = pageState.items;
 
     if (!pageItems.length) {

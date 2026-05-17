@@ -1,5 +1,5 @@
 import { form } from '../ui.js';
-import { DEFAULT_PAGE_SIZE, getPageItems, loadingTemplate, paginationTemplate } from '../pagination.js';
+import { DEFAULT_PAGE_SIZE, getResponsivePageItems, loadingTemplate, paginationTemplate } from '../pagination.js';
 
 const normalizeUniqueName = value => value.trim().toLocaleLowerCase('es');
 
@@ -13,6 +13,7 @@ export class ProveedoresComponent {
   constructor(app) {
     this.app = app;
     this.page = 1;
+    this.totalPages = 1;
     this.loadingTimer = null;
   }
 
@@ -64,8 +65,9 @@ export class ProveedoresComponent {
       return matchesSearch && matchesInfo;
     });
     document.getElementById('wrap-proveedores').innerHTML = `<table class="data-table"><thead><tr><th>Nombre</th><th>Contacto</th><th>Teléfono</th><th>Email</th><th>Productos</th><th>Acciones</th></tr></thead><tbody id="tbl-proveedores"></tbody></table><div id="empty-proveedores" class="empty-state" style="display:none"><div class="empty-icon">🚚</div><p>Aún no hay proveedores registrados</p></div>`;
-    const pageState = getPageItems(list, this.page, DEFAULT_PAGE_SIZE);
+    const pageState = getResponsivePageItems(list, this.page, DEFAULT_PAGE_SIZE);
     this.page = pageState.page;
+    this.totalPages = pageState.totalPages;
     const pageItems = pageState.items;
     const nextTbody = document.getElementById('tbl-proveedores');
     const nextEmpty = document.getElementById('empty-proveedores');
