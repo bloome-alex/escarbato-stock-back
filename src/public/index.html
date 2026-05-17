@@ -1239,9 +1239,11 @@
 
   /* ── TOAST ── */
   .toast-container {
-    position: fixed; bottom: 28px; right: 28px;
+    position: fixed; bottom: 28px; left: 50%;
+    transform: translateX(-50%);
     z-index: 9999;
-    display: flex; flex-direction: column; gap: 10px;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    pointer-events: none;
   }
   .toast {
     background: var(--brown);
@@ -1254,12 +1256,13 @@
     animation: toastIn .25s ease;
     display: flex; align-items: center; gap: 10px;
     min-width: 250px;
+    pointer-events: auto;
   }
   .toast.success { background: var(--sage-dark); }
   .toast.error { background: var(--danger); }
   @keyframes toastIn {
-    from { opacity: 0; transform: translateX(30px); }
-    to { opacity: 1; transform: translateX(0); }
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
   /* ── MOBILE OVERLAY ── */
@@ -1588,9 +1591,11 @@
     .pagination-actions .btn { min-height: 42px; }
 
     .toast-container {
+      top: calc(16px + env(safe-area-inset-top));
+      bottom: auto;
       left: 12px;
       right: 12px;
-      bottom: calc(16px + env(safe-area-inset-bottom));
+      transform: none;
     }
     .toast { min-width: 0; width: 100%; justify-content: center; }
   }
