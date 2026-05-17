@@ -101,6 +101,43 @@ export class NavigationManager {
   }
 }
 
+export class ThemeManager {
+  constructor() {
+    this.storageKey = 'petshop-theme';
+    this.metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    this.button = null;
+  }
+
+  bind() {
+    this.button = document.getElementById('themeToggleBtn');
+    if (!this.button) return;
+
+    this.apply(this.currentTheme(), false);
+    this.button.addEventListener('click', () => {
+      this.apply(this.currentTheme() === 'dark' ? 'light' : 'dark');
+    });
+  }
+
+  currentTheme() {
+    return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+  }
+
+  apply(theme, persist = true) {
+    const normalizedTheme = theme === 'dark' ? 'dark' : 'light';
+    document.documentElement.dataset.theme = normalizedTheme;
+    if (persist) {
+      try { localStorage.setItem(this.storageKey, normalizedTheme); } catch {}
+    }
+    if (this.metaThemeColor) this.metaThemeColor.content = normalizedTheme === 'dark' ? '#101611' : '#4E8055';
+
+    if (!this.button) return;
+    const isDark = normalizedTheme === 'dark';
+    this.button.setAttribute('aria-pressed', String(isDark));
+    this.button.setAttribute('aria-label', isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
+    this.button.innerHTML = `<span class="theme-toggle-icon" aria-hidden="true">${isDark ? '☀️' : '🌙'}</span><span class="theme-toggle-text">${isDark ? 'Claro' : 'Oscuro'}</span>`;
+  }
+}
+
 export const form = {
   value(id) {
     return document.getElementById(id).value;

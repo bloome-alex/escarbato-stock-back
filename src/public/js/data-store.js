@@ -164,7 +164,7 @@ class BackendStore {
         const input = modal.querySelector('#backend-login-user');
         const errorMsg = modal.querySelector('.login-error') || document.createElement('div');
         errorMsg.className = 'login-error';
-        errorMsg.style.cssText = 'color:#e53;color;font-size:.85rem;margin-top:8px;text-align:center';
+        errorMsg.style.cssText = 'color:var(--danger);font-size:.85rem;margin-top:8px;text-align:center';
         errorMsg.textContent = 'Usuario o contraseña incorrectos';
         if (!modal.querySelector('.login-error')) {
           modal.querySelector('.modal-actions').before(errorMsg);

@@ -168,7 +168,7 @@ export class MostradorComponent {
       const stock = stockData[producto.id] || 0;
       const available = this.getAvailableStock(producto.id);
       const disabled = available <= 0 ? 'disabled' : '';
-      return `<article class="counter-product-card"><div class="counter-product-main"><strong>${producto.nombre}</strong><div>${tipo ? tipo.nombre : 'Sin tipo'} · ${proveedor ? proveedor.nombre : 'Sin proveedor'}</div><span class="price-value">${this.formatMoney(this.getProductPrice(producto))}</span></div><div class="counter-stock"><span>Stock</span><strong>${stock} u.</strong></div><div class="counter-add"><input type="number" min="0.01" step="0.01" max="${available}" placeholder="Cant." data-counter-qty="${producto.id}" ${disabled}><button class="btn btn-amber btn-sm" data-action="add-counter-item" data-id="${producto.id}" ${disabled}>Agregar</button></div></article>`;
+      return `<article class="counter-product-card"><div class="counter-product-main"><strong>${producto.nombre}</strong><div>${tipo ? tipo.nombre : 'Sin tipo'} · ${proveedor ? proveedor.nombre : 'Sin proveedor'}</div><span class="price-value">${this.formatMoney(this.getProductPrice(producto))}</span></div><div class="counter-stock"><span>Stock</span><strong>${stock} u.</strong></div><div class="counter-add"><input type="number" min="0.01" step="0.01" max="${available}" placeholder="Cant." data-counter-qty="${producto.id}" ${disabled}><button class="btn btn-amber btn-sm counter-add-btn" data-action="add-counter-item" data-id="${producto.id}" ${disabled}>Agregar</button></div></article>`;
     }).join('');
     if (loadMore) loadMore.style.display = this.visibleCount < list.length ? '' : 'none';
   }

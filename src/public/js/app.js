@@ -1,5 +1,5 @@
 import { DataStore } from './data-store.js';
-import { ModalManager, NavigationManager, ToastManager } from './ui.js?v=20260516-2';
+import { ModalManager, NavigationManager, ThemeManager, ToastManager } from './ui.js?v=20260516-4';
 import { DashboardComponent } from './components/dashboard.js';
 import { ProveedoresComponent } from './components/proveedores.js';
 import { TiposComponent } from './components/tipos.js';
@@ -14,6 +14,7 @@ class PetshopApp {
     this.modals = new ModalManager();
     this.toasts = new ToastManager();
     this.navigation = new NavigationManager(this);
+    this.theme = new ThemeManager();
     this.dataReady = false;
     this.preloadPromise = null;
     this.components = {
@@ -132,6 +133,7 @@ class PetshopApp {
 
   bindEvents() {
     this.navigation.bind();
+    this.theme.bind();
     this.modals.bindOverlayClose();
 
     document.addEventListener('click', async event => {
