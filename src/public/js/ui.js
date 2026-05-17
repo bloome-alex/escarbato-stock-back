@@ -30,6 +30,7 @@ export class NavigationManager {
       proveedores: 'Proveedores',
       tipos: 'Tipos de Producto',
       productos: 'Productos',
+      metodosPago: 'Metodos de pago',
       stock: 'Stock',
       ventas: 'Ventas',
       mostrador: 'Mostrador'

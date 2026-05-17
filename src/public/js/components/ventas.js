@@ -16,11 +16,19 @@ export class VentasComponent {
     return new Date(value).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' });
   }
 
+  formatPercent(value) {
+    return `${Number(value || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })}%`;
+  }
+
+  paymentLabel(venta) {
+    return venta.metodoPago?.nombre || 'Sin método';
+  }
+
   template() {
     return `<section class="section" id="sec-ventas">
       <div class="section-header"><div class="section-heading">🧾 <span>Ventas</span></div></div>
-      <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar venta por cliente o producto…" id="searchVenta"></div><select id="filterVentaCliente" class="filter-control"><option value="">Todos los clientes</option><option value="con-cliente">Con cliente</option><option value="mostrador">Mostrador</option></select><label class="filter-field"><span>Desde</span><input type="date" id="filterVentaDesde" class="filter-control"></label><label class="filter-field"><span>Hasta</span><input type="date" id="filterVentaHasta" class="filter-control"></label><select id="filterVentaTotal" class="filter-control"><option value="">Todos los totales</option><option value="igual">Final igual al calculado</option><option value="diferente">Final modificado</option></select></div>
-      <div class="table-wrap" id="wrap-ventas"><table class="data-table"><thead><tr><th>Fecha y hora</th><th>Cliente</th><th>Productos</th><th>Total calculado</th><th>Total final</th><th>Acciones</th></tr></thead><tbody id="tbl-ventas"></tbody></table><div id="empty-ventas" class="empty-state" style="display:none"><div class="empty-icon">🧾</div><p>Aún no hay ventas cargadas</p></div></div><div id="pager-ventas"></div>
+      <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar venta por cliente, producto o método…" id="searchVenta"></div><select id="filterVentaCliente" class="filter-control"><option value="">Todos los clientes</option><option value="con-cliente">Con cliente</option><option value="mostrador">Mostrador</option></select><label class="filter-field"><span>Desde</span><input type="date" id="filterVentaDesde" class="filter-control"></label><label class="filter-field"><span>Hasta</span><input type="date" id="filterVentaHasta" class="filter-control"></label><select id="filterVentaTotal" class="filter-control"><option value="">Todos los totales</option><option value="igual">Final igual al calculado</option><option value="diferente">Final modificado</option></select></div>
+      <div class="table-wrap" id="wrap-ventas"><table class="data-table"><thead><tr><th>Fecha y hora</th><th>Cliente</th><th>Método de pago</th><th>Productos</th><th>Total calculado</th><th>Total final</th><th>Acciones</th></tr></thead><tbody id="tbl-ventas"></tbody></table><div id="empty-ventas" class="empty-state" style="display:none"><div class="empty-icon">🧾</div><p>Aún no hay ventas cargadas</p></div></div><div id="pager-ventas"></div>
     </section>`;
   }
 
@@ -58,7 +66,7 @@ export class VentasComponent {
     const list = [...this.app.store.data.ventas]
       .filter(venta => {
         const ventaDate = new Date(venta.createdAt);
-        const matchesSearch = (venta.cliente || '').toLowerCase().includes(q) || venta.items.some(item => item.productName.toLowerCase().includes(q));
+        const matchesSearch = (venta.cliente || '').toLowerCase().includes(q) || this.paymentLabel(venta).toLowerCase().includes(q) || venta.items.some(item => item.productName.toLowerCase().includes(q));
         const matchesCliente = !clienteFilter
           || (clienteFilter === 'con-cliente' && Boolean(venta.cliente))
           || (clienteFilter === 'mostrador' && !venta.cliente);
@@ -72,7 +80,7 @@ export class VentasComponent {
         return matchesSearch && matchesCliente && matchesDesde && matchesHasta && matchesTotal;
       })
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    document.getElementById('wrap-ventas').innerHTML = `<table class="data-table"><thead><tr><th>Fecha y hora</th><th>Cliente</th><th>Productos</th><th>Total calculado</th><th>Total final</th><th>Acciones</th></tr></thead><tbody id="tbl-ventas"></tbody></table><div id="empty-ventas" class="empty-state" style="display:none"><div class="empty-icon">🧾</div><p>Aún no hay ventas cargadas</p></div>`;
+    document.getElementById('wrap-ventas').innerHTML = `<table class="data-table"><thead><tr><th>Fecha y hora</th><th>Cliente</th><th>Método de pago</th><th>Productos</th><th>Total calculado</th><th>Total final</th><th>Acciones</th></tr></thead><tbody id="tbl-ventas"></tbody></table><div id="empty-ventas" class="empty-state" style="display:none"><div class="empty-icon">🧾</div><p>Aún no hay ventas cargadas</p></div>`;
     const tbody = document.getElementById('tbl-ventas');
     const empty = document.getElementById('empty-ventas');
     const pageState = getPageItems(list, this.page, DEFAULT_PAGE_SIZE);
@@ -90,7 +98,7 @@ export class VentasComponent {
     tbody.innerHTML = pageItems.map(venta => {
       const products = venta.items.map(item => `${item.productName} x ${item.qty}`).join(', ');
       const name = `${venta.cliente || 'Cliente mostrador'} - ${this.formatDate(venta.createdAt)}`;
-      return `<tr><td data-label="Fecha"><strong>${this.formatDate(venta.createdAt)}</strong></td><td data-label="Cliente">${venta.cliente || 'Cliente mostrador'}</td><td data-label="Productos">${products}</td><td data-label="Calculado">${this.formatMoney(venta.calculatedTotal)}</td><td class="price-value" data-label="Final">${this.formatMoney(venta.finalTotal)}</td><td data-label="Acciones"><div class="td-actions"><button class="btn btn-ghost btn-sm btn-icon" data-action="view-venta" data-id="${venta.id}" aria-label="Visualizar venta" title="Visualizar">👁️</button><button class="btn btn-danger btn-sm btn-icon" data-action="delete" data-entity="venta" data-id="${venta.id}" data-name="${name}" aria-label="Eliminar venta" title="Eliminar">🗑️</button></div></td></tr>`;
+      return `<tr><td data-label="Fecha"><strong>${this.formatDate(venta.createdAt)}</strong></td><td data-label="Cliente">${venta.cliente || 'Cliente mostrador'}</td><td data-label="Método">${this.paymentLabel(venta)}</td><td data-label="Productos">${products}</td><td data-label="Calculado">${this.formatMoney(venta.calculatedTotal)}</td><td class="price-value" data-label="Final">${this.formatMoney(venta.finalTotal)}</td><td data-label="Acciones"><div class="td-actions"><button class="btn btn-ghost btn-sm btn-icon" data-action="view-venta" data-id="${venta.id}" aria-label="Visualizar venta" title="Visualizar">👁️</button><button class="btn btn-danger btn-sm btn-icon" data-action="delete" data-entity="venta" data-id="${venta.id}" data-name="${name}" aria-label="Eliminar venta" title="Eliminar">🗑️</button></div></td></tr>`;
     }).join('');
     document.getElementById('pager-ventas').innerHTML = paginationTemplate('ventas', pageState);
   }
@@ -100,6 +108,8 @@ export class VentasComponent {
     if (!venta) return this.app.toasts.show('No se encontró la venta', 'error');
 
     const rows = venta.items.map(item => `<tr><td data-label="Producto"><strong>${item.productName}</strong></td><td data-label="Cantidad">${item.qty}</td><td class="price-value" data-label="Precio">${this.formatMoney(item.price)}</td><td class="price-value" data-label="Subtotal">${this.formatMoney(item.subtotal ?? item.qty * item.price)}</td></tr>`).join('');
-    this.app.showDetail('Detalle de venta', `<div class="sale-detail-grid"><div><span>Fecha y hora</span><strong>${this.formatDate(venta.createdAt)}</strong></div><div><span>Cliente</span><strong>${venta.cliente || 'Cliente mostrador'}</strong></div><div><span>Total calculado</span><strong>${this.formatMoney(venta.calculatedTotal)}</strong></div><div><span>Total final</span><strong class="price-value">${this.formatMoney(venta.finalTotal)}</strong></div></div><div class="table-wrap sale-cart-wrap"><table><thead><tr><th>Producto</th><th>Cantidad</th><th>Precio</th><th>Subtotal</th></tr></thead><tbody>${rows}</tbody></table></div>`);
+    const method = venta.metodoPago || {};
+    const paymentDetail = method.nombre ? `<div><span>Método de pago</span><strong>${method.nombre}</strong></div><div><span>Descuento</span><strong>${this.formatPercent(method.descuento)}</strong></div><div><span>Bonificación</span><strong>${this.formatPercent(method.bonificacion)}</strong></div>` : '<div><span>Método de pago</span><strong>Sin método</strong></div>';
+    this.app.showDetail('Detalle de venta', `<div class="sale-detail-grid"><div><span>Fecha y hora</span><strong>${this.formatDate(venta.createdAt)}</strong></div><div><span>Cliente</span><strong>${venta.cliente || 'Cliente mostrador'}</strong></div>${paymentDetail}<div><span>Total calculado</span><strong>${this.formatMoney(venta.calculatedTotal)}</strong></div><div><span>Total final</span><strong class="price-value">${this.formatMoney(venta.finalTotal)}</strong></div></div><div class="table-wrap sale-cart-wrap"><table><thead><tr><th>Producto</th><th>Cantidad</th><th>Precio</th><th>Subtotal</th></tr></thead><tbody>${rows}</tbody></table></div>`);
   }
 }

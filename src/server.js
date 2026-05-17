@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
-import { Auditoria, Producto, Proveedor, Stock, Tipo, Venta } from './models/index.js';
+import { Auditoria, MetodoPago, Producto, Proveedor, Stock, Tipo, Venta } from './models/index.js';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -23,6 +23,7 @@ const models = {
   proveedores: Proveedor,
   tipos: Tipo,
   productos: Producto,
+  metodosPago: MetodoPago,
   stock: Stock,
   ventas: Venta,
   auditoria: Auditoria
@@ -32,8 +33,9 @@ const searchableFields = {
   proveedores: ['nombre', 'contacto', 'email', 'telefono'],
   tipos: ['nombre', 'desc'],
   productos: ['nombre', 'desc'],
+  metodosPago: ['nombre'],
   stock: ['id'],
-  ventas: ['cliente', 'items.productName']
+  ventas: ['cliente', 'items.productName', 'metodoPago.nombre']
 };
 
 function credentialHash() {
@@ -99,12 +101,13 @@ function getDuplicateKeyMessage(store, error) {
 
   if (store === 'proveedores') return 'Ya existe un proveedor con ese nombre';
   if (store === 'tipos') return 'Ya existe un tipo de producto con ese nombre';
+  if (store === 'metodosPago') return 'Ya existe un método de pago con ese nombre';
   if (store === 'productos') return 'Ya existe un producto con ese nombre para el proveedor seleccionado';
   return 'Ya existe un registro con esos datos';
 }
 
 async function validateUniqueName(store, payload) {
-  if (!['proveedores', 'tipos', 'productos'].includes(store)) return;
+  if (!['proveedores', 'tipos', 'productos', 'metodosPago'].includes(store)) return;
 
   const nombre = String(payload.nombre || '').trim();
   if (!nombre) return;
@@ -132,6 +135,24 @@ function validateProductoPayload(payload) {
   const error = new Error('Seleccioná un proveedor');
   error.statusCode = 400;
   throw error;
+}
+
+function buildUpdatePayload(store, payload) {
+  const serverPayload = { ...payload };
+  if (store === 'productos') {
+    serverPayload.updatedAt = new Date();
+    return serverPayload;
+  }
+
+  if (store === 'ventas' || store === 'auditoria') {
+    delete serverPayload.createdAt;
+    return {
+      $set: serverPayload,
+      $setOnInsert: { createdAt: new Date().toISOString() }
+    };
+  }
+
+  return serverPayload;
 }
 
 function requireAuth(req, res, next) {
@@ -225,10 +246,11 @@ app.get('/api/dashboard', async (req, res, next) => {
 
 app.get('/api/data', async (req, res, next) => {
   try {
-    const [proveedores, tipos, productos, stockRecords, ventas, auditoria] = await Promise.all([
+    const [proveedores, tipos, productos, metodosPago, stockRecords, ventas, auditoria] = await Promise.all([
       Proveedor.find().lean(),
       Tipo.find().lean(),
       Producto.find().lean(),
+      MetodoPago.find().lean(),
       Stock.find().lean(),
       Venta.find().lean(),
       Auditoria.find().lean()
@@ -243,6 +265,7 @@ app.get('/api/data', async (req, res, next) => {
       proveedores: sanitizeList(proveedores),
       tipos: sanitizeList(tipos),
       productos: sanitizeList(productos),
+      metodosPago: sanitizeList(metodosPago),
       stock,
       ventas: sanitizeList(ventas),
       auditoria: sanitizeList(auditoria)
@@ -300,13 +323,13 @@ app.put('/api/:store/:id', async (req, res, next) => {
     const payload = { ...req.body, id: req.params.id };
     if (req.params.store === 'productos') {
       validateProductoPayload(payload);
-      payload.updatedAt = new Date();
     }
     await validateUniqueName(req.params.store, payload);
+    const updatePayload = buildUpdatePayload(req.params.store, payload);
 
     const record = await Model.findOneAndUpdate(
       { id: req.params.id },
-      payload,
+      updatePayload,
       { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
     );
     res.json(sanitize(record));

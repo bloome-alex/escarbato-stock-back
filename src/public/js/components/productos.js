@@ -189,7 +189,9 @@ export class ProductosComponent {
     producto.updatedAt = new Date().toISOString();
     row.querySelector('[data-inline-price]').textContent = this.formatMoney(producto.precio);
     row.querySelector('[data-product-updated-at]').textContent = this.formatDate(producto.updatedAt);
-    await this.app.store.put('productos', producto);
+    const savedProducto = await this.app.store.put('productos', producto);
+    if (savedProducto) Object.assign(producto, savedProducto);
+    row.querySelector('[data-product-updated-at]').textContent = this.formatDate(producto.updatedAt);
     await this.app.audit('Edición', 'Productos', `${producto.nombre} (precios)`);
     this.app.toasts.show('Producto actualizado ✅');
   }
@@ -259,12 +261,13 @@ export class ProductosComponent {
 
     const precio = this.calculatePrice(costo, porcentaje);
     const producto = { id, nombre, tipoId, proveedorId, costo: Number(costo), porcentaje: Number(porcentaje), precio, precioFinal: Number(precioFinal), minStock: Number(form.value('prod-min-stock')) || 5, updatedAt: new Date().toISOString(), desc: form.trim('prod-desc') };
-    await this.app.store.put('productos', producto);
+    const savedProducto = await this.app.store.put('productos', producto);
+    const currentProducto = savedProducto || producto;
     const list = this.app.store.data.productos;
     const index = list.findIndex(item => item.id === id);
-    if (index >= 0) list[index] = producto;
-    else list.push(producto);
-    await this.app.audit(index >= 0 ? 'Edición' : 'Creación', 'Productos', producto.nombre);
+    if (index >= 0) list[index] = currentProducto;
+    else list.push(currentProducto);
+    await this.app.audit(index >= 0 ? 'Edición' : 'Creación', 'Productos', currentProducto.nombre);
 
     if (!(id in this.app.store.data.stock)) {
       this.app.store.data.stock[id] = 0;

@@ -7,6 +7,7 @@ import { ProductosComponent } from './components/productos.js';
 import { StockComponent } from './components/stock.js';
 import { VentasComponent } from './components/ventas.js';
 import { MostradorComponent } from './components/mostrador.js?v=20260516-3';
+import { MetodosPagoComponent } from './components/metodos-pago.js';
 
 class PetshopApp {
   constructor() {
@@ -22,6 +23,7 @@ class PetshopApp {
       proveedores: new ProveedoresComponent(this),
       tipos: new TiposComponent(this),
       productos: new ProductosComponent(this),
+      metodosPago: new MetodosPagoComponent(this),
       stock: new StockComponent(this),
       ventas: new VentasComponent(this),
       mostrador: new MostradorComponent(this)
@@ -101,6 +103,7 @@ class PetshopApp {
       this.components.proveedores.template(),
       this.components.tipos.template(),
       this.components.productos.template(),
+      this.components.metodosPago.template(),
       this.components.stock.template(),
       this.components.ventas.template(),
       this.components.mostrador.template()
@@ -110,6 +113,7 @@ class PetshopApp {
       this.components.proveedores.modalTemplate(),
       this.components.tipos.modalTemplate(),
       this.components.productos.modalTemplate(),
+      this.components.metodosPago.modalTemplate(),
       this.components.stock.modalTemplate(),
       this.detailModalTemplate(),
       this.confirmModalTemplate()
@@ -118,6 +122,7 @@ class PetshopApp {
     this.components.proveedores.bind();
     this.components.tipos.bind();
     this.components.productos.bind();
+    this.components.metodosPago.bind();
     this.components.stock.bind();
     this.components.ventas.bind();
     this.components.mostrador.bind();
@@ -154,6 +159,9 @@ class PetshopApp {
       if (action === 'save-producto') return this.runButtonAction(actionButton, () => this.components.productos.save(), 'Guardando');
       if (action === 'view-producto') this.components.productos.view(id);
       if (action === 'edit-producto') this.components.productos.edit(id);
+      if (action === 'save-metodo-pago') return this.runButtonAction(actionButton, () => this.components.metodosPago.save(), 'Guardando');
+      if (action === 'view-metodo-pago') this.components.metodosPago.view(id);
+      if (action === 'edit-metodo-pago') this.components.metodosPago.edit(id);
       if (action === 'change-stock') return this.runButtonAction(actionButton, () => this.components.stock.change(id, Number(delta)), '');
       if (action === 'edit-stock') this.components.stock.edit(id);
       if (action === 'save-stock') return this.runButtonAction(actionButton, () => this.components.stock.save(), 'Guardando');
@@ -258,8 +266,8 @@ class PetshopApp {
       detail,
       createdAt: new Date().toISOString()
     };
-    await this.store.put('auditoria', record);
-    this.store.data.auditoria.push(record);
+    const savedRecord = await this.store.put('auditoria', record);
+    this.store.data.auditoria.push(savedRecord || record);
     if (document.getElementById('dash-audit')) this.components.dashboard.renderAudit();
   }
 
@@ -294,6 +302,15 @@ class PetshopApp {
       await this.audit('Eliminación', 'Productos', deleted ? deleted.nombre : 'Producto eliminado');
       this.modals.close('confirm');
       this.components.productos.render();
+    }
+
+    if (entity === 'metodo-pago') {
+      const deleted = data.metodosPago.find(item => item.id === id);
+      await this.store.delete('metodosPago', id);
+      data.metodosPago = data.metodosPago.filter(item => item.id !== id);
+      await this.audit('Eliminación', 'Métodos de pago', deleted ? deleted.nombre : 'Método de pago eliminado');
+      this.modals.close('confirm');
+      this.components.metodosPago.render();
     }
 
     if (entity === 'venta') {

@@ -1,12 +1,12 @@
 import { appConfig } from './config.js';
 
-const emptyData = () => ({ proveedores: [], tipos: [], productos: [], stock: {}, ventas: [], auditoria: [] });
+const emptyData = () => ({ proveedores: [], tipos: [], productos: [], metodosPago: [], stock: {}, ventas: [], auditoria: [] });
 
 class IndexedDbStore {
   constructor(app) {
     this.app = app;
     this.dbName = 'EscarbatoDB';
-    this.dbVersion = 3;
+    this.dbVersion = 4;
     this.db = null;
     this.data = emptyData();
   }
@@ -21,7 +21,7 @@ class IndexedDbStore {
       const req = indexedDB.open(this.dbName, this.dbVersion);
       req.onupgradeneeded = event => {
         const db = event.target.result;
-        ['proveedores', 'tipos', 'productos', 'stock', 'ventas', 'auditoria'].forEach(store => {
+        ['proveedores', 'tipos', 'productos', 'metodosPago', 'stock', 'ventas', 'auditoria'].forEach(store => {
           if (!db.objectStoreNames.contains(store)) {
             db.createObjectStore(store, { keyPath: 'id' });
           }
@@ -48,7 +48,7 @@ class IndexedDbStore {
     return new Promise((resolve, reject) => {
       const tx = this.db.transaction(store, 'readwrite');
       const req = tx.objectStore(store).put(obj);
-      req.onsuccess = () => resolve();
+      req.onsuccess = () => resolve(obj);
       req.onerror = () => reject(req.error);
     });
   }
@@ -66,6 +66,7 @@ class IndexedDbStore {
     this.data.proveedores = await this.getAll('proveedores');
     this.data.tipos = await this.getAll('tipos');
     this.data.productos = await this.getAll('productos');
+    this.data.metodosPago = await this.getAll('metodosPago');
     this.data.ventas = await this.getAll('ventas');
     this.data.auditoria = await this.getAll('auditoria');
     const stockRecords = await this.getAll('stock');
@@ -247,7 +248,7 @@ class BackendStore {
   }
 
   async put(store, obj) {
-    await this.request(`/api/${store}/${encodeURIComponent(obj.id)}`, {
+    return this.request(`/api/${store}/${encodeURIComponent(obj.id)}`, {
       method: 'PUT',
       body: JSON.stringify(obj)
     });

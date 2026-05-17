@@ -6,7 +6,7 @@ const auditoriaSchema = new mongoose.Schema({
   action: { type: String, required: true },
   entity: { type: String, required: true },
   detail: { type: String, required: true },
-  createdAt: { type: String, required: true }
+  createdAt: { type: String, required: true, default: () => new Date().toISOString() }
 }, { versionKey: false });
 
 export const Auditoria = mongoose.model('Auditoria', auditoriaSchema);

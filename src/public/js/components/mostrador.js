@@ -3,6 +3,7 @@ import { compareByName } from '../sort.js';
 
 const DEFAULT_CLIENT = 'mostrador';
 const PRODUCT_PAGE_SIZE = 24;
+const formatPercent = value => `${Number(value || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })}%`;
 
 export class MostradorComponent {
   constructor(app) {
@@ -30,7 +31,7 @@ export class MostradorComponent {
         <div class="cart-drawer-header"><div><span>Carrito</span><strong>Nueva venta</strong></div><button class="modal-close" data-action="close-counter-cart" aria-label="Cerrar carrito">✕</button></div>
         <div class="cart-drawer-list" id="counter-cart-list"></div>
         <div class="empty-state sale-empty" id="empty-counter-cart"><p>Agregá productos al carrito</p></div>
-        <div class="cart-drawer-footer"><div class="cart-total"><span>Total calculado</span><strong id="counter-cart-total">$0</strong></div><button class="btn btn-primary" data-action="finish-counter-sale">Finalizar compra</button></div>
+        <div class="cart-drawer-footer"><div class="form-group"><label>Método de pago *</label><select id="counter-payment-method" class="filter-control"><option value="">Seleccionar método</option></select></div><div id="counter-payment-summary"></div><div class="cart-total"><span>Total final</span><strong id="counter-cart-total">$0</strong></div><button class="btn btn-primary" data-action="finish-counter-sale">Finalizar compra</button></div>
       </aside>
     </section>`;
   }
@@ -40,6 +41,7 @@ export class MostradorComponent {
     document.getElementById('filterMostradorTipo').addEventListener('change', () => this.resetProducts());
     document.getElementById('filterMostradorProveedor').addEventListener('change', () => this.resetProducts());
     document.getElementById('filterMostradorStock').addEventListener('change', () => this.resetProducts());
+    document.getElementById('counter-payment-method').addEventListener('change', () => this.renderCart());
     window.addEventListener('scroll', this.onWindowScroll, { passive: true });
 
     const cliente = document.getElementById('mostrador-cliente');
@@ -74,6 +76,34 @@ export class MostradorComponent {
     return Number(this.cart.reduce((sum, item) => sum + item.qty * item.price, 0).toFixed(2));
   }
 
+  getSelectedPaymentMethod() {
+    const id = form.value('counter-payment-method');
+    if (!id) return null;
+    return (this.app.store.data.metodosPago || []).find(method => method.id === id) || null;
+  }
+
+  getPaymentTotals(method = this.getSelectedPaymentMethod()) {
+    const subtotal = this.getTotal();
+    const descuento = Number(method?.descuento || 0);
+    const bonificacion = Number(method?.bonificacion || 0);
+    const discountAmount = Number((subtotal * descuento / 100).toFixed(2));
+    const bonusAmount = Number((subtotal * bonificacion / 100).toFixed(2));
+    const finalTotal = Number(Math.max(0, subtotal - discountAmount + bonusAmount).toFixed(2));
+    return { subtotal, descuento, bonificacion, discountAmount, bonusAmount, finalTotal };
+  }
+
+  refreshPaymentMethods() {
+    const select = document.getElementById('counter-payment-method');
+    if (!select) return;
+    const selected = select.value;
+    const options = [...(this.app.store.data.metodosPago || [])]
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
+      .map(method => `<option value="${method.id}">${method.nombre}</option>`)
+      .join('');
+    select.innerHTML = '<option value="">Seleccionar método</option>' + options;
+    if (selected && (this.app.store.data.metodosPago || []).some(method => method.id === selected)) select.value = selected;
+  }
+
   refreshFilters() {
     const data = this.app.store.data;
     const tipoFilter = document.getElementById('filterMostradorTipo');
@@ -93,6 +123,7 @@ export class MostradorComponent {
 
   render() {
     this.refreshFilters();
+    this.refreshPaymentMethods();
     this.renderProducts();
     this.renderCart();
   }
@@ -210,9 +241,13 @@ export class MostradorComponent {
   }
 
   renderCart() {
+    this.refreshPaymentMethods();
     const count = this.cart.reduce((sum, item) => sum + item.qty, 0);
+    const method = this.getSelectedPaymentMethod();
+    const totals = this.getPaymentTotals(method);
     document.getElementById('counter-cart-count').textContent = count.toLocaleString('es-AR');
-    document.getElementById('counter-cart-total').textContent = this.formatMoney(this.getTotal());
+    document.getElementById('counter-cart-total').textContent = this.formatMoney(totals.finalTotal);
+    document.getElementById('counter-payment-summary').innerHTML = this.paymentSummaryTemplate(method, totals);
     const list = document.getElementById('counter-cart-list');
     const empty = document.getElementById('empty-counter-cart');
 
@@ -224,6 +259,15 @@ export class MostradorComponent {
 
     empty.style.display = 'none';
     list.innerHTML = this.cart.map(item => `<div class="cart-line"><div><strong>${item.productName}</strong><span>${this.formatMoney(item.price)} c/u</span></div><div class="cart-line-actions"><button class="stock-btn minus" data-action="decrease-counter-item" data-id="${item.productId}">−</button><strong>${item.qty}</strong><button class="stock-btn plus" data-action="increase-counter-item" data-id="${item.productId}">+</button><button class="btn btn-danger btn-icon btn-sm" data-action="remove-counter-item" data-id="${item.productId}" aria-label="Eliminar producto">🗑️</button></div></div>`).join('');
+  }
+
+  paymentSummaryTemplate(method, totals) {
+    if (!method) return '<div class="detail-list"><div><span>Método de pago</span><strong>Seleccioná uno para continuar</strong></div></div>';
+
+    const adjustments = [];
+    if (totals.descuento > 0) adjustments.push(`<div><span>Descuento ${formatPercent(totals.descuento)}</span><strong>-${this.formatMoney(totals.discountAmount)}</strong></div>`);
+    if (totals.bonificacion > 0) adjustments.push(`<div><span>Bonificación ${formatPercent(totals.bonificacion)}</span><strong>+${this.formatMoney(totals.bonusAmount)}</strong></div>`);
+    return `<div class="detail-list"><div><span>Método de pago</span><strong>${method.nombre}</strong></div><div><span>Total calculado</span><strong>${this.formatMoney(totals.subtotal)}</strong></div>${adjustments.join('') || '<div><span>Ajustes</span><strong>Sin descuento ni bonificación</strong></div>'}</div>`;
   }
 
   openCart() {
@@ -243,17 +287,26 @@ export class MostradorComponent {
 
   async finishSale() {
     if (!this.cart.length) return this.app.toasts.show('Agregá al menos un producto al carrito', 'error');
+    const method = this.getSelectedPaymentMethod();
+    if (!method) return this.app.toasts.show('Seleccioná un método de pago', 'error');
     const stock = this.app.store.data.stock || {};
     this.app.store.data.stock = stock;
     const stockIssue = this.cart.find(item => item.qty > (stock[item.productId] || 0));
     if (stockIssue) return this.app.toasts.show(`${stockIssue.productName} no tiene stock suficiente`, 'error');
 
+    const totals = this.getPaymentTotals(method);
     const venta = {
       id: this.app.store.createId(),
       cliente: this.getCliente(),
       items: this.cart.map(item => ({ ...item, subtotal: Number((item.qty * item.price).toFixed(2)) })),
-      calculatedTotal: this.getTotal(),
-      finalTotal: this.getTotal(),
+      metodoPago: {
+        id: method.id,
+        nombre: method.nombre,
+        descuento: totals.descuento,
+        bonificacion: totals.bonificacion
+      },
+      calculatedTotal: totals.subtotal,
+      finalTotal: totals.finalTotal,
       createdAt: new Date().toISOString()
     };
 
@@ -263,13 +316,14 @@ export class MostradorComponent {
       await this.app.store.put('stock', { id: item.productId, qty: newQty });
     }
 
-    await this.app.store.put('ventas', venta);
+    const savedVenta = await this.app.store.put('ventas', venta);
     this.app.store.data.ventas = this.app.store.data.ventas || [];
-    this.app.store.data.ventas.push(venta);
-    await this.app.audit('Creación', 'Ventas', `${venta.cliente || 'Cliente mostrador'} - ${this.formatMoney(venta.finalTotal)}`);
+    this.app.store.data.ventas.push(savedVenta || venta);
+    await this.app.audit('Creación', 'Ventas', `${(savedVenta || venta).cliente || 'Cliente mostrador'} - ${this.formatMoney((savedVenta || venta).finalTotal)}`);
 
     this.cart = [];
     form.set('mostrador-cliente', DEFAULT_CLIENT);
+    form.set('counter-payment-method');
     this.closeCart();
     this.render();
     this.app.components.ventas.render();
