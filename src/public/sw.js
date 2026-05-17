@@ -1,4 +1,4 @@
-const CACHE_NAME = 'escarbato-pwa-v2';
+const CACHE_NAME = 'escarbato-pwa-v8';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -20,7 +20,8 @@ const APP_SHELL = [
   '/js/components/proveedores.js',
   '/js/components/stock.js',
   '/js/components/tipos.js',
-  '/js/components/ventas.js'
+  '/js/components/ventas.js',
+  '/js/components/mostrador.js'
 ];
 
 self.addEventListener('install', event => {
@@ -51,10 +52,10 @@ self.addEventListener('fetch', event => {
   }
 
   event.respondWith(
-    caches.match(request).then(cached => cached || fetch(request).then(response => {
+    fetch(request).then(response => {
       const responseCopy = response.clone();
       caches.open(CACHE_NAME).then(cache => cache.put(request, responseCopy));
       return response;
-    }))
+    }).catch(() => caches.match(request))
   );
 });

@@ -31,7 +31,8 @@ export class NavigationManager {
       tipos: 'Tipos de Producto',
       productos: 'Productos',
       stock: 'Stock',
-      ventas: 'Ventas'
+      ventas: 'Ventas',
+      mostrador: 'Mostrador'
     };
   }
 
@@ -47,14 +48,41 @@ export class NavigationManager {
     });
   }
 
-  go(section) {
+  showLoading(section) {
+    document.getElementById('topbarTitle').textContent = this.sectionTitles[section] || 'Cargando';
+    document.querySelectorAll('[data-nav]').forEach(el => el.classList.toggle('active', el.dataset.nav === section));
+    document.getElementById('sectionsRoot').innerHTML = `<section class="section active"><div class="section-loading"><span class="loading-spinner" aria-hidden="true"></span><span>Cargando ${this.sectionTitles[section] || 'sección'}...</span></div></section>`;
+    this.closeSidebar();
+  }
+
+  async go(section) {
+    if (section !== 'dashboard' && !this.app?.dataReady) {
+      this.showLoading(section);
+      try {
+        await this.app.ensureDataReady();
+      } catch (error) {
+        this.app?.toasts?.show(error.message || 'No se pudo cargar la sección', 'error');
+        return;
+      }
+    }
+
+    let target = document.getElementById('sec-' + section);
+    if (!target && this.app?.renderShell) {
+      this.app.renderShell();
+      target = document.getElementById('sec-' + section);
+    }
+    if (!target) {
+      this.app?.toasts?.show('No se pudo cargar la sección. Recargá la página.', 'error');
+      return;
+    }
+
     document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('[data-nav]').forEach(el => el.classList.remove('active'));
-    document.getElementById('sec-' + section).classList.add('active');
+    target.classList.add('active');
     document.querySelectorAll(`[data-nav="${section}"]`).forEach(el => el.classList.add('active'));
     document.getElementById('topbarTitle').textContent = this.sectionTitles[section];
     this.closeSidebar();
-    this.app.renderSection(section);
+    await this.app.renderSection(section);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 

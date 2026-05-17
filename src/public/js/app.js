@@ -1,11 +1,12 @@
 import { DataStore } from './data-store.js';
-import { ModalManager, NavigationManager, ToastManager } from './ui.js';
+import { ModalManager, NavigationManager, ToastManager } from './ui.js?v=20260516-2';
 import { DashboardComponent } from './components/dashboard.js';
 import { ProveedoresComponent } from './components/proveedores.js';
 import { TiposComponent } from './components/tipos.js';
 import { ProductosComponent } from './components/productos.js';
 import { StockComponent } from './components/stock.js';
 import { VentasComponent } from './components/ventas.js';
+import { MostradorComponent } from './components/mostrador.js?v=20260516-3';
 
 class PetshopApp {
   constructor() {
@@ -13,13 +14,16 @@ class PetshopApp {
     this.modals = new ModalManager();
     this.toasts = new ToastManager();
     this.navigation = new NavigationManager(this);
+    this.dataReady = false;
+    this.preloadPromise = null;
     this.components = {
       dashboard: new DashboardComponent(this),
       proveedores: new ProveedoresComponent(this),
       tipos: new TiposComponent(this),
       productos: new ProductosComponent(this),
       stock: new StockComponent(this),
-      ventas: new VentasComponent(this)
+      ventas: new VentasComponent(this),
+      mostrador: new MostradorComponent(this)
     };
   }
 
@@ -35,7 +39,7 @@ class PetshopApp {
       throw error;
     }
     this.renderSection('dashboard');
-    this.preloadMenuData();
+    this.preloadPromise = this.preloadMenuData();
     this.startHealthCron();
   }
 
@@ -44,11 +48,22 @@ class PetshopApp {
       await this.store.loadAll();
       this.components.productos.refreshTipoSelects();
       this.components.productos.refreshProveedorSelects();
+      this.dataReady = true;
       this.setMenuDisabled(false);
       this.updateBadge();
+      return true;
     } catch (error) {
       this.toasts.show(error.message || 'No se pudieron precargar las secciones', 'error');
+      return false;
     }
+  }
+
+  async ensureDataReady() {
+    if (this.dataReady) return true;
+    if (!this.preloadPromise) this.preloadPromise = this.preloadMenuData();
+    await this.preloadPromise;
+    if (!this.dataReady) throw new Error('No se pudieron cargar los datos de la aplicación');
+    return true;
   }
 
   setMenuDisabled(disabled) {
@@ -86,7 +101,8 @@ class PetshopApp {
       this.components.tipos.template(),
       this.components.productos.template(),
       this.components.stock.template(),
-      this.components.ventas.template()
+      this.components.ventas.template(),
+      this.components.mostrador.template()
     ].join('');
 
     document.getElementById('modalsRoot').innerHTML = [
@@ -94,7 +110,6 @@ class PetshopApp {
       this.components.tipos.modalTemplate(),
       this.components.productos.modalTemplate(),
       this.components.stock.modalTemplate(),
-      this.components.ventas.modalTemplate(),
       this.detailModalTemplate(),
       this.confirmModalTemplate()
     ].join('');
@@ -104,6 +119,7 @@ class PetshopApp {
     this.components.productos.bind();
     this.components.stock.bind();
     this.components.ventas.bind();
+    this.components.mostrador.bind();
   }
 
   confirmModalTemplate() {
@@ -139,11 +155,14 @@ class PetshopApp {
       if (action === 'change-stock') return this.runButtonAction(actionButton, () => this.components.stock.change(id, Number(delta)), '');
       if (action === 'edit-stock') this.components.stock.edit(id);
       if (action === 'save-stock') return this.runButtonAction(actionButton, () => this.components.stock.save(), 'Guardando');
-      if (action === 'add-venta-item') this.components.ventas.addItem();
-      if (action === 'remove-venta-item') this.components.ventas.removeItem(actionButton.dataset.index);
       if (action === 'view-venta') this.components.ventas.view(id);
-      if (action === 'edit-venta') this.components.ventas.edit(id);
-      if (action === 'save-venta') return this.runButtonAction(actionButton, () => this.components.ventas.save(), 'Guardando');
+      if (action === 'open-counter-cart') this.components.mostrador.openCart();
+      if (action === 'close-counter-cart') this.components.mostrador.closeCart();
+      if (action === 'add-counter-item') this.components.mostrador.addItem(id);
+      if (action === 'increase-counter-item') this.components.mostrador.changeItem(id, 1);
+      if (action === 'decrease-counter-item') this.components.mostrador.changeItem(id, -1);
+      if (action === 'remove-counter-item') this.components.mostrador.removeItem(id);
+      if (action === 'finish-counter-sale') return this.runButtonAction(actionButton, () => this.components.mostrador.finishSale(), 'Guardando');
       if (action === 'delete') this.confirmDelete(entity, id, name);
     });
 
@@ -188,7 +207,16 @@ class PetshopApp {
     button.removeAttribute('aria-busy');
   }
 
-  renderSection(section) {
+  async renderSection(section) {
+    if (section !== 'dashboard' && !this.dataReady) {
+      try {
+        await (this.preloadPromise || this.preloadMenuData());
+      } catch (error) {
+        this.toasts.show(error.message || 'No se pudieron cargar los datos', 'error');
+        return;
+      }
+    }
+
     this.components[section].render();
   }
 
