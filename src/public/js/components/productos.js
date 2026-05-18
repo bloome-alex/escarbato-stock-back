@@ -201,6 +201,11 @@ export class ProductosComponent {
     this.render();
   }
 
+  async downloadProviderProductsPdf() {
+    await this.app.store.downloadProductsPdf();
+    this.app.toasts.show('PDF descargado ✅');
+  }
+
   view(id) {
     const producto = this.app.store.data.productos.find(item => item.id === id);
     if (!producto) return this.app.toasts.show('No se encontró el producto', 'error');

@@ -2,6 +2,11 @@ import { appConfig } from './config.js';
 
 const emptyData = () => ({ proveedores: [], tipos: [], productos: [], metodosPago: [], stock: {}, ventas: [], cajas: [], auditoria: [] });
 
+const reportTimestamp = (date = new Date()) => {
+  const pad = value => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}-${pad(date.getHours())}-${pad(date.getMinutes())}`;
+};
+
 class IndexedDbStore {
   constructor(app) {
     this.app = app;
@@ -121,6 +126,10 @@ class IndexedDbStore {
 
   createId() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  }
+
+  async downloadProductsPdf() {
+    throw new Error('La descarga de PDF requiere usar el backend');
   }
 }
 
@@ -267,6 +276,32 @@ class BackendStore {
 
   async delete(store, id) {
     await this.request(`/api/${store}/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  }
+
+  async downloadProductsPdf(retry = true) {
+    await this.ensureToken();
+    const response = await fetch(`${this.baseUrl}/api/reportes/productos.pdf`, {
+      headers: { Authorization: `Bearer ${this.token}` }
+    });
+    if (response.status === 401 && retry) {
+      sessionStorage.removeItem('petshopAuthToken');
+      this.token = '';
+      return this.downloadProductsPdf(false);
+    }
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({}));
+      throw new Error(result.error || 'No se pudo descargar el PDF');
+    }
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `reporte-productos-${reportTimestamp()}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   createId() {

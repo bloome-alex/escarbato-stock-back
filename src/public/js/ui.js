@@ -39,7 +39,7 @@ export class NavigationManager {
     this.sectionActions = {
       proveedores: '<button class="btn btn-primary" data-action="new-proveedor">+ Nuevo proveedor</button>',
       tipos: '<button class="btn btn-primary" data-action="new-tipo">+ Nuevo tipo</button>',
-      productos: '<button class="btn btn-primary" data-action="new-producto">+ Nuevo producto</button>',
+      productos: '<button class="btn btn-ghost" data-action="download-productos">⬇️ Descargar</button><button class="btn btn-primary" data-action="new-producto">+ Nuevo producto</button>',
       metodosPago: '<button class="btn btn-primary" data-action="new-metodo-pago">+ Nuevo método</button>'
     };
   }

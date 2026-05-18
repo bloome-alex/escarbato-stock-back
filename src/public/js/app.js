@@ -167,6 +167,7 @@ class PetshopApp {
       if (action === 'edit-tipo') this.components.tipos.edit(id);
       if (action === 'new-producto') return this.components.productos.openNew();
       if (action === 'save-producto') return this.runButtonAction(actionButton, () => this.components.productos.save(), 'Guardando');
+      if (action === 'download-productos') return this.runButtonAction(actionButton, () => this.components.productos.downloadProviderProductsPdf(), 'Descargando');
       if (action === 'view-producto') this.components.productos.view(id);
       if (action === 'edit-producto') this.components.productos.edit(id);
       if (action === 'new-metodo-pago') return this.components.metodosPago.openNew();
