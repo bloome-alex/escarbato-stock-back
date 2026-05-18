@@ -1,12 +1,12 @@
 import { DataStore } from './data-store.js';
-import { ModalManager, NavigationManager, ThemeManager, ToastManager } from './ui.js?v=20260516-4';
+import { ModalManager, NavigationManager, ThemeManager, ToastManager } from './ui.js?v=20260517-1';
 import { DashboardComponent } from './components/dashboard.js';
 import { ProveedoresComponent } from './components/proveedores.js';
 import { TiposComponent } from './components/tipos.js';
 import { ProductosComponent } from './components/productos.js';
 import { StockComponent } from './components/stock.js';
 import { VentasComponent } from './components/ventas.js';
-import { MostradorComponent } from './components/mostrador.js?v=20260516-3';
+import { MostradorComponent } from './components/mostrador.js?v=20260517-1';
 import { MetodosPagoComponent } from './components/metodos-pago.js';
 import { CajasComponent } from './components/cajas.js';
 import { isMobileListView } from './pagination.js';
@@ -157,15 +157,19 @@ class PetshopApp {
       if (actionButton.disabled) return;
 
       const { action, id, entity, name, delta } = actionButton.dataset;
+      if (action === 'new-proveedor') return this.components.proveedores.openNew();
       if (action === 'save-proveedor') return this.runButtonAction(actionButton, () => this.components.proveedores.save(), 'Guardando');
       if (action === 'view-proveedor') this.components.proveedores.view(id);
       if (action === 'edit-proveedor') this.components.proveedores.edit(id);
+      if (action === 'new-tipo') return this.components.tipos.openNew();
       if (action === 'save-tipo') return this.runButtonAction(actionButton, () => this.components.tipos.save(), 'Guardando');
       if (action === 'view-tipo') this.components.tipos.view(id);
       if (action === 'edit-tipo') this.components.tipos.edit(id);
+      if (action === 'new-producto') return this.components.productos.openNew();
       if (action === 'save-producto') return this.runButtonAction(actionButton, () => this.components.productos.save(), 'Guardando');
       if (action === 'view-producto') this.components.productos.view(id);
       if (action === 'edit-producto') this.components.productos.edit(id);
+      if (action === 'new-metodo-pago') return this.components.metodosPago.openNew();
       if (action === 'save-metodo-pago') return this.runButtonAction(actionButton, () => this.components.metodosPago.save(), 'Guardando');
       if (action === 'view-metodo-pago') this.components.metodosPago.view(id);
       if (action === 'edit-metodo-pago') this.components.metodosPago.edit(id);
@@ -266,6 +270,7 @@ class PetshopApp {
 
   updateBadge() {
     const badge = document.getElementById('stockAlertBadge');
+    if (!badge) return;
     const lowStockCount = this.store.dashboard?.totals?.lowStock ?? this.getLowStockProducts().length;
     badge.style.display = lowStockCount ? '' : 'none';
   }

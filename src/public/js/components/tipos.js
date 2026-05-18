@@ -13,7 +13,6 @@ export class TiposComponent {
 
   template() {
     return `<section class="section" id="sec-tipos">
-      <div class="section-header"><div class="section-heading">🏷️ <span>Tipos de Producto</span></div><button class="btn btn-primary" data-action="new-tipo">+ Nuevo tipo</button></div>
       <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar tipo…" id="searchTipo"></div><select id="filterTipoUso" class="filter-control"><option value="">Todos</option><option value="con-productos">Con productos</option><option value="sin-productos">Sin productos</option></select></div>
       <div class="table-wrap" id="wrap-tipos"><table class="data-table"><thead><tr><th>Nombre</th><th>Descripción</th><th>Productos</th><th>Acciones</th></tr></thead><tbody id="tbl-tipos"></tbody></table><div id="empty-tipos" class="empty-state" style="display:none"><div class="empty-icon">🏷️</div><p>Aún no hay tipos de producto</p></div></div><div id="pager-tipos"></div>
     </section>`;
@@ -26,7 +25,6 @@ export class TiposComponent {
   bind() {
     document.getElementById('searchTipo').addEventListener('input', () => this.resetAndRender());
     document.getElementById('filterTipoUso').addEventListener('change', () => this.resetAndRender());
-    document.querySelector('[data-action="new-tipo"]').addEventListener('click', () => this.openNew());
   }
 
   render() {

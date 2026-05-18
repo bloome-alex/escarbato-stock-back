@@ -17,7 +17,6 @@ export class MostradorComponent {
 
   template() {
     return `<section class="section" id="sec-mostrador">
-      <div class="section-header"><div class="section-heading">🛒 <span>Mostrador</span></div></div>
       <div id="counter-caja-status"></div>
       <div class="counter-shell">
         <div class="counter-client form-group"><label>Cliente</label><input type="text" id="mostrador-cliente" value="${DEFAULT_CLIENT}" autocomplete="off"></div>

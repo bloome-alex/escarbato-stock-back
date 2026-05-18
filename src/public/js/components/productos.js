@@ -33,7 +33,6 @@ export class ProductosComponent {
 
   template() {
     return `<section class="section" id="sec-productos">
-      <div class="section-header"><div class="section-heading">📦 <span>Productos</span></div><button class="btn btn-primary" data-action="new-producto">+ Nuevo producto</button></div>
       <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar producto…" id="searchProd"></div><select id="filterTipo" class="filter-control"><option value="">Todos los tipos</option></select><select id="filterProveedor" class="filter-control"><option value="">Todos los proveedores</option></select><select id="filterStockProd" class="filter-control"><option value="">Todo stock</option><option value="disponible">Disponible</option><option value="bajo">Stock bajo</option><option value="sin-stock">Sin stock</option></select></div>
       <div class="table-wrap" id="wrap-productos"><table class="data-table"><thead><tr><th>Producto</th><th>Tipo</th><th>Proveedor</th><th>Costo</th><th>Porcentaje</th><th>Precio</th><th>Precio final</th><th>Última actualización</th><th>Acciones</th></tr></thead><tbody id="tbl-productos"></tbody></table><div id="empty-productos" class="empty-state" style="display:none"><div class="empty-icon">📦</div><p>Aún no hay productos registrados</p></div></div><div id="pager-productos"></div>
     </section>`;
@@ -48,7 +47,6 @@ export class ProductosComponent {
     document.getElementById('filterTipo').addEventListener('change', () => this.resetAndRender());
     document.getElementById('filterProveedor').addEventListener('change', () => this.resetAndRender());
     document.getElementById('filterStockProd').addEventListener('change', () => this.resetAndRender());
-    document.querySelector('[data-action="new-producto"]').addEventListener('click', () => this.openNew());
     document.getElementById('prod-costo').addEventListener('input', () => this.updateCalculatedPrice());
     document.getElementById('prod-porcentaje').addEventListener('input', () => this.updateCalculatedPrice());
     document.getElementById('wrap-productos').addEventListener('input', event => {

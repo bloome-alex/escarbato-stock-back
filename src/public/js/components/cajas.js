@@ -5,7 +5,6 @@ export class CajasComponent {
 
   template() {
     return `<section class="section" id="sec-cajas">
-      <div class="section-header"><div class="section-heading">💵 <span>Cajas</span></div></div>
       <div class="counter-shell">
         <div id="caja-status"></div>
         <div id="caja-open-form"></div>

@@ -20,7 +20,6 @@ export class MetodosPagoComponent {
 
   template() {
     return `<section class="section" id="sec-metodosPago">
-      <div class="section-header"><div class="section-heading">💳 <span>Metodos de pago</span></div><button class="btn btn-primary" data-action="new-metodo-pago">+ Nuevo método</button></div>
       <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar método de pago…" id="searchMetodoPago"></div></div>
       <div class="table-wrap" id="wrap-metodos-pago"><table class="data-table"><thead><tr><th>Nombre</th><th>Descuento</th><th>Recargo</th><th>Acciones</th></tr></thead><tbody id="tbl-metodos-pago"></tbody></table><div id="empty-metodos-pago" class="empty-state" style="display:none"><div class="empty-icon">💳</div><p>Aún no hay métodos de pago</p></div></div><div id="pager-metodosPago"></div>
     </section>`;
@@ -32,7 +31,6 @@ export class MetodosPagoComponent {
 
   bind() {
     document.getElementById('searchMetodoPago').addEventListener('input', () => this.resetAndRender());
-    document.querySelector('[data-action="new-metodo-pago"]').addEventListener('click', () => this.openNew());
   }
 
   render() {

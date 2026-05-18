@@ -37,7 +37,6 @@ export class VentasComponent {
 
   template() {
     return `<section class="section" id="sec-ventas">
-      <div class="section-header"><div class="section-heading">🧾 <span>Ventas</span></div></div>
       <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar venta por cliente, producto o método…" id="searchVenta"></div><select id="filterVentaMetodoPago" class="filter-control"><option value="">Todos los métodos</option></select><label class="filter-field"><span>Desde</span><input type="date" id="filterVentaDesde" class="filter-control"></label><label class="filter-field"><span>Hasta</span><input type="date" id="filterVentaHasta" class="filter-control"></label></div>
       <div class="table-wrap" id="wrap-ventas"><table class="data-table"><thead><tr><th>Fecha y hora</th><th>Cliente</th><th>Método de pago</th><th>Productos</th><th>Total calculado</th><th>Total final</th><th>Acciones</th></tr></thead><tbody id="tbl-ventas"></tbody></table><div id="empty-ventas" class="empty-state" style="display:none"><div class="empty-icon">🧾</div><p>Aún no hay ventas cargadas</p></div></div><div id="pager-ventas"></div>
     </section>`;

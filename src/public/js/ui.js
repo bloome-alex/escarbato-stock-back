@@ -36,6 +36,12 @@ export class NavigationManager {
       ventas: 'Ventas',
       mostrador: 'Mostrador'
     };
+    this.sectionActions = {
+      proveedores: '<button class="btn btn-primary" data-action="new-proveedor">+ Nuevo proveedor</button>',
+      tipos: '<button class="btn btn-primary" data-action="new-tipo">+ Nuevo tipo</button>',
+      productos: '<button class="btn btn-primary" data-action="new-producto">+ Nuevo producto</button>',
+      metodosPago: '<button class="btn btn-primary" data-action="new-metodo-pago">+ Nuevo método</button>'
+    };
   }
 
   bind() {
@@ -48,10 +54,11 @@ export class NavigationManager {
     document.addEventListener('keydown', event => {
       if (event.key === 'Escape') this.closeSidebar();
     });
+    this.updateHeader('dashboard');
   }
 
   showLoading(section) {
-    document.getElementById('topbarTitle').textContent = this.sectionTitles[section] || 'Cargando';
+    this.updateHeader(section);
     document.querySelectorAll('[data-nav]').forEach(el => el.classList.toggle('active', el.dataset.nav === section));
     document.getElementById('sectionsRoot').innerHTML = `<section class="section active"><div class="section-loading"><span class="loading-spinner" aria-hidden="true"></span><span>Cargando ${this.sectionTitles[section] || 'sección'}...</span></div></section>`;
     this.closeSidebar();
@@ -82,10 +89,17 @@ export class NavigationManager {
     document.querySelectorAll('[data-nav]').forEach(el => el.classList.remove('active'));
     target.classList.add('active');
     document.querySelectorAll(`[data-nav="${section}"]`).forEach(el => el.classList.add('active'));
-    document.getElementById('topbarTitle').textContent = this.sectionTitles[section];
+    this.updateHeader(section);
     this.closeSidebar();
     await this.app.renderSection(section);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  updateHeader(section) {
+    const title = document.getElementById('topbarTitle');
+    const actions = document.getElementById('topbarActions');
+    if (title) title.textContent = this.sectionTitles[section] || 'Cargando';
+    if (actions) actions.innerHTML = this.sectionActions[section] || '';
   }
 
   toggleSidebar() {

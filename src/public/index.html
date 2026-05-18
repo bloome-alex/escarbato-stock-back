@@ -292,7 +292,12 @@
     font-size: .78rem;
     color: var(--text-soft);
     text-align: center;
+    display: grid;
+    gap: 12px;
   }
+
+  .sidebar-footer .theme-toggle { width: 100%; }
+  .sidebar-version { font-size: .78rem; }
 
   /* ── MAIN ── */
   .main {
@@ -328,7 +333,11 @@
     color: var(--brown);
   }
 
-  .topbar-right { display: flex; align-items: center; gap: 14px; }
+  .topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
 
   .theme-toggle {
     min-width: 42px;
@@ -364,15 +373,6 @@
 
   .mobile-brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
   .mobile-brand img { display: none; }
-
-  .badge {
-    background: var(--amber-light);
-    color: var(--brown);
-    font-size: .72rem;
-    font-weight: 800;
-    padding: 3px 10px;
-    border-radius: 99px;
-  }
 
   /* ── CONTENT ── */
   .content {
@@ -545,22 +545,6 @@
   .skeleton-dot { width: 30px; height: 30px; flex: 0 0 auto; }
   .skeleton-line { width: 100%; height: 14px; }
   @keyframes skeleton-shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
-
-  /* ── ABM SECTION ── */
-  .section-header {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 24px;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-  .section-heading {
-    font-family: 'Cinzel', serif;
-    font-size: 1.4rem;
-    font-weight: 800;
-    color: var(--brown);
-    text-shadow: none;
-  }
-  .section-heading span { color: var(--sage-dark); }
 
   /* ── BUTTONS ── */
   .btn {
@@ -1394,24 +1378,7 @@
       background: var(--topbar-bg-mobile);
     }
     .topbar-title { font-size: 1.04rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .topbar-right { gap: 8px; }
-    .badge { padding: 5px 9px; font-size: .66rem; max-width: 98px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-    .section-header {
-      align-items: stretch;
-      margin-bottom: 16px;
-    }
-    .section-heading {
-      width: 100%;
-      font-size: 1.22rem;
-      line-height: 1.15;
-    }
-    .section-header .btn {
-      width: 100%;
-      justify-content: center;
-      min-height: 48px;
-      border-radius: 16px;
-    }
+    .topbar-actions .btn { min-height: 42px; padding: 0 12px; white-space: nowrap; }
 
     .toolbar {
       display: grid;
@@ -1712,7 +1679,12 @@
     </button>
   </nav>
 
-  <div class="sidebar-footer">v1.0 &nbsp;·&nbsp; 2025</div>
+  <div class="sidebar-footer">
+    <button class="theme-toggle" id="themeToggleBtn" type="button" aria-label="Cambiar a modo oscuro" aria-pressed="false">
+      <span class="theme-toggle-icon" aria-hidden="true">🌙</span><span class="theme-toggle-text">Oscuro</span>
+    </button>
+    <div class="sidebar-version">v1.0 &nbsp;·&nbsp; 2025</div>
+  </div>
 </aside>
 
 <!-- MAIN -->
@@ -1723,12 +1695,7 @@
       <img src="assets/logo.png" alt="Escarbato">
       <div class="topbar-title" id="topbarTitle">Panel</div>
     </div>
-    <div class="topbar-right">
-      <button class="theme-toggle" id="themeToggleBtn" type="button" aria-label="Cambiar a modo oscuro" aria-pressed="false">
-        <span class="theme-toggle-icon" aria-hidden="true">🌙</span><span class="theme-toggle-text">Oscuro</span>
-      </button>
-      <span class="badge" id="stockAlertBadge" style="display:none">⚠ Stock bajo</span>
-    </div>
+    <div class="topbar-actions" id="topbarActions"></div>
   </header>
 
   <div class="content" id="sectionsRoot">
@@ -1745,6 +1712,6 @@
     password: ''
   };
 </script>
-<script type="module" src="js/app.js?v=20260517-2"></script>
+<script type="module" src="js/app.js?v=20260517-3"></script>
 </body>
 </html>

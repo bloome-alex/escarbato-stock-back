@@ -19,7 +19,6 @@ export class ProveedoresComponent {
 
   template() {
     return `<section class="section" id="sec-proveedores">
-      <div class="section-header"><div class="section-heading">🚚 <span>Proveedores</span></div><button class="btn btn-primary" data-action="new-proveedor">+ Nuevo proveedor</button></div>
       <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar proveedor…" id="searchProv"></div><select id="filterProvInfo" class="filter-control"><option value="">Todos</option><option value="contacto">Con contacto</option><option value="sin-contacto">Sin contacto</option><option value="email">Con email</option><option value="sin-email">Sin email</option></select></div>
       <div class="table-wrap" id="wrap-proveedores"><table class="data-table"><thead><tr><th>Nombre</th><th>Contacto</th><th>Teléfono</th><th>Email</th><th>Productos</th><th>Acciones</th></tr></thead><tbody id="tbl-proveedores"></tbody></table><div id="empty-proveedores" class="empty-state" style="display:none"><div class="empty-icon">🚚</div><p>Aún no hay proveedores registrados</p></div></div><div id="pager-proveedores"></div>
     </section>`;
@@ -32,7 +31,6 @@ export class ProveedoresComponent {
   bind() {
     document.getElementById('searchProv').addEventListener('input', () => this.resetAndRender());
     document.getElementById('filterProvInfo').addEventListener('change', () => this.resetAndRender());
-    document.querySelector('[data-action="new-proveedor"]').addEventListener('click', () => this.openNew());
   }
 
   render() {
