@@ -40,7 +40,7 @@ export class ProductosComponent {
   }
 
   modalTemplate() {
-    return `<div class="modal-overlay" id="modal-prod"><div class="modal"><div class="modal-title"><span id="modal-prod-title">Nuevo Producto</span><button class="modal-close" data-close-modal="prod">✕</button></div><input type="hidden" id="prod-id"><div class="form-group"><label>Nombre del producto *</label><input type="text" id="prod-nombre" placeholder="Ej: Croquetas Premium Perro Adulto 10kg"></div><div class="form-row"><div class="form-group"><label>Tipo *</label><select id="prod-tipo"><option value="">Seleccionar tipo…</option></select></div><div class="form-group"><label>Proveedor *</label><select id="prod-proveedor"><option value="">Seleccionar proveedor…</option></select></div></div><div class="form-row"><div class="form-group"><label>Costo ($) *</label><input type="number" id="prod-costo" placeholder="0.00" min="0" step="0.01"></div><div class="form-group"><label>Porcentaje de ganancia (%) *</label><input type="number" id="prod-porcentaje" placeholder="0" min="0" step="0.01"></div></div><div class="form-row"><div class="form-group"><label>Precio calculado ($)</label><input type="number" id="prod-precio" placeholder="0.00" min="0" step="0.01" readonly></div><div class="form-group"><label>Precio final ($) *</label><input type="number" id="prod-precio-final" placeholder="Redondeado a mano" min="0" step="0.01"></div></div><div class="form-row"><div class="form-group"><label>Stock mínimo</label><input type="number" id="prod-min-stock" placeholder="5" min="0"></div></div><div class="form-group"><label>Descripción</label><textarea id="prod-desc" placeholder="Detalle del producto…"></textarea></div><div class="modal-actions"><button class="btn btn-ghost" data-close-modal="prod">Cancelar</button><button class="btn btn-primary" data-action="save-producto">💾 Guardar</button></div></div></div>`;
+    return `<div class="modal-overlay" id="modal-prod"><div class="modal"><div class="modal-title"><span id="modal-prod-title">Nuevo Producto</span><button class="modal-close" data-close-modal="prod">✕</button></div><input type="hidden" id="prod-id"><div class="form-group"><label>Nombre del producto *</label><input type="text" id="prod-nombre" placeholder="Ej: Croquetas Premium Perro Adulto 10kg"></div><div class="form-row"><div class="form-group"><label>Tipo *</label><select id="prod-tipo"><option value="">Seleccionar tipo…</option></select></div><div class="form-group"><label>Proveedor *</label><select id="prod-proveedor"><option value="">Seleccionar proveedor…</option></select></div></div><div class="form-row"><div class="form-group"><label>Costo ($) *</label><input type="number" id="prod-costo" placeholder="0.00" min="0" step="0.01"></div><div class="form-group"><label>Porcentaje de ganancia (%) *</label><input type="number" id="prod-porcentaje" placeholder="0" min="0" step="0.01"></div></div><div class="form-row"><div class="form-group"><label>Precio calculado ($)</label><input type="number" id="prod-precio" placeholder="0.00" min="0" step="0.01" readonly></div><div class="form-group"><label>Precio final ($) *</label><input type="number" id="prod-precio-final" placeholder="Redondeado a mano" min="0" step="0.01"></div></div><div class="form-row"><div class="form-group"><label>Stock mínimo</label><input type="number" id="prod-min-stock" placeholder="0" min="0"></div></div><div class="form-group"><label>Descripción</label><textarea id="prod-desc" placeholder="Detalle del producto…"></textarea></div><div class="modal-actions"><button class="btn btn-ghost" data-close-modal="prod">Cancelar</button><button class="btn btn-primary" data-action="save-producto">💾 Guardar</button></div></div></div>`;
   }
 
   bind() {
@@ -121,7 +121,7 @@ export class ProductosComponent {
     const stockFilter = form.value('filterStockProd');
     const list = data.productos.filter(producto => {
       const qty = data.stock[producto.id] || 0;
-      const min = producto.minStock || 5;
+      const min = producto.minStock ?? 0;
       const matchesStock = !stockFilter
         || (stockFilter === 'disponible' && qty > min)
         || (stockFilter === 'bajo' && qty > 0 && qty <= min)
@@ -210,7 +210,7 @@ export class ProductosComponent {
     const data = this.app.store.data;
     const tipo = data.tipos.find(item => item.id === producto.tipoId);
     const prov = data.proveedores.find(item => item.id === producto.proveedorId);
-    this.app.showDetail('Producto', `<div class="detail-list"><div><span>Nombre</span><strong>${producto.nombre}</strong></div><div><span>Tipo</span><strong>${tipo ? tipo.nombre : '—'}</strong></div><div><span>Proveedor</span><strong>${prov ? prov.nombre : '—'}</strong></div><div><span>Costo</span><strong class="price-value">${this.formatMoney(producto.costo ?? producto.precio)}</strong></div><div><span>Porcentaje de ganancia</span><strong>${producto.porcentaje ?? 0}%</strong></div><div><span>Precio calculado</span><strong class="price-value">${this.formatMoney(producto.precio)}</strong></div><div><span>Precio final</span><strong class="price-value">${this.formatMoney(this.getProductPrice(producto))}</strong></div><div><span>Stock mínimo</span><strong>${producto.minStock || 5} u.</strong></div><div><span>Última actualización</span><strong>${this.formatDate(producto.updatedAt)}</strong></div><div><span>Descripción</span><strong>${producto.desc || '—'}</strong></div></div>`);
+    this.app.showDetail('Producto', `<div class="detail-list"><div><span>Nombre</span><strong>${producto.nombre}</strong></div><div><span>Tipo</span><strong>${tipo ? tipo.nombre : '—'}</strong></div><div><span>Proveedor</span><strong>${prov ? prov.nombre : '—'}</strong></div><div><span>Costo</span><strong class="price-value">${this.formatMoney(producto.costo ?? producto.precio)}</strong></div><div><span>Porcentaje de ganancia</span><strong>${producto.porcentaje ?? 0}%</strong></div><div><span>Precio calculado</span><strong class="price-value">${this.formatMoney(producto.precio)}</strong></div><div><span>Precio final</span><strong class="price-value">${this.formatMoney(this.getProductPrice(producto))}</strong></div><div><span>Stock mínimo</span><strong>${producto.minStock ?? 0} u.</strong></div><div><span>Última actualización</span><strong>${this.formatDate(producto.updatedAt)}</strong></div><div><span>Descripción</span><strong>${producto.desc || '—'}</strong></div></div>`);
   }
 
   openNew() {
@@ -218,6 +218,7 @@ export class ProductosComponent {
     this.refreshProveedorSelects();
     form.set('prod-id');
     form.clear(['prod-nombre', 'prod-costo', 'prod-porcentaje', 'prod-precio', 'prod-precio-final', 'prod-min-stock', 'prod-desc']);
+    form.set('prod-min-stock', 0);
     form.set('prod-tipo');
     form.set('prod-proveedor');
     document.getElementById('modal-prod-title').textContent = 'Nuevo Producto';
@@ -237,7 +238,7 @@ export class ProductosComponent {
     form.set('prod-porcentaje', producto.porcentaje ?? 0);
     form.set('prod-precio', producto.precio ?? '');
     form.set('prod-precio-final', this.getProductPrice(producto) ?? '');
-    form.set('prod-min-stock', producto.minStock || '');
+    form.set('prod-min-stock', producto.minStock ?? '');
     form.set('prod-desc', producto.desc || '');
     document.getElementById('modal-prod-title').textContent = 'Editar Producto';
     this.app.modals.open('prod');
@@ -262,7 +263,8 @@ export class ProductosComponent {
     if (duplicated) return this.app.toasts.show('Ya existe un producto con ese nombre para el proveedor seleccionado', 'error');
 
     const precio = this.calculatePrice(costo, porcentaje);
-    const producto = { id, nombre, tipoId, proveedorId, costo: Number(costo), porcentaje: Number(porcentaje), precio, precioFinal: Number(precioFinal), minStock: Number(form.value('prod-min-stock')) || 5, updatedAt: new Date().toISOString(), desc: form.trim('prod-desc') };
+    const minStockValue = form.value('prod-min-stock');
+    const producto = { id, nombre, tipoId, proveedorId, costo: Number(costo), porcentaje: Number(porcentaje), precio, precioFinal: Number(precioFinal), minStock: minStockValue === '' ? 0 : Number(minStockValue), updatedAt: new Date().toISOString(), desc: form.trim('prod-desc') };
     const savedProducto = await this.app.store.put('productos', producto);
     const currentProducto = savedProducto || producto;
     const list = this.app.store.data.productos;

@@ -259,7 +259,7 @@ class PetshopApp {
     const data = this.store.data;
     return data.productos.filter(product => {
       const qty = data.stock[product.id] || 0;
-      const min = product.minStock || 5;
+      const min = product.minStock ?? 0;
       return qty <= min;
     });
   }

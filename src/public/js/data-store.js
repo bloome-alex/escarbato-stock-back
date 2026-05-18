@@ -82,7 +82,7 @@ class IndexedDbStore {
     const lowStockProducts = this.data.productos
       .map(product => {
         const qty = this.data.stock[product.id] || 0;
-        const minStock = product.minStock || 5;
+        const minStock = product.minStock ?? 0;
         return { id: product.id, nombre: product.nombre, qty, minStock, status: qty <= 0 ? 'Sin stock' : 'Stock bajo' };
       })
       .filter(product => product.qty <= product.minStock);
@@ -190,8 +190,18 @@ class BackendStore {
       document.querySelectorAll('.login-modal').forEach(m => m.remove());
       const modal = document.createElement('div');
       modal.className = 'modal-overlay open login-modal';
-      modal.innerHTML = `<div class="modal" style="max-width:380px"><div class="modal-title"><span>Iniciar sesión</span></div><div class="form-group"><label>Usuario</label><input type="text" id="backend-login-user" autocomplete="username"></div><div class="form-group"><label>Contraseña</label><input type="password" id="backend-login-pass" autocomplete="current-password"></div><div class="modal-actions"><button class="btn btn-primary" id="backend-login-submit">Ingresar</button></div></div>`;
+      modal.innerHTML = `<div class="modal" style="max-width:380px"><div class="modal-title"><span>Iniciar sesión</span></div><div class="form-group"><label>Usuario</label><input type="text" id="backend-login-user" autocomplete="username"></div><div class="form-group"><label>Contraseña</label><div class="password-field"><input type="password" id="backend-login-pass" autocomplete="current-password"><button type="button" class="password-toggle" id="backend-login-pass-toggle" aria-label="Mostrar contraseña" aria-pressed="false"><span class="password-eye" aria-hidden="true"></span></button></div></div><div class="modal-actions"><button class="btn btn-primary" id="backend-login-submit">Ingresar</button></div></div>`;
       document.body.appendChild(modal);
+
+      const passwordInput = modal.querySelector('#backend-login-pass');
+      const passwordToggle = modal.querySelector('#backend-login-pass-toggle');
+      passwordToggle.addEventListener('click', () => {
+        const showPassword = passwordInput.type === 'password';
+        passwordInput.type = showPassword ? 'text' : 'password';
+        passwordToggle.setAttribute('aria-label', showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña');
+        passwordToggle.setAttribute('aria-pressed', String(showPassword));
+        passwordToggle.classList.toggle('is-visible', showPassword);
+      });
 
       const submit = () => {
         const username = document.getElementById('backend-login-user').value.trim();

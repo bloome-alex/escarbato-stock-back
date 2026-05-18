@@ -90,11 +90,11 @@ export class MostradorComponent {
   getPaymentTotals(method = this.getSelectedPaymentMethod()) {
     const subtotal = this.getTotal();
     const descuento = Number(method?.descuento || 0);
-    const bonificacion = Number(method?.bonificacion || 0);
+    const recargo = Number(method?.recargo ?? method?.bonificacion ?? 0);
     const discountAmount = Number((subtotal * descuento / 100).toFixed(2));
-    const bonusAmount = Number((subtotal * bonificacion / 100).toFixed(2));
-    const finalTotal = Number(Math.max(0, subtotal - discountAmount + bonusAmount).toFixed(2));
-    return { subtotal, descuento, bonificacion, discountAmount, bonusAmount, finalTotal };
+    const surchargeAmount = Number((subtotal * recargo / 100).toFixed(2));
+    const finalTotal = Number(Math.max(0, subtotal - discountAmount + surchargeAmount).toFixed(2));
+    return { subtotal, descuento, recargo, discountAmount, surchargeAmount, finalTotal };
   }
 
   refreshPaymentMethods() {
@@ -281,8 +281,8 @@ export class MostradorComponent {
 
     const adjustments = [];
     if (totals.descuento > 0) adjustments.push(`<div><span>Descuento ${formatPercent(totals.descuento)}</span><strong>-${this.formatMoney(totals.discountAmount)}</strong></div>`);
-    if (totals.bonificacion > 0) adjustments.push(`<div><span>Bonificación ${formatPercent(totals.bonificacion)}</span><strong>+${this.formatMoney(totals.bonusAmount)}</strong></div>`);
-    return `<div class="detail-list"><div><span>Método de pago</span><strong>${method.nombre}</strong></div><div><span>Total calculado</span><strong>${this.formatMoney(totals.subtotal)}</strong></div>${adjustments.join('') || '<div><span>Ajustes</span><strong>Sin descuento ni bonificación</strong></div>'}</div>`;
+    if (totals.recargo > 0) adjustments.push(`<div><span>Recargo ${formatPercent(totals.recargo)}</span><strong>+${this.formatMoney(totals.surchargeAmount)}</strong></div>`);
+    return `<div class="detail-list"><div><span>Método de pago</span><strong>${method.nombre}</strong></div><div><span>Total calculado</span><strong>${this.formatMoney(totals.subtotal)}</strong></div>${adjustments.join('') || '<div><span>Ajustes</span><strong>Sin descuento ni recargo</strong></div>'}</div>`;
   }
 
   openCart() {
@@ -320,7 +320,7 @@ export class MostradorComponent {
         id: method.id,
         nombre: method.nombre,
         descuento: totals.descuento,
-        bonificacion: totals.bonificacion
+        recargo: totals.recargo
       },
       cajaId: openCaja.id,
       calculatedTotal: totals.subtotal,

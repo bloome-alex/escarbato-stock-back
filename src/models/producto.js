@@ -10,7 +10,7 @@ const productoSchema = new mongoose.Schema({
   porcentaje: { type: Number, required: true, min: 0 },
   precio: { type: Number, required: true, min: 0 },
   precioFinal: { type: Number, required: true, min: 0 },
-  minStock: { type: Number, default: 5, min: 0 },
+  minStock: { type: Number, default: 0, min: 0 },
   updatedAt: { type: Date, default: Date.now },
   desc: { type: String, default: '' }
 }, { versionKey: false });

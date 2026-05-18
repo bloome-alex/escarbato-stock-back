@@ -70,7 +70,7 @@ export class DashboardComponent {
     const alertsEl = document.getElementById('dash-alerts');
     alertsEl.innerHTML = data.stockAlerts.length
       ? data.stockAlerts.map(product => {
-        return `<div class="alert-item"><span class="alert-icon">⚠️</span><span>${product.nombre} — <strong>${product.qty}</strong> unidades</span><span class="chip ${product.qty === 0 ? 'chip-out' : 'chip-low'}" style="margin-left:auto">${product.status}</span></div>`;
+        return `<div class="alert-item"><span class="alert-icon">⚠️</span><span>${product.nombre} — <strong>${product.qty}</strong> unidades · mín. ${product.minStock ?? 0}</span><span class="chip ${product.qty === 0 ? 'chip-out' : 'chip-low'}" style="margin-left:auto">${product.status}</span></div>`;
       }).join('')
       : '<div class="empty-state" style="padding:24px"><p style="font-size:.85rem">Sin alertas 🎉</p></div>';
 

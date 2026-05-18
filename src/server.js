@@ -255,7 +255,7 @@ app.get('/api/dashboard', async (req, res, next) => {
     const lowStockProducts = productos
       .map(product => {
         const qty = getStockQty(stockByProduct, product.id);
-        const minStock = product.minStock || 5;
+        const minStock = product.minStock ?? 0;
         return {
           id: product.id,
           nombre: product.nombre,

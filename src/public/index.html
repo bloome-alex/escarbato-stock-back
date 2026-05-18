@@ -876,6 +876,62 @@
   }
   .form-group textarea { resize: vertical; min-height: 80px; }
 
+  .password-field { position: relative; }
+  .password-field input { padding-right: 48px; }
+  .password-toggle {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    width: 34px;
+    height: 34px;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-soft);
+    cursor: pointer;
+  }
+  .password-toggle:hover,
+  .password-toggle:focus-visible {
+    background: var(--cream);
+    color: var(--text);
+    outline: none;
+  }
+  .password-eye {
+    position: relative;
+    width: 20px;
+    height: 12px;
+    border: 1.8px solid currentColor;
+    border-radius: 50% / 65%;
+  }
+  .password-eye::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+    transform: translate(-50%, -50%);
+  }
+  .password-eye::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 24px;
+    height: 2px;
+    border-radius: 999px;
+    background: currentColor;
+    transform: translate(-50%, -50%) rotate(-38deg) scaleX(0);
+    transition: transform .16s;
+  }
+  .password-toggle:not(.is-visible) .password-eye::after { transform: translate(-50%, -50%) rotate(-38deg) scaleX(1); }
+
   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
   .modal-actions {
@@ -1689,6 +1745,6 @@
     password: ''
   };
 </script>
-<script type="module" src="js/app.js?v=20260517-1"></script>
+<script type="module" src="js/app.js?v=20260517-2"></script>
 </body>
 </html>
