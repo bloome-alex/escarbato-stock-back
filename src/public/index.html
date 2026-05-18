@@ -339,6 +339,55 @@
     gap: 10px;
   }
 
+  .download-menu {
+    position: relative;
+    display: inline-flex;
+  }
+
+  .download-menu-list {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    min-width: 230px;
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--card);
+    box-shadow: var(--shadow-lg);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-4px);
+    transition: opacity .16s ease, transform .16s ease;
+    z-index: 80;
+  }
+
+  .download-menu:hover .download-menu-list,
+  .download-menu:focus-within .download-menu-list {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+
+  .download-menu-list button {
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: .86rem;
+    font-weight: 800;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .download-menu-list button:hover,
+  .download-menu-list button:focus {
+    outline: none;
+    background: var(--cream);
+  }
+
   .theme-toggle {
     min-width: 42px;
     height: 42px;

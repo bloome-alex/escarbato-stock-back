@@ -206,6 +206,11 @@ export class ProductosComponent {
     this.app.toasts.show('PDF descargado ✅');
   }
 
+  async downloadProviderProductsXlsx() {
+    await this.app.store.downloadProductsXlsx();
+    this.app.toasts.show('XLSX descargado ✅');
+  }
+
   view(id) {
     const producto = this.app.store.data.productos.find(item => item.id === id);
     if (!producto) return this.app.toasts.show('No se encontró el producto', 'error');

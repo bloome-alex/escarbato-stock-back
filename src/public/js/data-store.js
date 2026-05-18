@@ -131,6 +131,10 @@ class IndexedDbStore {
   async downloadProductsPdf() {
     throw new Error('La descarga de PDF requiere usar el backend');
   }
+
+  async downloadProductsXlsx() {
+    throw new Error('La descarga de XLSX requiere usar el backend');
+  }
 }
 
 class BackendStore {
@@ -298,6 +302,32 @@ class BackendStore {
     const link = document.createElement('a');
     link.href = url;
     link.download = `reporte-productos-${reportTimestamp()}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  async downloadProductsXlsx(retry = true) {
+    await this.ensureToken();
+    const response = await fetch(`${this.baseUrl}/api/reportes/productos.xlsx`, {
+      headers: { Authorization: `Bearer ${this.token}` }
+    });
+    if (response.status === 401 && retry) {
+      sessionStorage.removeItem('petshopAuthToken');
+      this.token = '';
+      return this.downloadProductsXlsx(false);
+    }
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({}));
+      throw new Error(result.error || 'No se pudo descargar el XLSX');
+    }
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `reporte-productos-${reportTimestamp()}.xlsx`;
     document.body.appendChild(link);
     link.click();
     link.remove();

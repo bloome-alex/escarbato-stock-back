@@ -39,7 +39,7 @@ export class NavigationManager {
     this.sectionActions = {
       proveedores: '<button class="btn btn-primary" data-action="new-proveedor">+ Nuevo proveedor</button>',
       tipos: '<button class="btn btn-primary" data-action="new-tipo">+ Nuevo tipo</button>',
-      productos: '<button class="btn btn-ghost" data-action="download-productos">⬇️ Descargar</button><button class="btn btn-primary" data-action="new-producto">+ Nuevo producto</button>',
+      productos: '<div class="download-menu"><button class="btn btn-ghost" type="button" aria-haspopup="true">⬇️ Descargar ▾</button><div class="download-menu-list"><button type="button" data-action="download-productos-pdf">Descargar reporte PDF</button><button type="button" data-action="download-productos-xlsx">Descargar reporte XLSX</button></div></div><button class="btn btn-primary" data-action="new-producto">+ Nuevo producto</button>',
       metodosPago: '<button class="btn btn-primary" data-action="new-metodo-pago">+ Nuevo método</button>'
     };
   }

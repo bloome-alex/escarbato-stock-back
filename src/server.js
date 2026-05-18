@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import cors from 'cors';
 import crypto from 'node:crypto';
+import ExcelJS from 'exceljs';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
@@ -179,6 +180,98 @@ function drawProductsPdf(doc, productos, proveedores, tipos) {
     row.forEach((value, index) => doc.text(value, columns[index].x + cellPaddingX, y + cellPaddingY, { width: columns[index].width - (cellPaddingX * 2), align: columns[index].align || 'left' }));
     doc.y = y + rowHeight;
   });
+}
+
+function getUniqueSheetName(name, usedNames) {
+  const cleanName = String(name || 'Sin proveedor')
+    .replace(/[\\/*?:[\]]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim() || 'Sin proveedor';
+  let sheetName = cleanName.slice(0, 31);
+  let counter = 2;
+  while (usedNames.has(sheetName.toLocaleLowerCase('es'))) {
+    const suffix = ` ${counter}`;
+    sheetName = cleanName.slice(0, 31 - suffix.length) + suffix;
+    counter += 1;
+  }
+  usedNames.add(sheetName.toLocaleLowerCase('es'));
+  return sheetName;
+}
+
+function getProductsByProvider(productos, proveedores, tipos) {
+  const proveedorById = new Map(proveedores.map(proveedor => [proveedor.id, proveedor.nombre]));
+  const tipoById = new Map(tipos.map(tipo => [tipo.id, tipo.nombre]));
+  const groups = new Map();
+
+  productos.forEach(producto => {
+    const providerName = proveedorById.get(producto.proveedorId) || 'Sin proveedor';
+    if (!groups.has(providerName)) groups.set(providerName, []);
+    groups.get(providerName).push(producto);
+  });
+
+  return [...groups.entries()]
+    .sort(([nameA], [nameB]) => nameA.localeCompare(nameB, 'es', { sensitivity: 'base' }))
+    .map(([providerName, providerProducts]) => ({
+      providerName,
+      products: providerProducts.sort((a, b) => {
+        const typeCompare = (tipoById.get(a.tipoId) || '-').localeCompare(tipoById.get(b.tipoId) || '-', 'es', { sensitivity: 'base' });
+        return typeCompare || (a.nombre || '').localeCompare(b.nombre || '', 'es', { sensitivity: 'base' });
+      })
+    }));
+}
+
+function buildProductsXlsx(productos, proveedores, tipos) {
+  const workbook = new ExcelJS.Workbook();
+  const tipoById = new Map(tipos.map(tipo => [tipo.id, tipo.nombre]));
+  const usedSheetNames = new Set();
+  const productGroups = getProductsByProvider(productos, proveedores, tipos);
+
+  workbook.creator = 'Escarbato Petshop';
+  workbook.created = new Date();
+
+  if (!productGroups.length) {
+    const sheet = workbook.addWorksheet('Productos');
+    sheet.addRow(['No hay productos registrados.']);
+    return workbook;
+  }
+
+  productGroups.forEach(({ providerName, products }) => {
+    const sheet = workbook.addWorksheet(getUniqueSheetName(providerName, usedSheetNames));
+    sheet.columns = [
+      { header: 'Producto', key: 'producto', width: 38 },
+      { header: 'Tipo de producto', key: 'tipo', width: 24 },
+      { header: 'Costo', key: 'costo', width: 14 },
+      { header: 'Porcentaje', key: 'porcentaje', width: 14 },
+      { header: 'Precio', key: 'precio', width: 14 },
+      { header: 'Precio final', key: 'precioFinal', width: 14 }
+    ];
+    sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4E8055' } };
+    sheet.getRow(1).alignment = { vertical: 'middle' };
+
+    products.forEach(producto => {
+      sheet.addRow({
+        producto: producto.nombre || '-',
+        tipo: tipoById.get(producto.tipoId) || '-',
+        costo: producto.costo ?? producto.precio ?? null,
+        porcentaje: producto.porcentaje ?? null,
+        precio: producto.precio ?? null,
+        precioFinal: producto.precioFinal ?? producto.precio ?? null
+      });
+    });
+
+    sheet.getColumn('costo').numFmt = '$ #,##0.00';
+    sheet.getColumn('porcentaje').numFmt = '0.00%';
+    sheet.getColumn('precio').numFmt = '$ #,##0.00';
+    sheet.getColumn('precioFinal').numFmt = '$ #,##0.00';
+    sheet.getColumn('porcentaje').eachCell((cell, rowNumber) => {
+      if (rowNumber > 1 && typeof cell.value === 'number') cell.value = cell.value / 100;
+    });
+    sheet.views = [{ state: 'frozen', ySplit: 1 }];
+    sheet.autoFilter = { from: 'A1', to: 'F1' };
+  });
+
+  return workbook;
 }
 
 function getDuplicateKeyMessage(store, error) {
@@ -420,6 +513,24 @@ app.get('/api/reportes/productos.pdf', async (req, res, next) => {
     doc.pipe(res);
     drawProductsPdf(doc, productos, proveedores, tipos);
     doc.end();
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/reportes/productos.xlsx', async (req, res, next) => {
+  try {
+    const [productos, proveedores, tipos] = await Promise.all([
+      Producto.find().lean(),
+      Proveedor.find().lean(),
+      Tipo.find().lean()
+    ]);
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="reporte-productos-${reportTimestamp()}.xlsx"`);
+    const workbook = buildProductsXlsx(productos, proveedores, tipos);
+    await workbook.xlsx.write(res);
+    res.end();
   } catch (error) {
     next(error);
   }
