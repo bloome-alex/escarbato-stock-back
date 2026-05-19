@@ -349,7 +349,7 @@ class PetshopApp {
       const venta = data.ventas.find(item => item.id === id);
       if (venta) {
         for (const item of venta.items) {
-          const newQty = Number(((data.stock[item.productId] || 0) + item.qty).toFixed(2));
+          const newQty = Number(((data.stock[item.productId] || 0) + item.qty).toFixed(4));
           data.stock[item.productId] = newQty;
           await this.store.put('stock', { id: item.productId, qty: newQty });
         }

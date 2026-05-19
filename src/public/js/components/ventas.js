@@ -21,6 +21,10 @@ export class VentasComponent {
     return `${Number(value || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })}%`;
   }
 
+  formatQty(value) {
+    return Number(value || 0).toLocaleString('es-AR', { maximumFractionDigits: 4 });
+  }
+
   paymentLabel(venta) {
     return venta.metodoPago?.nombre || 'Sin método';
   }
@@ -99,7 +103,7 @@ export class VentasComponent {
 
     empty.style.display = 'none';
     tbody.innerHTML = pageItems.map(venta => {
-      const products = venta.items.map(item => `${item.productName} x ${item.qty}`).join(', ');
+      const products = venta.items.map(item => `${item.productName} x ${this.formatQty(item.qty)}`).join(', ');
       const name = `${venta.cliente || 'Cliente mostrador'} - ${this.formatDate(venta.createdAt)}`;
       return `<tr><td data-label="Fecha"><strong>${this.formatDate(venta.createdAt)}</strong></td><td data-label="Cliente">${venta.cliente || 'Cliente mostrador'}</td><td data-label="Método">${this.paymentLabel(venta)}</td><td data-label="Productos">${products}</td><td data-label="Calculado">${this.formatMoney(venta.calculatedTotal)}</td><td class="price-value" data-label="Final">${this.formatMoney(venta.finalTotal)}</td><td data-label="Acciones"><div class="td-actions"><button class="btn btn-ghost btn-sm btn-icon" data-action="view-venta" data-id="${venta.id}" aria-label="Visualizar venta" title="Visualizar">👁️</button><button class="btn btn-danger btn-sm btn-icon" data-action="delete" data-entity="venta" data-id="${venta.id}" data-name="${name}" aria-label="Eliminar venta" title="Eliminar">🗑️</button></div></td></tr>`;
     }).join('');
@@ -110,7 +114,7 @@ export class VentasComponent {
     const venta = this.app.store.data.ventas.find(item => item.id === id);
     if (!venta) return this.app.toasts.show('No se encontró la venta', 'error');
 
-    const rows = venta.items.map(item => `<tr><td data-label="Producto"><strong>${item.productName}</strong></td><td data-label="Cantidad">${item.qty}</td><td class="price-value" data-label="Precio">${this.formatMoney(item.price)}</td><td class="price-value" data-label="Subtotal">${this.formatMoney(item.subtotal ?? item.qty * item.price)}</td></tr>`).join('');
+    const rows = venta.items.map(item => `<tr><td data-label="Producto"><strong>${item.productName}</strong></td><td data-label="Cantidad">${this.formatQty(item.qty)}</td><td class="price-value" data-label="Precio">${this.formatMoney(item.price)}</td><td class="price-value" data-label="Subtotal">${this.formatMoney(item.subtotal ?? item.qty * item.price)}</td></tr>`).join('');
     const method = venta.metodoPago || {};
     const paymentDetail = method.nombre ? `<div><span>Método de pago</span><strong>${method.nombre}</strong></div><div><span>Descuento</span><strong>${this.formatPercent(method.descuento)}</strong></div><div><span>Recargo</span><strong>${this.formatPercent(method.recargo ?? method.bonificacion)}</strong></div>` : '<div><span>Método de pago</span><strong>Sin método</strong></div>';
     this.app.showDetail('Detalle de venta', `<div class="sale-detail-grid"><div><span>Fecha y hora</span><strong>${this.formatDate(venta.createdAt)}</strong></div><div><span>Cliente</span><strong>${venta.cliente || 'Cliente mostrador'}</strong></div>${paymentDetail}<div><span>Total calculado</span><strong>${this.formatMoney(venta.calculatedTotal)}</strong></div><div><span>Total final</span><strong class="price-value">${this.formatMoney(venta.finalTotal)}</strong></div></div><div class="table-wrap sale-cart-wrap"><table><thead><tr><th>Producto</th><th>Cantidad</th><th>Precio</th><th>Subtotal</th></tr></thead><tbody>${rows}</tbody></table></div>`);

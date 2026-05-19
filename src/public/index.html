@@ -1104,7 +1104,15 @@
     box-shadow: var(--shadow);
     padding: 18px;
   }
-  .counter-client { max-width: 460px; }
+  .counter-header-row {
+    display: grid;
+    grid-template-columns: minmax(240px, 460px) 180px;
+    gap: 14px;
+    align-items: end;
+    margin-bottom: 16px;
+  }
+  .counter-client,
+  .counter-measure { margin-bottom: 0; }
   .counter-products {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -1629,6 +1637,7 @@
     .sale-totals { border-radius: 20px; padding: 14px; }
     .sale-detail-grid { grid-template-columns: 1fr; }
     .counter-shell { padding: 12px; border-radius: 22px; }
+    .counter-header-row { grid-template-columns: 1fr; }
     .counter-products { grid-template-columns: 1fr; }
     .counter-product-card { grid-template-columns: 1fr; border-radius: 18px; }
     .counter-stock { text-align: left; }

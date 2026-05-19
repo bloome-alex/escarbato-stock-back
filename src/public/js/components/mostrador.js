@@ -3,6 +3,7 @@ import { compareByName } from '../sort.js';
 
 const DEFAULT_CLIENT = 'mostrador';
 const PRODUCT_PAGE_SIZE = 24;
+const STOCK_DECIMALS = 4;
 const formatPercent = value => `${Number(value || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })}%`;
 
 export class MostradorComponent {
@@ -19,7 +20,7 @@ export class MostradorComponent {
     return `<section class="section" id="sec-mostrador">
       <div id="counter-caja-status"></div>
       <div class="counter-shell">
-        <div class="counter-client form-group"><label>Cliente</label><input type="text" id="mostrador-cliente" value="${DEFAULT_CLIENT}" autocomplete="off"></div>
+        <div class="counter-header-row"><div class="counter-client form-group"><label>Cliente</label><input type="text" id="mostrador-cliente" value="${DEFAULT_CLIENT}" autocomplete="off"></div><div class="counter-measure form-group"><label>Unidad de medición</label><select id="counter-measure-mode" class="filter-control"><option value="qty">Unidad</option><option value="amount">$</option></select></div></div>
         <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar producto…" id="searchMostrador"></div><select id="filterMostradorTipo" class="filter-control"><option value="">Todos los tipos</option></select><select id="filterMostradorProveedor" class="filter-control"><option value="">Todos los proveedores</option></select><select id="filterMostradorStock" class="filter-control"><option value="">Todos</option><option value="disponible">Disponible</option><option value="sin-stock">Sin stock</option></select></div>
         <div class="counter-products" id="mostrador-products"></div>
         <div class="counter-load-more" id="mostrador-load-more" style="display:none"><span class="loading-spinner" aria-hidden="true"></span><span>Cargando más productos...</span></div>
@@ -41,6 +42,7 @@ export class MostradorComponent {
     document.getElementById('filterMostradorTipo').addEventListener('change', () => this.resetProducts());
     document.getElementById('filterMostradorProveedor').addEventListener('change', () => this.resetProducts());
     document.getElementById('filterMostradorStock').addEventListener('change', () => this.resetProducts());
+    document.getElementById('counter-measure-mode').addEventListener('change', () => this.renderProducts());
     document.getElementById('counter-payment-method').addEventListener('change', () => this.renderCart());
     window.addEventListener('scroll', this.onWindowScroll, { passive: true });
 
@@ -61,6 +63,14 @@ export class MostradorComponent {
     return producto.precioFinal ?? producto.precio ?? 0;
   }
 
+  roundQty(value) {
+    return Number(Number(value).toFixed(STOCK_DECIMALS));
+  }
+
+  formatQty(value) {
+    return Number(value || 0).toLocaleString('es-AR', { maximumFractionDigits: STOCK_DECIMALS });
+  }
+
   getCartQty(productId) {
     const item = this.cart.find(cartItem => cartItem.productId === productId);
     return item ? item.qty : 0;
@@ -69,17 +79,21 @@ export class MostradorComponent {
   getAvailableStock(productId) {
     const stock = this.app.store.data.stock || {};
     this.app.store.data.stock = stock;
-    return Number(((stock[productId] || 0) - this.getCartQty(productId)).toFixed(2));
+    return this.roundQty((stock[productId] || 0) - this.getCartQty(productId));
   }
 
   getTotal() {
-    return Number(this.cart.reduce((sum, item) => sum + item.qty * item.price, 0).toFixed(2));
+    return Number(this.cart.reduce((sum, item) => sum + (item.subtotal ?? item.qty * item.price), 0).toFixed(2));
   }
 
   getSelectedPaymentMethod() {
     const id = form.value('counter-payment-method');
     if (!id) return null;
     return (this.app.store.data.metodosPago || []).find(method => method.id === id) || null;
+  }
+
+  getMeasureMode() {
+    return document.getElementById('counter-measure-mode')?.value === 'amount' ? 'amount' : 'qty';
   }
 
   getOpenCaja() {
@@ -176,6 +190,8 @@ export class MostradorComponent {
     const tipoId = form.value('filterMostradorTipo');
     const proveedorId = form.value('filterMostradorProveedor');
     const stockFilter = form.value('filterMostradorStock');
+    const measureMode = this.getMeasureMode();
+    const valuePlaceholder = measureMode === 'amount' ? 'Importe $' : 'Cantidad';
     const nextFilterKey = this.getCurrentFilterKey();
     if (nextFilterKey !== this.filterKey) {
       this.filterKey = nextFilterKey;
@@ -213,23 +229,35 @@ export class MostradorComponent {
       const stock = stockData[producto.id] || 0;
       const available = this.getAvailableStock(producto.id);
       const disabled = available <= 0 ? 'disabled' : '';
-      return `<article class="counter-product-card"><div class="counter-product-main"><strong>${producto.nombre}</strong><div>${tipo ? tipo.nombre : 'Sin tipo'} · ${proveedor ? proveedor.nombre : 'Sin proveedor'}</div><span class="price-value">${this.formatMoney(this.getProductPrice(producto))}</span></div><div class="counter-stock"><span>Stock</span><strong>${stock} u.</strong></div><div class="counter-add"><input type="number" min="0.01" step="0.01" max="${available}" placeholder="Cant." data-counter-qty="${producto.id}" ${disabled}><button class="btn btn-amber btn-sm counter-add-btn" data-action="add-counter-item" data-id="${producto.id}" ${disabled}>Agregar</button></div></article>`;
+      return `<article class="counter-product-card"><div class="counter-product-main"><strong>${producto.nombre}</strong><div>${tipo ? tipo.nombre : 'Sin tipo'} · ${proveedor ? proveedor.nombre : 'Sin proveedor'}</div><span class="price-value">${this.formatMoney(this.getProductPrice(producto))}</span></div><div class="counter-stock"><span>Stock</span><strong>${this.formatQty(stock)} u.</strong></div><div class="counter-add"><input type="number" min="0.01" step="0.01" max="${available}" placeholder="${valuePlaceholder}" data-counter-value="${producto.id}" ${disabled}><button class="btn btn-amber btn-sm counter-add-btn" data-action="add-counter-item" data-id="${producto.id}" ${disabled}>Agregar</button></div></article>`;
     }).join('');
     if (loadMore) loadMore.style.display = this.visibleCount < list.length ? '' : 'none';
   }
 
   addItem(id) {
     const producto = (this.app.store.data.productos || []).find(item => item.id === id);
-    const input = document.querySelector(`[data-counter-qty="${id}"]`);
-    const qty = input?.value === '' ? 1 : Number(input?.value);
+    const valueInput = document.querySelector(`[data-counter-value="${id}"]`);
+    const mode = this.getMeasureMode();
+    const hasValue = !!valueInput && valueInput.value !== '';
     if (!producto) return this.app.toasts.show('No se encontró el producto', 'error');
+    const price = this.getProductPrice(producto);
+    const value = hasValue ? Number(valueInput.value) : 1;
+    if (!value || value <= 0) return this.app.toasts.show(mode === 'amount' ? 'Ingresá un importe válido' : 'Ingresá una cantidad válida', 'error');
+    if (mode === 'amount' && (!price || price <= 0)) return this.app.toasts.show('El producto no tiene precio para convertir el importe', 'error');
+    const qty = mode === 'amount' ? this.roundQty(value / price) : value;
+    const subtotal = mode === 'amount' ? Number(value.toFixed(2)) : Number((qty * price).toFixed(2));
     if (!qty || qty <= 0) return this.app.toasts.show('Ingresá una cantidad válida', 'error');
-    if (qty > this.getAvailableStock(id)) return this.app.toasts.show(`Stock insuficiente. Disponible: ${this.getAvailableStock(id)} u.`, 'error');
+    if (qty > this.getAvailableStock(id)) return this.app.toasts.show(`Stock insuficiente. Disponible: ${this.formatQty(this.getAvailableStock(id))} u.`, 'error');
 
     const cartItem = this.cart.find(item => item.productId === id);
-    if (cartItem) cartItem.qty = Number((cartItem.qty + qty).toFixed(2));
-    else this.cart.push({ productId: id, productName: producto.nombre, qty, price: this.getProductPrice(producto) });
-    if (input) input.value = '';
+    if (cartItem) {
+      const currentSubtotal = cartItem.subtotal ?? Number((cartItem.qty * cartItem.price).toFixed(2));
+      cartItem.qty = this.roundQty(cartItem.qty + qty);
+      cartItem.subtotal = Number((currentSubtotal + subtotal).toFixed(2));
+    } else {
+      this.cart.push({ productId: id, productName: producto.nombre, qty, price, subtotal });
+    }
+    if (valueInput) valueInput.value = '';
     this.renderProducts();
     this.renderCart();
     this.app.toasts.show('Producto agregado al carrito');
@@ -238,12 +266,13 @@ export class MostradorComponent {
   changeItem(id, delta) {
     const item = this.cart.find(cartItem => cartItem.productId === id);
     if (!item) return;
-    const nextQty = Number((item.qty + delta).toFixed(2));
+    const nextQty = this.roundQty(item.qty + delta);
     if (nextQty <= 0) return this.removeItem(id);
     const stock = this.app.store.data.stock || {};
     const available = (stock[id] || 0) - item.qty;
-    if (delta > 0 && delta > available) return this.app.toasts.show(`Stock insuficiente. Disponible: ${Number(available.toFixed(2))} u.`, 'error');
+    if (delta > 0 && delta > available) return this.app.toasts.show(`Stock insuficiente. Disponible: ${this.formatQty(available)} u.`, 'error');
     item.qty = nextQty;
+    item.subtotal = Number((item.qty * item.price).toFixed(2));
     this.renderProducts();
     this.renderCart();
   }
@@ -272,7 +301,7 @@ export class MostradorComponent {
     }
 
     empty.style.display = 'none';
-    list.innerHTML = this.cart.map(item => `<div class="cart-line"><div><strong>${item.productName}</strong><span>${this.formatMoney(item.price)} c/u</span></div><div class="cart-line-actions"><button class="stock-btn minus" data-action="decrease-counter-item" data-id="${item.productId}">−</button><strong>${item.qty}</strong><button class="stock-btn plus" data-action="increase-counter-item" data-id="${item.productId}">+</button><button class="btn btn-danger btn-icon btn-sm" data-action="remove-counter-item" data-id="${item.productId}" aria-label="Eliminar producto">🗑️</button></div></div>`).join('');
+    list.innerHTML = this.cart.map(item => `<div class="cart-line"><div><strong>${item.productName}</strong><span>${this.formatMoney(item.price)} c/u · Subtotal ${this.formatMoney(item.subtotal ?? item.qty * item.price)}</span></div><div class="cart-line-actions"><button class="stock-btn minus" data-action="decrease-counter-item" data-id="${item.productId}">−</button><strong>${this.formatQty(item.qty)}</strong><button class="stock-btn plus" data-action="increase-counter-item" data-id="${item.productId}">+</button><button class="btn btn-danger btn-icon btn-sm" data-action="remove-counter-item" data-id="${item.productId}" aria-label="Eliminar producto">🗑️</button></div></div>`).join('');
   }
 
   paymentSummaryTemplate(method, totals) {
@@ -314,7 +343,7 @@ export class MostradorComponent {
     const venta = {
       id: this.app.store.createId(),
       cliente: this.getCliente(),
-      items: this.cart.map(item => ({ ...item, subtotal: Number((item.qty * item.price).toFixed(2)) })),
+      items: this.cart.map(item => ({ ...item, subtotal: Number((item.subtotal ?? item.qty * item.price).toFixed(2)) })),
       metodoPago: {
         id: method.id,
         nombre: method.nombre,
@@ -328,7 +357,7 @@ export class MostradorComponent {
     };
 
     for (const item of venta.items) {
-      const newQty = Number(((stock[item.productId] || 0) - item.qty).toFixed(2));
+      const newQty = this.roundQty((stock[item.productId] || 0) - item.qty);
       this.app.store.data.stock[item.productId] = newQty;
       await this.app.store.put('stock', { id: item.productId, qty: newQty });
     }
