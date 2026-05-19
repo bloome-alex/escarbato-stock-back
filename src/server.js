@@ -13,6 +13,7 @@ import { Auditoria, Caja, MetodoPago, Producto, Proveedor, Stock, Tipo, Venta } 
 const app = express();
 const port = process.env.PORT || 3000;
 const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/escarbato_petshop';
+const mongoDbName = process.env.MONGODB_DB_NAME;
 const jwtSecret = process.env.JWT_SECRET || 'change-me';
 const jwtExpiresIn = process.env.JWT_EXPIRES_IN || '8h';
 const authUsername = process.env.AUTH_USERNAME || 'admin';
@@ -670,7 +671,7 @@ app.use((error, req, res, next) => {
 });
 
 try {
-  await mongoose.connect(mongoUri);
+  await mongoose.connect(mongoUri, mongoDbName ? { dbName: mongoDbName } : undefined);
 } catch (error) {
   console.error('Error conectando a MongoDB:', error);
   process.exit(1);
