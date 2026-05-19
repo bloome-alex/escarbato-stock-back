@@ -1,6 +1,8 @@
 import 'dotenv/config';
 import cors from 'cors';
 import crypto from 'node:crypto';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 import ExcelJS from 'exceljs';
 import express from 'express';
 import jwt from 'jsonwebtoken';
@@ -16,10 +18,16 @@ const jwtExpiresIn = process.env.JWT_EXPIRES_IN || '8h';
 const authUsername = process.env.AUTH_USERNAME || 'admin';
 const authPassword = process.env.AUTH_PASSWORD || 'admin';
 const corsOrigin = process.env.CORS_ORIGIN || '*';
+const appName = process.env.APP_NAME || 'Escarbato';
+const appAssetsPath = normalizeAssetsPath(process.env.APP_ASSETS_PATH || 'assets/escarbato');
+const publicDir = path.join(process.cwd(), 'src/public');
 
 app.use(cors({ origin: corsOrigin === '*' ? true : corsOrigin }));
 app.use(express.json({ limit: '1mb' }));
-app.use(express.static('src/public'));
+app.get(['/', '/index.html'], serveConfiguredPublicFile('index.html', 'text/html; charset=utf-8'));
+app.get('/manifest.webmanifest', serveConfiguredPublicFile('manifest.webmanifest', 'application/manifest+json; charset=utf-8'));
+app.get('/sw.js', serveConfiguredPublicFile('sw.js', 'application/javascript; charset=utf-8'));
+app.use(express.static(publicDir, { index: false }));
 
 const models = {
   proveedores: Proveedor,
@@ -44,6 +52,43 @@ const searchableFields = {
 
 function credentialHash() {
   return crypto.createHash('sha256').update(`${authUsername}:${authPassword}`).digest('hex');
+}
+
+function normalizeAssetsPath(value) {
+  const pathValue = String(value || '').trim().replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
+  return `/${pathValue || 'assets/escarbato'}`;
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function configuredPublicContent(content, fileName) {
+  const configuredName = fileName.endsWith('.html')
+    ? escapeHtml(appName)
+    : JSON.stringify(appName).slice(1, -1);
+  return content
+    .replaceAll('Escarbato', configuredName)
+    .replaceAll('/assets', appAssetsPath)
+    .replace(/(["'])assets\//g, `$1${appAssetsPath}/`);
+}
+
+function serveConfiguredPublicFile(fileName, contentType) {
+  return async (req, res, next) => {
+    try {
+      const content = await readFile(path.join(publicDir, fileName), 'utf8');
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Cache-Control', 'no-cache');
+      res.send(configuredPublicContent(content, fileName));
+    } catch (error) {
+      next(error);
+    }
+  };
 }
 
 function sanitize(doc) {
@@ -226,7 +271,7 @@ function buildProductsXlsx(productos, proveedores, tipos) {
   const usedSheetNames = new Set();
   const productGroups = getProductsByProvider(productos, proveedores, tipos);
 
-  workbook.creator = 'Escarbato Petshop';
+  workbook.creator = `${appName} Petshop`;
   workbook.created = new Date();
 
   if (!productGroups.length) {
