@@ -20,7 +20,7 @@ export class MostradorComponent {
     return `<section class="section" id="sec-mostrador">
       <div id="counter-caja-status"></div>
       <div class="counter-shell">
-        <div class="counter-header-row"><div class="counter-client form-group"><label>Cliente</label><input type="text" id="mostrador-cliente" value="${DEFAULT_CLIENT}" autocomplete="off"></div><div class="counter-measure form-group"><label>Unidad de medición</label><select id="counter-measure-mode" class="filter-control"><option value="qty">Unidad</option><option value="amount">$</option></select></div></div>
+        <div class="counter-header-row"><div class="counter-client form-group"><label>Cliente</label><input type="text" id="mostrador-cliente" value="${DEFAULT_CLIENT}" autocomplete="off"></div><div class="counter-measure form-group"><label>Unidad de medición</label><select id="counter-measure-mode" class="filter-control"><option value="qty">Unidad</option><option value="amount">Pesos</option></select></div><div class="counter-stock-view form-group"><label>Visualizar stock</label><select id="counter-stock-view-mode" class="filter-control"><option value="qty">Unidades</option><option value="amount">Pesos</option></select></div></div>
         <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar producto…" id="searchMostrador"></div><select id="filterMostradorTipo" class="filter-control"><option value="">Todos los tipos</option></select><select id="filterMostradorProveedor" class="filter-control"><option value="">Todos los proveedores</option></select><select id="filterMostradorStock" class="filter-control"><option value="">Todos</option><option value="disponible">Disponible</option><option value="sin-stock">Sin stock</option></select></div>
         <div class="counter-products" id="mostrador-products"></div>
         <div class="counter-load-more" id="mostrador-load-more" style="display:none"><span class="loading-spinner" aria-hidden="true"></span><span>Cargando más productos...</span></div>
@@ -42,8 +42,36 @@ export class MostradorComponent {
     document.getElementById('filterMostradorTipo').addEventListener('change', () => this.resetProducts());
     document.getElementById('filterMostradorProveedor').addEventListener('change', () => this.resetProducts());
     document.getElementById('filterMostradorStock').addEventListener('change', () => this.resetProducts());
-    document.getElementById('counter-measure-mode').addEventListener('change', () => this.renderProducts());
+    document.getElementById('counter-measure-mode').addEventListener('change', () => {
+      this.renderProducts();
+      this.renderCart();
+    });
+    document.getElementById('counter-stock-view-mode').addEventListener('change', () => {
+      this.renderProducts();
+      this.renderCart();
+    });
     document.getElementById('counter-payment-method').addEventListener('change', () => this.renderCart());
+    document.getElementById('mostrador-products').addEventListener('input', event => {
+      if (event.target.matches('[data-counter-value]')) this.clampNumberInput(event.target);
+    });
+    document.getElementById('mostrador-products').addEventListener('change', event => {
+      if (event.target.matches('[data-counter-value]')) this.clampNumberInput(event.target);
+    });
+    document.getElementById('counter-cart-list').addEventListener('input', event => {
+      if (event.target.matches('[data-cart-value]')) this.clampNumberInput(event.target);
+    });
+    document.getElementById('counter-cart-list').addEventListener('change', event => {
+      if (event.target.matches('[data-cart-value]')) {
+        this.clampNumberInput(event.target);
+        this.setItemValue(event.target.dataset.cartValue, event.target.value);
+      }
+    });
+    document.getElementById('counter-cart-list').addEventListener('keydown', event => {
+      if (event.key === 'Enter' && event.target.matches('[data-cart-value]')) {
+        event.preventDefault();
+        event.target.blur();
+      }
+    });
     window.addEventListener('scroll', this.onWindowScroll, { passive: true });
 
     const cliente = document.getElementById('mostrador-cliente');
@@ -82,6 +110,12 @@ export class MostradorComponent {
     return this.roundQty((stock[productId] || 0) - this.getCartQty(productId));
   }
 
+  getProductStock(productId) {
+    const stock = this.app.store.data.stock || {};
+    this.app.store.data.stock = stock;
+    return this.roundQty(stock[productId] || 0);
+  }
+
   getTotal() {
     return Number(this.cart.reduce((sum, item) => sum + (item.subtotal ?? item.qty * item.price), 0).toFixed(2));
   }
@@ -94,6 +128,26 @@ export class MostradorComponent {
 
   getMeasureMode() {
     return document.getElementById('counter-measure-mode')?.value === 'amount' ? 'amount' : 'qty';
+  }
+
+  getStockViewMode() {
+    return document.getElementById('counter-stock-view-mode')?.value === 'amount' ? 'amount' : 'qty';
+  }
+
+  formatStockValue(producto, qty) {
+    if (this.getStockViewMode() === 'amount') return this.formatMoney(Number((qty * this.getProductPrice(producto)).toFixed(2)));
+    return `${this.formatQty(qty)} u.`;
+  }
+
+  getInputMax(qty, price, mode = this.getMeasureMode()) {
+    return mode === 'amount' ? Number((qty * price).toFixed(2)) : this.roundQty(qty);
+  }
+
+  clampNumberInput(input) {
+    if (!input || input.value === '') return;
+    const value = Number(input.value);
+    const max = Number(input.max);
+    if (Number.isFinite(max) && value > max) input.value = max;
   }
 
   getOpenCaja() {
@@ -226,10 +280,10 @@ export class MostradorComponent {
     container.innerHTML = visibleItems.map(producto => {
       const tipo = tipos.find(item => item.id === producto.tipoId);
       const proveedor = proveedores.find(item => item.id === producto.proveedorId);
-      const stock = stockData[producto.id] || 0;
       const available = this.getAvailableStock(producto.id);
+      const maxValue = this.getInputMax(available, this.getProductPrice(producto), measureMode);
       const disabled = available <= 0 ? 'disabled' : '';
-      return `<article class="counter-product-card"><div class="counter-product-main"><strong>${producto.nombre}</strong><div>${tipo ? tipo.nombre : 'Sin tipo'} · ${proveedor ? proveedor.nombre : 'Sin proveedor'}</div><span class="price-value">${this.formatMoney(this.getProductPrice(producto))}</span></div><div class="counter-stock"><span>Stock</span><strong>${this.formatQty(stock)} u.</strong></div><div class="counter-add"><input type="number" min="0.01" step="0.01" max="${available}" placeholder="${valuePlaceholder}" data-counter-value="${producto.id}" ${disabled}><button class="btn btn-amber btn-sm counter-add-btn" data-action="add-counter-item" data-id="${producto.id}" ${disabled}>Agregar</button></div></article>`;
+      return `<article class="counter-product-card"><div class="counter-product-main"><strong>${producto.nombre}</strong><div>${tipo ? tipo.nombre : 'Sin tipo'} · ${proveedor ? proveedor.nombre : 'Sin proveedor'}</div><span class="price-value">${this.formatMoney(this.getProductPrice(producto))}</span></div><div class="counter-stock"><span>Stock</span><strong>${this.formatStockValue(producto, available)}</strong></div><div class="counter-add"><input type="number" min="0" step="1" max="${maxValue}" placeholder="${valuePlaceholder}" data-counter-value="${producto.id}" ${disabled}><button class="btn btn-amber btn-sm counter-add-btn" data-action="add-counter-item" data-id="${producto.id}" ${disabled}>Agregar</button></div></article>`;
     }).join('');
     if (loadMore) loadMore.style.display = this.visibleCount < list.length ? '' : 'none';
   }
@@ -263,16 +317,33 @@ export class MostradorComponent {
     this.app.toasts.show('Producto agregado al carrito');
   }
 
-  changeItem(id, delta) {
+  setItemValue(id, rawValue) {
     const item = this.cart.find(cartItem => cartItem.productId === id);
     if (!item) return;
-    const nextQty = this.roundQty(item.qty + delta);
-    if (nextQty <= 0) return this.removeItem(id);
-    const stock = this.app.store.data.stock || {};
-    const available = (stock[id] || 0) - item.qty;
-    if (delta > 0 && delta > available) return this.app.toasts.show(`Stock insuficiente. Disponible: ${this.formatQty(available)} u.`, 'error');
-    item.qty = nextQty;
-    item.subtotal = Number((item.qty * item.price).toFixed(2));
+    const value = Number(rawValue);
+    const mode = this.getMeasureMode();
+    if (!value || value <= 0) {
+      this.renderCart();
+      return this.app.toasts.show(mode === 'amount' ? 'Ingresá un importe válido' : 'Ingresá una cantidad válida', 'error');
+    }
+    if (mode === 'amount' && (!item.price || item.price <= 0)) {
+      this.renderCart();
+      return this.app.toasts.show('El producto no tiene precio para convertir el importe', 'error');
+    }
+
+    const qty = mode === 'amount' ? this.roundQty(value / item.price) : this.roundQty(value);
+    const stock = this.getProductStock(id);
+    if (!qty || qty <= 0) {
+      this.renderCart();
+      return this.app.toasts.show('Ingresá una cantidad válida', 'error');
+    }
+    if (qty > stock) {
+      this.renderCart();
+      return this.app.toasts.show(`Stock insuficiente. Disponible: ${this.formatQty(stock)} u.`, 'error');
+    }
+
+    item.qty = qty;
+    item.subtotal = mode === 'amount' ? Number(value.toFixed(2)) : Number((qty * item.price).toFixed(2));
     this.renderProducts();
     this.renderCart();
   }
@@ -301,7 +372,16 @@ export class MostradorComponent {
     }
 
     empty.style.display = 'none';
-    list.innerHTML = this.cart.map(item => `<div class="cart-line"><div><strong>${item.productName}</strong><span>${this.formatMoney(item.price)} c/u · Subtotal ${this.formatMoney(item.subtotal ?? item.qty * item.price)}</span></div><div class="cart-line-actions"><button class="stock-btn minus" data-action="decrease-counter-item" data-id="${item.productId}">−</button><strong>${this.formatQty(item.qty)}</strong><button class="stock-btn plus" data-action="increase-counter-item" data-id="${item.productId}">+</button><button class="btn btn-danger btn-icon btn-sm" data-action="remove-counter-item" data-id="${item.productId}" aria-label="Eliminar producto">🗑️</button></div></div>`).join('');
+    const mode = this.getMeasureMode();
+    const inputLabel = mode === 'amount' ? 'Importe $' : 'Cantidad';
+    list.innerHTML = this.cart.map(item => {
+      const stock = this.getProductStock(item.productId);
+      const producto = (this.app.store.data.productos || []).find(product => product.id === item.productId);
+      const subtotal = item.subtotal ?? item.qty * item.price;
+      const inputValue = mode === 'amount' ? Number(subtotal).toFixed(2) : item.qty;
+      const maxValue = this.getInputMax(stock, item.price, mode);
+      return `<div class="cart-line"><div class="cart-line-header"><div><strong>${item.productName}</strong><span>${this.formatMoney(item.price)} c/u · Subtotal ${this.formatMoney(subtotal)}</span></div><button class="btn btn-danger btn-icon btn-sm" data-action="remove-counter-item" data-id="${item.productId}" aria-label="Eliminar producto" title="Eliminar">🗑️</button></div><div class="cart-line-meta"><div><span>Stock</span><strong>${this.formatStockValue(producto || { precioFinal: item.price }, stock)}</strong></div><div><span>En carrito</span><strong>${this.formatQty(item.qty)} u.</strong></div></div><label class="cart-line-input"><span>${inputLabel}</span><input type="number" min="0" step="1" max="${maxValue}" value="${inputValue}" data-cart-value="${item.productId}" aria-label="${inputLabel} de ${item.productName}"></label></div>`;
+    }).join('');
   }
 
   paymentSummaryTemplate(method, totals) {

@@ -185,8 +185,6 @@ class PetshopApp {
       if (action === 'open-counter-cart') this.components.mostrador.openCart();
       if (action === 'close-counter-cart') this.components.mostrador.closeCart();
       if (action === 'add-counter-item') this.components.mostrador.addItem(id);
-      if (action === 'increase-counter-item') this.components.mostrador.changeItem(id, 1);
-      if (action === 'decrease-counter-item') this.components.mostrador.changeItem(id, -1);
       if (action === 'remove-counter-item') this.components.mostrador.removeItem(id);
       if (action === 'finish-counter-sale') return this.runButtonAction(actionButton, () => this.components.mostrador.finishSale(), 'Guardando');
       if (action === 'delete') this.confirmDelete(entity, id, name);

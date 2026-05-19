@@ -1106,13 +1106,14 @@
   }
   .counter-header-row {
     display: grid;
-    grid-template-columns: minmax(240px, 460px) 180px;
+    grid-template-columns: minmax(240px, 460px) 180px 180px;
     gap: 14px;
     align-items: end;
     margin-bottom: 16px;
   }
   .counter-client,
-  .counter-measure { margin-bottom: 0; }
+  .counter-measure,
+  .counter-stock-view { margin-bottom: 0; }
   .counter-products {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -1295,15 +1296,54 @@
     font-size: .8rem;
     margin-top: 4px;
   }
-  .cart-line-actions {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
+  .cart-line-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: start;
+    gap: 10px;
+  }
+  .cart-line-meta {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
     gap: 8px;
   }
-  .cart-line-actions > strong {
-    min-width: 44px;
-    text-align: center;
+  .cart-line-meta div {
+    background: var(--cream);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 8px 10px;
+  }
+  .cart-line-meta span,
+  .cart-line-input span {
+    color: var(--text-soft);
+    font-size: .7rem;
+    font-weight: 800;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  .cart-line-meta strong {
+    display: block;
+    margin-top: 3px;
+  }
+  .cart-line-input {
+    display: grid;
+    gap: 6px;
+  }
+  .cart-line-input input {
+    width: 100%;
+    min-width: 0;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--warm-white);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    outline: none;
+  }
+  .cart-line-input input:focus {
+    border-color: var(--sage-dark);
+    box-shadow: 0 0 0 3px var(--focus-ring);
   }
   .cart-drawer-footer {
     padding: 18px;
@@ -1651,11 +1691,8 @@
       border-radius: 18px;
     }
     .cart-drawer { width: 100vw; }
-    .cart-line-actions {
-      display: grid;
-      grid-template-columns: 46px 1fr 46px 46px;
-      justify-content: stretch;
-    }
+    .cart-line-meta { grid-template-columns: 1fr; }
+    .cart-line-header .btn-icon { width: 46px; height: 46px; }
     .detail-list { grid-template-columns: 1fr; }
     .detail-list div,
     .sale-detail-grid div { border-radius: 16px; }
