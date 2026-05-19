@@ -156,7 +156,7 @@ class PetshopApp {
       if (!actionButton) return;
       if (actionButton.disabled) return;
 
-      const { action, id, entity, name, delta } = actionButton.dataset;
+      const { action, id, entity, name } = actionButton.dataset;
       if (action === 'new-proveedor') return this.components.proveedores.openNew();
       if (action === 'save-proveedor') return this.runButtonAction(actionButton, () => this.components.proveedores.save(), 'Guardando');
       if (action === 'view-proveedor') this.components.proveedores.view(id);
@@ -175,9 +175,6 @@ class PetshopApp {
       if (action === 'save-metodo-pago') return this.runButtonAction(actionButton, () => this.components.metodosPago.save(), 'Guardando');
       if (action === 'view-metodo-pago') this.components.metodosPago.view(id);
       if (action === 'edit-metodo-pago') this.components.metodosPago.edit(id);
-      if (action === 'change-stock') return this.runButtonAction(actionButton, () => this.components.stock.change(id, Number(delta)), '');
-      if (action === 'edit-stock') this.components.stock.edit(id);
-      if (action === 'save-stock') return this.runButtonAction(actionButton, () => this.components.stock.save(), 'Guardando');
       if (action === 'view-venta') this.components.ventas.view(id);
       if (action === 'open-caja') return this.runButtonAction(actionButton, () => this.components.cajas.open(), 'Abriendo');
       if (action === 'close-caja') return this.runButtonAction(actionButton, () => this.components.cajas.close(id), 'Cerrando');

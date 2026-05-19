@@ -15,17 +15,25 @@ export class StockComponent {
   template() {
     return `<section class="section" id="sec-stock">
       <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar producto en stock…" id="searchStock"></div><select id="filterStockStatus" class="filter-control"><option value="">Todos</option><option value="ok">Disponible</option><option value="low">Stock bajo</option><option value="out">Sin stock</option></select></div>
-      <div class="table-wrap" id="stock-list"><table class="data-table"><thead><tr><th>Producto</th><th>Tipo de producto</th><th>Proveedor</th><th>Mínimo</th><th>Stock</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="tbl-stock"></tbody></table></div><div id="empty-stock" class="empty-state" style="display:none"><div class="empty-icon">📊</div><p>Agregá productos para gestionar el stock</p></div><div id="pager-stock"></div>
+      <div class="table-wrap" id="stock-list"><table class="data-table"><thead><tr><th>Producto</th><th>Tipo de producto</th><th>Proveedor</th><th>Mínimo</th><th>Stock</th><th>Estado</th></tr></thead><tbody id="tbl-stock"></tbody></table></div><div id="empty-stock" class="empty-state" style="display:none"><div class="empty-icon">📊</div><p>Agregá productos para gestionar el stock</p></div><div id="pager-stock"></div>
     </section>`;
   }
 
   modalTemplate() {
-    return `<div class="modal-overlay" id="modal-stock"><div class="modal" style="max-width:420px"><div class="modal-title"><span>Editar stock</span><button class="modal-close" data-close-modal="stock">✕</button></div><input type="hidden" id="stock-id"><div class="form-group"><label>Producto</label><input type="text" id="stock-producto" readonly></div><div class="form-group"><label>Cantidad en stock *</label><input type="number" id="stock-cantidad" min="0" step="0.01" placeholder="0.00"></div><div class="modal-actions"><button class="btn btn-ghost" data-close-modal="stock">Cancelar</button><button class="btn btn-primary" data-action="save-stock">💾 Guardar</button></div></div></div>`;
+    return '';
   }
 
   bind() {
     document.getElementById('searchStock').addEventListener('input', () => this.resetAndRender());
     document.getElementById('filterStockStatus').addEventListener('change', () => this.resetAndRender());
+    document.getElementById('stock-list').addEventListener('change', event => {
+      const input = event.target.closest('[data-stock-input]');
+      if (input) this.saveInline(input);
+    });
+    document.getElementById('stock-list').addEventListener('keydown', event => {
+      const input = event.target.closest('[data-stock-input]');
+      if (input && event.key === 'Enter') input.blur();
+    });
   }
 
   getStatus(qty, min) {
@@ -77,54 +85,64 @@ export class StockComponent {
     }
 
     emptyEl.style.display = 'none';
-    listEl.innerHTML = `<table class="data-table"><thead><tr><th>Producto</th><th>Tipo de producto</th><th>Proveedor</th><th>Mínimo</th><th>Stock</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="tbl-stock"></tbody></table>`;
+    listEl.innerHTML = `<table class="data-table"><thead><tr><th>Producto</th><th>Tipo de producto</th><th>Proveedor</th><th>Mínimo</th><th>Stock</th><th>Estado</th></tr></thead><tbody id="tbl-stock"></tbody></table>`;
     document.getElementById('tbl-stock').innerHTML = pageItems.map(producto => {
       const qty = data.stock[producto.id] || 0;
       const min = producto.minStock ?? 0;
       const status = this.getStatus(qty, min);
       const tipo = data.tipos.find(item => item.id === producto.tipoId);
       const proveedor = data.proveedores.find(item => item.id === producto.proveedorId);
-      return `<tr><td data-label="Producto"><strong>${producto.nombre}</strong></td><td data-label="Tipo">${tipo ? tipo.nombre : '—'}</td><td data-label="Proveedor">${proveedor ? proveedor.nombre : '—'}</td><td data-label="Mínimo">${min} u.</td><td data-label="Stock"><div class="stock-controls"><button class="stock-btn minus" data-action="change-stock" data-id="${producto.id}" data-delta="-1">−</button><div class="stock-qty">${qty}</div><button class="stock-btn plus" data-action="change-stock" data-id="${producto.id}" data-delta="1">+</button></div></td><td data-label="Estado"><span class="chip ${this.statusChip[status]}">${this.statusLabel[status]}</span></td><td data-label="Acciones"><button class="btn btn-ghost btn-sm" data-action="edit-stock" data-id="${producto.id}">Editar</button></td></tr>`;
+      return `<tr><td data-label="Producto"><strong>${producto.nombre}</strong></td><td data-label="Tipo">${tipo ? tipo.nombre : '—'}</td><td data-label="Proveedor">${proveedor ? proveedor.nombre : '—'}</td><td data-label="Mínimo">${min} u.</td><td data-label="Stock"><input class="stock-qty" type="number" min="0" step="1" value="${qty}" data-stock-input data-id="${producto.id}" aria-label="Stock de ${producto.nombre}"></td><td data-label="Estado"><span class="chip ${this.statusChip[status]}" data-stock-status>${this.statusLabel[status]}</span></td></tr>`;
     }).join('');
     document.getElementById('pager-stock').innerHTML = paginationTemplate('stock', pageState);
   }
 
-  edit(id) {
-    const product = this.app.store.data.productos.find(item => item.id === id);
-    if (!product) return;
-    form.set('stock-id', id);
-    form.set('stock-producto', product.nombre);
-    form.set('stock-cantidad', this.app.store.data.stock[id] || 0);
-    this.app.modals.open('stock');
-  }
-
-  async save() {
-    const id = form.value('stock-id');
-    const qty = Number(form.value('stock-cantidad'));
+  async saveInline(input) {
+    const id = input.dataset.id;
+    const qty = Number(input.value);
     if (!id) return;
-    if (Number.isNaN(qty) || qty < 0) return this.app.toasts.show('Ingresá una cantidad válida', 'error');
+    if (Number.isNaN(qty) || qty < 0 || !Number.isInteger(qty)) {
+      input.value = this.app.store.data.stock[id] || 0;
+      return this.app.toasts.show('Ingresá una cantidad entera válida', 'error');
+    }
 
-    await this.setQuantity(id, qty, 'Edición manual');
-    this.app.modals.close('stock');
+    const newQty = qty;
+    if (newQty === (this.app.store.data.stock[id] || 0)) {
+      input.value = newQty;
+      return;
+    }
+
+    try {
+      input.disabled = true;
+      await this.setQuantity(id, newQty, 'Edición manual desde listado', false);
+      this.updateInlineRow(input, newQty);
+    } finally {
+      input.disabled = false;
+    }
   }
 
-  async setQuantity(id, qty, source = 'Ajuste rápido') {
+  updateInlineRow(input, qty) {
+    input.value = qty;
+    const product = this.app.store.data.productos.find(item => item.id === input.dataset.id);
+    const status = this.getStatus(qty, product ? (product.minStock ?? 0) : 0);
+    const statusEl = input.closest('tr')?.querySelector('[data-stock-status]');
+    if (!statusEl) return;
+    statusEl.className = `chip ${this.statusChip[status]}`;
+    statusEl.textContent = this.statusLabel[status];
+  }
+
+  async setQuantity(id, qty, source = 'Ajuste rápido', shouldRender = true) {
     const data = this.app.store.data;
     const previousQty = data.stock[id] || 0;
-    const newQty = Number(qty.toFixed(2));
+    const newQty = Number(qty);
+    if (newQty === previousQty) return;
     data.stock[id] = newQty;
     await this.app.store.put('stock', { id, qty: newQty });
     const product = data.productos.find(item => item.id === id);
     await this.app.audit('Edición', 'Stock', `${product ? product.nombre : 'Producto'}: ${previousQty} -> ${newQty} (${source})`);
-    this.render();
+    if (shouldRender) this.render();
     const status = this.getStatus(newQty, product ? (product.minStock ?? 0) : 0);
     this.app.toasts.show(`Stock actualizado: ${newQty} unidades`, status === 'ok' ? 'success' : 'error');
     this.app.updateBadge();
-  }
-
-  async change(id, delta) {
-    const data = this.app.store.data;
-    const newQty = Math.max(0, (data.stock[id] || 0) + delta);
-    await this.setQuantity(id, newQty);
   }
 }

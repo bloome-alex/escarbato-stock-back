@@ -988,40 +988,23 @@
   .stock-prod-info { flex: 1; }
   .stock-prod-name { font-weight: 800; color: var(--text); font-size: .95rem; }
   .stock-prod-type { font-size: .78rem; color: var(--text-soft); margin-top: 2px; }
-  .stock-controls {
-    display: flex; align-items: center; gap: 10px;
-  }
   .stock-qty {
     font-family: 'Inter Tight', sans-serif;
-    font-size: 1.6rem;
+    font-size: 1.2rem;
     font-weight: 800;
     color: var(--brown);
     background: var(--stock-qty-bg);
     border: 1px solid var(--stock-qty-border);
     border-radius: 12px;
-    min-width: 64px;
-    padding: 5px 10px;
+    width: 96px;
+    max-width: 100%;
+    padding: 8px 10px;
     text-align: center;
     box-shadow: var(--stock-qty-shadow);
   }
-  .stock-btn {
-    width: 36px; height: 36px;
-    border-radius: 10px;
-    border: none;
-    font-size: 1.2rem;
-    font-weight: 900;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: all .15s;
-  }
-  .stock-btn.minus { background: var(--danger-light); color: var(--danger); }
-  .stock-btn.minus:hover { background: var(--danger); color: var(--on-accent); }
-  .stock-btn.plus { background: var(--success-light); color: var(--sage-dark); }
-  .stock-btn.plus:hover { background: var(--sage-dark); color: var(--on-accent); }
-  .stock-btn:disabled {
+  .stock-qty:disabled {
     cursor: wait;
     opacity: .72;
-    pointer-events: none;
   }
 
   .stock-status { min-width: 96px; text-align: right; }
@@ -1663,7 +1646,6 @@
     }
     .btn-icon { width: auto; }
     .btn,
-    .stock-btn,
     .modal-close { -webkit-tap-highlight-color: transparent; }
     .inline-table-input {
       width: 100%;
@@ -1721,14 +1703,7 @@
     }
     .modal-actions .btn { justify-content: center; min-height: 48px; padding: 10px 12px; }
 
-    .stock-controls {
-      justify-content: stretch;
-      width: 100%;
-      display: grid;
-      grid-template-columns: 46px 1fr 46px;
-    }
-    .stock-btn { width: 46px; height: 46px; border-radius: 15px; }
-    .stock-qty { min-width: 0; padding: 8px 10px; }
+    .stock-qty { width: 100%; min-height: 46px; }
     .sale-totals { grid-template-columns: 1fr; }
     .sale-product-box,
     .sale-totals { border-radius: 20px; padding: 14px; }
