@@ -6,7 +6,7 @@ import { TiposComponent } from './components/tipos.js';
 import { ProductosComponent } from './components/productos.js';
 import { StockComponent } from './components/stock.js';
 import { VentasComponent } from './components/ventas.js';
-import { MostradorComponent } from './components/mostrador.js?v=20260517-1';
+import { MostradorComponent } from './components/mostrador.js?v=20260519-1';
 import { MetodosPagoComponent } from './components/metodos-pago.js';
 import { CajasComponent } from './components/cajas.js';
 import { isMobileListView } from './pagination.js';

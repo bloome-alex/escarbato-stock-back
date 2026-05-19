@@ -13,6 +13,7 @@ export class MostradorComponent {
     this.visibleCount = PRODUCT_PAGE_SIZE;
     this.filteredTotal = 0;
     this.filterKey = '';
+    this.viewMode = 'grid';
     this.onWindowScroll = () => this.handleScroll();
   }
 
@@ -20,7 +21,7 @@ export class MostradorComponent {
     return `<section class="section" id="sec-mostrador">
       <div id="counter-caja-status"></div>
       <div class="counter-shell">
-        <div class="counter-header-row"><div class="counter-client form-group"><label>Cliente</label><input type="text" id="mostrador-cliente" value="${DEFAULT_CLIENT}" autocomplete="off"></div><div class="counter-measure form-group"><label>Unidad de medición</label><select id="counter-measure-mode" class="filter-control"><option value="qty">Unidad</option><option value="amount">Pesos</option></select></div><div class="counter-stock-view form-group"><label>Visualizar stock</label><select id="counter-stock-view-mode" class="filter-control"><option value="qty">Unidades</option><option value="amount">Pesos</option></select></div></div>
+        <div class="counter-header-row"><div class="counter-client form-group"><label>Cliente</label><input type="text" id="mostrador-cliente" value="${DEFAULT_CLIENT}" autocomplete="off"></div><div class="counter-measure form-group"><label>Unidad de medición</label><select id="counter-measure-mode" class="filter-control"><option value="qty">Unidad</option><option value="amount">Pesos</option></select></div><div class="counter-stock-view form-group"><label>Visualizar stock</label><select id="counter-stock-view-mode" class="filter-control"><option value="qty">Unidades</option><option value="amount">Pesos</option></select></div><div class="counter-view-toggle form-group" aria-label="Modo de vista"><label>Vista</label><div class="counter-view-switch" role="group"><button type="button" class="counter-view-btn active" data-counter-view="grid" aria-label="Vista en cuadricula" aria-pressed="true"><span class="counter-view-icon counter-view-icon-grid" aria-hidden="true"></span></button><button type="button" class="counter-view-btn" data-counter-view="list" aria-label="Vista en listado" aria-pressed="false"><span class="counter-view-icon counter-view-icon-list" aria-hidden="true"></span></button></div></div></div>
         <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar producto…" id="searchMostrador"></div><select id="filterMostradorTipo" class="filter-control"><option value="">Todos los tipos</option></select><select id="filterMostradorProveedor" class="filter-control"><option value="">Todos los proveedores</option></select><select id="filterMostradorStock" class="filter-control"><option value="">Todos</option><option value="disponible">Disponible</option><option value="sin-stock">Sin stock</option></select></div>
         <div class="counter-products" id="mostrador-products"></div>
         <div class="counter-load-more" id="mostrador-load-more" style="display:none"><span class="loading-spinner" aria-hidden="true"></span><span>Cargando más productos...</span></div>
@@ -49,6 +50,9 @@ export class MostradorComponent {
     document.getElementById('counter-stock-view-mode').addEventListener('change', () => {
       this.renderProducts();
       this.renderCart();
+    });
+    document.querySelectorAll('[data-counter-view]').forEach(button => {
+      button.addEventListener('click', () => this.setViewMode(button.dataset.counterView));
     });
     document.getElementById('counter-payment-method').addEventListener('change', () => this.renderCart());
     document.getElementById('mostrador-products').addEventListener('input', event => {
@@ -132,6 +136,16 @@ export class MostradorComponent {
 
   getStockViewMode() {
     return document.getElementById('counter-stock-view-mode')?.value === 'amount' ? 'amount' : 'qty';
+  }
+
+  setViewMode(mode) {
+    this.viewMode = mode === 'list' ? 'list' : 'grid';
+    document.querySelectorAll('[data-counter-view]').forEach(button => {
+      const active = button.dataset.counterView === this.viewMode;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-pressed', String(active));
+    });
+    this.renderProducts();
   }
 
   formatStockValue(producto, qty) {
@@ -267,6 +281,7 @@ export class MostradorComponent {
     const container = document.getElementById('mostrador-products');
     const empty = document.getElementById('empty-mostrador');
     const loadMore = document.getElementById('mostrador-load-more');
+    container.classList.toggle('counter-products-list', this.viewMode === 'list');
     this.filteredTotal = list.length;
     if (!list.length) {
       container.innerHTML = '';
