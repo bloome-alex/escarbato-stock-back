@@ -23,8 +23,12 @@ export class PublicController {
     const configuredName = fileName.endsWith('.html')
       ? this.escapeHtml(this.config.appName)
       : JSON.stringify(this.config.appName).slice(1, -1);
+    const configuredBusinessType = fileName.endsWith('.html')
+      ? this.escapeHtml(this.config.businessType)
+      : JSON.stringify(this.config.businessType).slice(1, -1);
     return content
       .replaceAll('Escarbato', configuredName)
+      .replaceAll('Petshop', configuredBusinessType)
       .replaceAll('/assets', this.config.appAssetsPath)
       .replace(/(["'])assets\//g, `$1${this.config.appAssetsPath}/`)
       .replace('"__PETSHOP_SECTIONS_CONFIG__"', JSON.stringify(this.config.sections));

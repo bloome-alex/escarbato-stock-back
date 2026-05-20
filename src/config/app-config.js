@@ -13,6 +13,7 @@ export class AppConfig {
     this.supervisorPassword = env.SUPERVISOR_PASSWORD || 'supervisor';
     this.corsOrigin = env.CORS_ORIGIN || '*';
     this.appName = env.APP_NAME || 'Escarbato';
+    this.businessType = env.APP_BUSINESS_TYPE || 'Petshop';
     this.appAssetsPath = this.normalizeAssetsPath(env.APP_ASSETS_PATH || 'assets/escarbato');
     this.publicDir = path.join(process.cwd(), 'src/public');
     this.sections = this.getSectionConfig(env);

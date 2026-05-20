@@ -161,7 +161,7 @@ export class ProductReportService {
     const usedSheetNames = new Set();
     const productGroups = this.getProductsByProvider(productos, proveedores, tipos);
 
-    workbook.creator = `${this.config.appName} Petshop`;
+    workbook.creator = `${this.config.appName} ${this.config.businessType}`;
     workbook.created = new Date();
 
     if (!productGroups.length) {
