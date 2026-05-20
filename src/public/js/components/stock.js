@@ -10,6 +10,7 @@ export class StockComponent {
     this.page = 1;
     this.totalPages = 1;
     this.loadingTimer = null;
+    this.inlineSaveTimers = new Map();
   }
 
   template() {
@@ -26,13 +27,17 @@ export class StockComponent {
   bind() {
     document.getElementById('searchStock').addEventListener('input', () => this.resetAndRender());
     document.getElementById('filterStockStatus').addEventListener('change', () => this.resetAndRender());
-    document.getElementById('stock-list').addEventListener('change', event => {
+    document.getElementById('stock-list').addEventListener('input', event => {
       const input = event.target.closest('[data-stock-input]');
-      if (input) this.saveInline(input);
+      if (input) this.scheduleInlineSave(input);
     });
     document.getElementById('stock-list').addEventListener('keydown', event => {
       const input = event.target.closest('[data-stock-input]');
-      if (input && event.key === 'Enter') input.blur();
+      if (input && event.key === 'Enter') {
+        event.preventDefault();
+        this.clearInlineSave(input.dataset.id);
+        this.saveInline(input, true);
+      }
     });
   }
 
@@ -97,7 +102,24 @@ export class StockComponent {
     document.getElementById('pager-stock').innerHTML = paginationTemplate('stock', pageState);
   }
 
-  async saveInline(input) {
+  scheduleInlineSave(input) {
+    const id = input.dataset.id;
+    if (!id) return;
+    this.clearInlineSave(id);
+    this.inlineSaveTimers.set(id, setTimeout(() => {
+      this.inlineSaveTimers.delete(id);
+      this.saveInline(input, true);
+    }, 600));
+  }
+
+  clearInlineSave(id) {
+    const timer = this.inlineSaveTimers.get(id);
+    if (!timer) return;
+    clearTimeout(timer);
+    this.inlineSaveTimers.delete(id);
+  }
+
+  async saveInline(input, keepFocus = false) {
     const id = input.dataset.id;
     const qty = Number(input.value);
     if (!id) return;
@@ -112,13 +134,9 @@ export class StockComponent {
       return;
     }
 
-    try {
-      input.disabled = true;
-      await this.setQuantity(id, newQty, 'Edición manual desde listado', false);
-      this.updateInlineRow(input, newQty);
-    } finally {
-      input.disabled = false;
-    }
+    await this.setQuantity(id, newQty, 'Edición manual desde listado', false);
+    if (Number(input.value) === newQty) this.updateInlineRow(input, newQty);
+    if (keepFocus) input.focus();
   }
 
   updateInlineRow(input, qty) {
