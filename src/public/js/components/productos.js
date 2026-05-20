@@ -118,7 +118,7 @@ export class ProductosComponent {
     const proveedorId = form.value('filterProveedor');
     const stockFilter = form.value('filterStockProd');
     const list = data.productos.filter(producto => {
-      const qty = data.stock[producto.id] || 0;
+      const qty = (data.stock[producto.id] || 0) - (data.reservedStock?.[producto.id] || 0);
       const min = producto.minStock ?? 0;
       const matchesStock = !stockFilter
         || (stockFilter === 'disponible' && qty > min)
@@ -198,7 +198,7 @@ export class ProductosComponent {
 
   invalidInlineEdit(message) {
     this.app.toasts.show(message, 'error');
-    this.render();
+    this.renderList();
   }
 
   async downloadProviderProductsPdf() {
@@ -287,7 +287,7 @@ export class ProductosComponent {
     }
 
     this.app.modals.close('prod');
-    this.render();
+    this.renderList();
     this.app.toasts.show('Producto guardado ✅');
   }
 }

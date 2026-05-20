@@ -13,7 +13,7 @@ const defaultSections = {
 const configuredSections = window.PETSHOP_CONFIG?.sections;
 
 export const appConfig = {
-  dataProvider: window.PETSHOP_CONFIG?.dataProvider || 'local',
+  dataProvider: 'backend',
   backendUrl: window.PETSHOP_CONFIG?.backendUrl || '',
   username: window.PETSHOP_CONFIG?.username || '',
   password: window.PETSHOP_CONFIG?.password || '',

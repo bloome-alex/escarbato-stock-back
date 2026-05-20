@@ -1,4 +1,4 @@
-import { Caja } from '../models/index.js';
+import { Caja, Stock } from '../models/index.js';
 import { HttpError } from '../utils/http-error.js';
 import { Sanitizer } from '../utils/sanitize.js';
 
@@ -53,7 +53,7 @@ export class DataStoreService {
 
     if (store === 'productos') this.validateProductoPayload(payload);
     if (store === 'cajas') await this.validateCajaPayload(payload);
-    if (store === 'ventas') await this.validateVentaPayload(payload);
+    if (store === 'ventas') return this.upsertVenta(Model, id, payload);
     await this.validateUniqueName(store, payload);
 
     const record = await Model.findOneAndUpdate(
@@ -66,7 +66,68 @@ export class DataStoreService {
 
   async delete(store, id) {
     const Model = this.getModelOrFail(store);
+    if (store === 'ventas') await this.restoreVentaStockBeforeDelete(Model, id);
     await Model.deleteOne({ id });
+  }
+
+  async upsertVenta(Model, id, payload) {
+    await this.validateVentaPayload(payload);
+    const existing = await Model.findOne({ id }).lean();
+
+    if (existing) {
+      const record = await Model.findOneAndUpdate(
+        { id },
+        this.buildUpdatePayload('ventas', payload),
+        { new: true, runValidators: true }
+      );
+      return Sanitizer.record(record);
+    }
+
+    const decrementedItems = [];
+    try {
+      for (const item of payload.items || []) {
+        const productId = String(item.productId || '').trim();
+        const qty = Number(item.qty || 0);
+        if (!productId || qty <= 0) throw new HttpError('La venta contiene productos inválidos');
+
+        const stockRecord = await Stock.findOneAndUpdate(
+          { id: productId, qty: { $gte: qty } },
+          { $inc: { qty: -qty } },
+          { new: true, runValidators: true }
+        ).lean();
+
+        if (!stockRecord) {
+          throw new HttpError(`Stock insuficiente para ${item.productName || productId}`);
+        }
+
+        decrementedItems.push({ productId, qty });
+      }
+
+      const record = await Model.findOneAndUpdate(
+        { id },
+        this.buildUpdatePayload('ventas', payload),
+        { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
+      );
+      return Sanitizer.record(record);
+    } catch (error) {
+      await Promise.all(decrementedItems.map(item => Stock.updateOne(
+        { id: item.productId },
+        { $inc: { qty: item.qty } },
+        { runValidators: true }
+      )));
+      throw error;
+    }
+  }
+
+  async restoreVentaStockBeforeDelete(Model, id) {
+    const venta = await Model.findOne({ id }).lean();
+    if (!venta) return;
+
+    await Promise.all((venta.items || []).map(item => Stock.updateOne(
+      { id: item.productId },
+      { $inc: { qty: Number(item.qty || 0) } },
+      { upsert: true, runValidators: true }
+    )));
   }
 
   getModelOrFail(store) {

@@ -117,7 +117,7 @@ export class TiposComponent {
     else list.push(tipo);
     await this.app.audit(index >= 0 ? 'Edición' : 'Creación', 'Tipos de producto', tipo.nombre);
     this.app.modals.close('tipo');
-    this.render();
+    this.renderList();
     this.app.components.productos.refreshTipoSelects();
     this.app.toasts.show('Tipo guardado ✅');
   }

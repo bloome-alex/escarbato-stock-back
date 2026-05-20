@@ -70,7 +70,7 @@ export class StockComponent {
     const q = (form.value('searchStock') || '').toLowerCase();
     const filter = form.value('filterStockStatus');
     const list = data.productos.filter(producto => {
-      const qty = data.stock[producto.id] || 0;
+      const qty = (data.stock[producto.id] || 0) - (data.reservedStock?.[producto.id] || 0);
       const min = producto.minStock ?? 0;
       const status = this.getStatus(qty, min);
       return producto.nombre.toLowerCase().includes(q) && (!filter || status === filter);
@@ -92,7 +92,7 @@ export class StockComponent {
     emptyEl.style.display = 'none';
     listEl.innerHTML = `<table class="data-table"><thead><tr><th>Producto</th><th>Tipo de producto</th><th>Proveedor</th><th>Mínimo</th><th>Stock</th><th>Estado</th></tr></thead><tbody id="tbl-stock"></tbody></table>`;
     document.getElementById('tbl-stock').innerHTML = pageItems.map(producto => {
-      const qty = data.stock[producto.id] || 0;
+      const qty = (data.stock[producto.id] || 0) - (data.reservedStock?.[producto.id] || 0);
       const min = producto.minStock ?? 0;
       const status = this.getStatus(qty, min);
       const tipo = data.tipos.find(item => item.id === producto.tipoId);
@@ -158,7 +158,7 @@ export class StockComponent {
     await this.app.store.put('stock', { id, qty: newQty });
     const product = data.productos.find(item => item.id === id);
     await this.app.audit('Edición', 'Stock', `${product ? product.nombre : 'Producto'}: ${previousQty} -> ${newQty} (${source})`);
-    if (shouldRender) this.render();
+    if (shouldRender) this.renderList();
     const status = this.getStatus(newQty, product ? (product.minStock ?? 0) : 0);
     this.app.toasts.show(`Stock actualizado: ${newQty} unidades`, status === 'ok' ? 'success' : 'error');
     this.app.updateBadge();

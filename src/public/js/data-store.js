@@ -1,141 +1,11 @@
 import { appConfig } from './config.js';
 
-const emptyData = () => ({ proveedores: [], tipos: [], productos: [], metodosPago: [], stock: {}, ventas: [], cajas: [], auditoria: [] });
+const emptyData = () => ({ proveedores: [], tipos: [], productos: [], metodosPago: [], stock: {}, reservedStock: {}, ventas: [], cajas: [], auditoria: [] });
 
 const reportTimestamp = (date = new Date()) => {
   const pad = value => String(value).padStart(2, '0');
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}-${pad(date.getHours())}-${pad(date.getMinutes())}`;
 };
-
-class IndexedDbStore {
-  constructor(app) {
-    this.app = app;
-    this.dbName = 'EscarbatoDB';
-    this.dbVersion = 5;
-    this.db = null;
-    this.data = emptyData();
-  }
-
-  async init() {
-    await this.openDB();
-    await this.loadAll();
-  }
-
-  openDB() {
-    return new Promise((resolve, reject) => {
-      const req = indexedDB.open(this.dbName, this.dbVersion);
-      req.onupgradeneeded = event => {
-        const db = event.target.result;
-        ['proveedores', 'tipos', 'productos', 'metodosPago', 'stock', 'ventas', 'cajas', 'auditoria'].forEach(store => {
-          if (!db.objectStoreNames.contains(store)) {
-            db.createObjectStore(store, { keyPath: 'id' });
-          }
-        });
-      };
-      req.onsuccess = event => {
-        this.db = event.target.result;
-        resolve(this.db);
-      };
-      req.onerror = () => reject(req.error);
-    });
-  }
-
-  getAll(store) {
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction(store, 'readonly');
-      const req = tx.objectStore(store).getAll();
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
-    });
-  }
-
-  put(store, obj) {
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction(store, 'readwrite');
-      const req = tx.objectStore(store).put(obj);
-      req.onsuccess = () => resolve(obj);
-      req.onerror = () => reject(req.error);
-    });
-  }
-
-  delete(store, id) {
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction(store, 'readwrite');
-      const req = tx.objectStore(store).delete(id);
-      req.onsuccess = () => resolve();
-      req.onerror = () => reject(req.error);
-    });
-  }
-
-  async loadAll() {
-    this.data.proveedores = await this.getAll('proveedores');
-    this.data.tipos = await this.getAll('tipos');
-    this.data.productos = await this.getAll('productos');
-    this.data.metodosPago = await this.getAll('metodosPago');
-    this.data.ventas = await this.getAll('ventas');
-    this.data.cajas = await this.getAll('cajas');
-    this.data.auditoria = await this.getAll('auditoria');
-    const stockRecords = await this.getAll('stock');
-    this.data.stock = {};
-    stockRecords.forEach(record => {
-      this.data.stock[record.id] = record.qty;
-    });
-  }
-
-  async getDashboard() {
-    await this.loadAll();
-    const lowStockProducts = this.data.productos
-      .map(product => {
-        const qty = this.data.stock[product.id] || 0;
-        const minStock = product.minStock ?? 0;
-        return { id: product.id, nombre: product.nombre, qty, minStock, status: qty <= 0 ? 'Sin stock' : 'Stock bajo' };
-      })
-      .filter(product => product.qty <= product.minStock);
-
-    this.dashboard = {
-      totals: {
-        proveedores: this.data.proveedores.length,
-        tipos: this.data.tipos.length,
-        productos: this.data.productos.length,
-        lowStock: lowStockProducts.length
-      },
-      stockAlerts: lowStockProducts.slice(0, 5),
-      recentProducts: [...this.data.productos].reverse().slice(0, 5).map(product => {
-        const tipo = this.data.tipos.find(item => item.id === product.tipoId);
-        return { ...product, tipoNombre: tipo ? tipo.nombre : null };
-      }),
-      auditActivity: [...this.data.auditoria]
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-        .slice(0, 8)
-    };
-    return this.dashboard;
-  }
-
-  async getPage(store, { page = 1, limit = 10 } = {}) {
-    const list = store === 'stock'
-      ? Object.entries(this.data.stock).map(([id, qty]) => ({ id, qty }))
-      : [...(this.data[store] || [])];
-    const totalPages = Math.max(1, Math.ceil(list.length / limit));
-    const currentPage = Math.min(Math.max(1, page), totalPages);
-    const start = (currentPage - 1) * limit;
-    return {
-      data: list.slice(start, start + limit),
-      pagination: { page: currentPage, limit, total: list.length, totalPages }
-    };
-  }
-
-  createId() {
-    return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  }
-
-  async downloadProductsPdf() {
-    throw new Error('La descarga de PDF requiere usar el backend');
-  }
-
-  async downloadProductsXlsx() {
-    throw new Error('La descarga de XLSX requiere usar el backend');
-  }
-}
 
 class BackendStore {
   constructor(config, app) {
@@ -143,12 +13,16 @@ class BackendStore {
     this.config = config;
     this.baseUrl = config.backendUrl.replace(/\/$/, '');
     this.token = sessionStorage.getItem('petshopAuthToken') || '';
+    this.clientId = globalThis.crypto?.randomUUID ? globalThis.crypto.randomUUID() : this.createId();
     this.data = emptyData();
+    this.socket = null;
   }
 
   async init() {
     await this.ensureToken();
     this.dashboard = null;
+    this.connectRealtime();
+    window.addEventListener('pagehide', () => this.sendRealtime({ type: 'cart:clear' }));
   }
 
   async ensureToken() {
@@ -236,6 +110,7 @@ class BackendStore {
       ...options,
       headers: {
         'Content-Type': 'application/json',
+        'X-Client-Id': this.clientId,
         ...(options.headers || {}),
         Authorization: `Bearer ${this.token}`
       }
@@ -257,7 +132,10 @@ class BackendStore {
   }
 
   async loadAll() {
+    const reservedStock = this.data.reservedStock || {};
     this.data = await this.request('/api/data');
+    this.data.reservedStock = reservedStock;
+    this.dashboard = null;
   }
 
   async getDashboard() {
@@ -269,6 +147,10 @@ class BackendStore {
     const params = new URLSearchParams({ page, limit });
     if (q) params.set('q', q);
     return this.request(`/api/${store}?${params.toString()}`);
+  }
+
+  async getById(store, id) {
+    return this.request(`/api/${store}/${encodeURIComponent(id)}`);
   }
 
   async put(store, obj) {
@@ -337,10 +219,53 @@ class BackendStore {
   createId() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   }
+
+  connectRealtime() {
+    if (!('WebSocket' in window) || this.socket) return;
+
+    const httpBase = this.baseUrl || window.location.origin;
+    const url = new URL(httpBase, window.location.origin);
+    url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+    url.pathname = '/ws';
+    url.search = new URLSearchParams({ token: this.token, clientId: this.clientId }).toString();
+
+    this.socket = new WebSocket(url.toString());
+    this.socket.addEventListener('message', event => {
+      const message = JSON.parse(event.data || '{}');
+      if (message.clientId && message.clientId === this.clientId) return;
+      if (message.type === 'cart-stock-changed') {
+        this.applyCartReservations(message.reservations || {});
+        this.app?.handleCartStockChange?.(message);
+        return;
+      }
+      if (message.type === 'data-changed') this.app?.handleRealtimeChange?.(message);
+    });
+    this.socket.addEventListener('close', () => {
+      this.socket = null;
+      setTimeout(() => this.connectRealtime(), 2000);
+    });
+    this.socket.addEventListener('error', () => this.socket?.close());
+  }
+
+  sendRealtime(message) {
+    if (this.socket?.readyState !== WebSocket.OPEN) return;
+    this.socket.send(JSON.stringify(message));
+  }
+
+  applyCartReservations(reservations) {
+    const reservedStock = {};
+    for (const [clientId, items] of Object.entries(reservations)) {
+      if (clientId === this.clientId) continue;
+      for (const [productId, qty] of Object.entries(items || {})) {
+        reservedStock[productId] = Number((Number(reservedStock[productId] || 0) + Number(qty || 0)).toFixed(4));
+      }
+    }
+    this.data.reservedStock = reservedStock;
+  }
 }
 
 export class DataStore {
   constructor(config = appConfig, app) {
-    return config.dataProvider === 'backend' ? new BackendStore(config, app) : new IndexedDbStore(app);
+    return new BackendStore(config, app);
   }
 }

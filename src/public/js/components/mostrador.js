@@ -65,10 +65,16 @@ export class MostradorComponent {
     });
     document.getElementById('counter-payment-method').addEventListener('change', () => this.renderCart());
     document.getElementById('mostrador-products').addEventListener('input', event => {
-      if (event.target.matches('[data-counter-value]')) this.clampNumberInput(event.target);
+      if (event.target.matches('[data-counter-value]')) {
+        this.clampNumberInput(event.target);
+        this.updateAddButton(event.target);
+      }
     });
     document.getElementById('mostrador-products').addEventListener('change', event => {
-      if (event.target.matches('[data-counter-value]')) this.clampNumberInput(event.target);
+      if (event.target.matches('[data-counter-value]')) {
+        this.clampNumberInput(event.target);
+        this.updateAddButton(event.target);
+      }
     });
     document.getElementById('counter-cart-list').addEventListener('input', event => {
       if (event.target.matches('[data-cart-value]')) this.clampNumberInput(event.target);
@@ -139,14 +145,29 @@ export class MostradorComponent {
 
   getAvailableStock(productId) {
     const stock = this.app.store.data.stock || {};
+    const reservedStock = this.app.store.data.reservedStock || {};
     this.app.store.data.stock = stock;
-    return this.roundQty((stock[productId] || 0) - this.getCartQty(productId));
+    this.app.store.data.reservedStock = reservedStock;
+    return this.roundQty((stock[productId] || 0) - (reservedStock[productId] || 0) - this.getCartQty(productId));
   }
 
   getProductStock(productId) {
     const stock = this.app.store.data.stock || {};
+    const reservedStock = this.app.store.data.reservedStock || {};
     this.app.store.data.stock = stock;
-    return this.roundQty(stock[productId] || 0);
+    this.app.store.data.reservedStock = reservedStock;
+    return this.roundQty((stock[productId] || 0) - (reservedStock[productId] || 0));
+  }
+
+  notifyCartReservations() {
+    this.app.store.sendRealtime?.({
+      type: 'cart:set',
+      items: this.cart.map(item => ({ productId: item.productId, qty: item.qty }))
+    });
+  }
+
+  clearCartReservations() {
+    this.app.store.sendRealtime?.({ type: 'cart:clear' });
   }
 
   getTotal() {
@@ -193,6 +214,15 @@ export class MostradorComponent {
     const value = Number(input.value);
     const max = Number(input.max);
     if (Number.isFinite(max) && value > max) input.value = max;
+  }
+
+  updateAddButton(input) {
+    const button = document.querySelector(`[data-action="add-counter-item"][data-id="${input.dataset.counterValue}"]`);
+    if (!button) return;
+
+    const value = Number(input.value);
+    const max = Number(input.max);
+    button.disabled = !input.value || !value || value <= 0 || (Number.isFinite(max) && value > max);
   }
 
   getOpenCaja() {
@@ -335,8 +365,8 @@ export class MostradorComponent {
       const proveedor = proveedores.find(item => item.id === producto.proveedorId);
       const available = this.getAvailableStock(producto.id);
       const maxValue = this.getInputMax(available, this.getProductPrice(producto), measureMode);
-      const disabled = available <= 0 ? 'disabled' : '';
-      return `<article class="counter-product-card"><div class="counter-product-main"><strong>${producto.nombre}</strong><div>${tipo ? tipo.nombre : 'Sin tipo'} · ${proveedor ? proveedor.nombre : 'Sin proveedor'}</div><span class="price-value">${this.formatMoney(this.getProductPrice(producto))}</span></div><div class="counter-stock"><span>Stock</span><strong>${this.formatStockValue(producto, available)}</strong></div><div class="counter-add"><input type="number" min="0" step="1" max="${maxValue}" placeholder="${valuePlaceholder}" data-counter-value="${producto.id}" ${disabled}><button class="btn btn-amber btn-sm counter-add-btn" data-action="add-counter-item" data-id="${producto.id}" ${disabled}>Agregar</button></div></article>`;
+      const inputDisabled = available <= 0 ? 'disabled' : '';
+      return `<article class="counter-product-card"><div class="counter-product-main"><strong>${producto.nombre}</strong><div>${tipo ? tipo.nombre : 'Sin tipo'} · ${proveedor ? proveedor.nombre : 'Sin proveedor'}</div><span class="price-value">${this.formatMoney(this.getProductPrice(producto))}</span></div><div class="counter-stock"><span>Stock</span><strong>${this.formatStockValue(producto, available)}</strong></div><div class="counter-add"><input type="number" min="0" step="1" max="${maxValue}" placeholder="${valuePlaceholder}" data-counter-value="${producto.id}" ${inputDisabled}><button class="btn btn-amber btn-sm counter-add-btn" data-action="add-counter-item" data-id="${producto.id}" disabled>Agregar</button></div></article>`;
     }).join('');
     if (loadMore) loadMore.style.display = this.visibleCount < list.length ? '' : 'none';
   }
@@ -365,6 +395,7 @@ export class MostradorComponent {
       this.cart.push({ productId: id, productName: producto.nombre, qty, price, subtotal });
     }
     if (valueInput) valueInput.value = '';
+    this.notifyCartReservations();
     this.renderProducts();
     this.renderCart();
     this.app.toasts.show('Producto agregado al carrito');
@@ -397,12 +428,14 @@ export class MostradorComponent {
 
     item.qty = qty;
     item.subtotal = mode === 'amount' ? Number(value.toFixed(2)) : Number((qty * item.price).toFixed(2));
+    this.notifyCartReservations();
     this.renderProducts();
     this.renderCart();
   }
 
   removeItem(id) {
     this.cart = this.cart.filter(item => item.productId !== id);
+    this.notifyCartReservations();
     this.renderProducts();
     this.renderCart();
   }
@@ -489,24 +522,21 @@ export class MostradorComponent {
       createdAt: new Date().toISOString()
     };
 
-    for (const item of venta.items) {
-      const newQty = this.roundQty((stock[item.productId] || 0) - item.qty);
-      this.app.store.data.stock[item.productId] = newQty;
-      await this.app.store.put('stock', { id: item.productId, qty: newQty });
-    }
-
     const savedVenta = await this.app.store.put('ventas', venta);
     this.app.store.data.ventas = this.app.store.data.ventas || [];
     this.app.store.data.ventas.push(savedVenta || venta);
+    await this.app.store.loadAll();
     await this.app.audit('Creación', 'Ventas', `${(savedVenta || venta).cliente || 'Cliente mostrador'} - ${this.formatMoney((savedVenta || venta).finalTotal)}`);
 
     this.cart = [];
+    this.clearCartReservations();
     form.set('mostrador-cliente', DEFAULT_CLIENT);
     form.set('counter-payment-method');
     this.closeCart();
     this.render();
-    this.app.components.ventas.render();
-    this.app.components.stock.render();
+    this.app.components.ventas.refreshPaymentMethodFilter();
+    this.app.components.ventas.renderList();
+    this.app.components.stock.renderList();
     this.app.components.cajas.render();
     this.app.updateBadge();
     this.app.toasts.show('Venta guardada ✅');

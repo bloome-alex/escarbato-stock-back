@@ -1,3 +1,4 @@
+import http from 'node:http';
 import cors from 'cors';
 import express from 'express';
 import { AuthController } from '../controllers/auth.controller.js';
@@ -16,6 +17,7 @@ import { DashboardService } from '../services/dashboard.service.js';
 import { DataStoreService } from '../services/data-store.service.js';
 import { ModelRegistry } from '../services/model-registry.js';
 import { ProductReportService } from '../services/product-report.service.js';
+import { RealtimeService } from '../services/realtime.service.js';
 
 export class ServerApplication {
   constructor(config) {
@@ -27,6 +29,7 @@ export class ServerApplication {
     const modelRegistry = new ModelRegistry();
     const authMiddleware = new AuthMiddleware(this.config);
     const dataStoreService = new DataStoreService(modelRegistry);
+    this.realtimeService = new RealtimeService(this.config, authMiddleware);
 
     this.app.use(cors({ origin: this.config.corsOrigin === '*' ? true : this.config.corsOrigin }));
     this.app.use(express.json({ limit: '1mb' }));
@@ -41,7 +44,7 @@ export class ServerApplication {
       dashboardController: new DashboardController(new DashboardService()),
       bootstrapDataController: new BootstrapDataController(new BootstrapDataService()),
       reportController: new ReportController(new ProductReportService(this.config)),
-      dataStoreController: new DataStoreController(dataStoreService)
+      dataStoreController: new DataStoreController(dataStoreService, this.realtimeService)
     }).register();
 
     this.app.use(new ErrorHandler(dataStoreService).handle);
@@ -49,7 +52,9 @@ export class ServerApplication {
   }
 
   listen() {
-    this.app.listen(this.config.port, () => {
+    const server = http.createServer(this.app);
+    this.realtimeService.attach(server);
+    server.listen(this.config.port, () => {
       console.log(`Backend escuchando en http://localhost:${this.config.port}`);
     });
   }

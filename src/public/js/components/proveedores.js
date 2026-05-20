@@ -130,7 +130,7 @@ export class ProveedoresComponent {
     else list.push(prov);
     await this.app.audit(index >= 0 ? 'Edición' : 'Creación', 'Proveedores', prov.nombre);
     this.app.modals.close('prov');
-    this.render();
+    this.renderList();
     this.app.components.productos.refreshProveedorSelects();
     this.app.toasts.show('Proveedor guardado ✅');
   }

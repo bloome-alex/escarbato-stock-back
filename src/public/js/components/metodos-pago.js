@@ -117,7 +117,7 @@ export class MetodosPagoComponent {
     else list.push(metodo);
     await this.app.audit(index >= 0 ? 'Edición' : 'Creación', 'Métodos de pago', metodo.nombre);
     this.app.modals.close('metodo-pago');
-    this.render();
+    this.renderList();
     this.app.toasts.show('Método de pago guardado ✅');
   }
 }

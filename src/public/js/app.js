@@ -21,6 +21,9 @@ class PetshopApp {
     this.theme = new ThemeManager();
     this.dataReady = false;
     this.preloadPromise = null;
+    this.realtimeRefreshTimer = null;
+    this.pendingRealtimeStores = new Set();
+    this.pendingRealtimeMessages = [];
     this.onWindowScroll = () => this.handleMobileListScroll();
     this.sectionOrder = ['dashboard', 'proveedores', 'tipos', 'productos', 'metodosPago', 'cajas', 'ventas', 'mostrador', 'stock'];
     this.sectionMenu = {
@@ -117,6 +120,7 @@ class PetshopApp {
   async preloadMenuData() {
     try {
       await this.store.loadAll();
+      this.components.dashboard.data = null;
       if (this.isSectionEnabled('productos')) {
         this.components.productos.refreshTipoSelects();
         this.components.productos.refreshProveedorSelects();
@@ -338,7 +342,7 @@ class PetshopApp {
   getLowStockProducts() {
     const data = this.store.data;
     return data.productos.filter(product => {
-      const qty = data.stock[product.id] || 0;
+      const qty = (data.stock[product.id] || 0) - (data.reservedStock?.[product.id] || 0);
       const min = product.minStock ?? 0;
       return qty <= min;
     });
@@ -385,7 +389,7 @@ class PetshopApp {
       data.proveedores = data.proveedores.filter(item => item.id !== id);
       await this.audit('Eliminación', 'Proveedores', deleted ? deleted.nombre : 'Proveedor eliminado');
       this.modals.close('confirm');
-      this.components.proveedores.render();
+      this.components.proveedores.renderList();
       if (this.isSectionEnabled('productos')) this.components.productos.refreshProveedorSelects();
     }
 
@@ -395,7 +399,7 @@ class PetshopApp {
       data.tipos = data.tipos.filter(item => item.id !== id);
       await this.audit('Eliminación', 'Tipos de producto', deleted ? deleted.nombre : 'Tipo eliminado');
       this.modals.close('confirm');
-      this.components.tipos.render();
+      this.components.tipos.renderList();
       if (this.isSectionEnabled('productos')) this.components.productos.refreshTipoSelects();
     }
 
@@ -407,7 +411,7 @@ class PetshopApp {
       delete data.stock[id];
       await this.audit('Eliminación', 'Productos', deleted ? deleted.nombre : 'Producto eliminado');
       this.modals.close('confirm');
-      this.components.productos.render();
+      this.components.productos.renderList();
     }
 
     if (entity === 'metodo-pago') {
@@ -416,30 +420,168 @@ class PetshopApp {
       data.metodosPago = data.metodosPago.filter(item => item.id !== id);
       await this.audit('Eliminación', 'Métodos de pago', deleted ? deleted.nombre : 'Método de pago eliminado');
       this.modals.close('confirm');
-      this.components.metodosPago.render();
+      this.components.metodosPago.renderList();
     }
 
     if (entity === 'venta') {
       const venta = data.ventas.find(item => item.id === id);
-      if (venta) {
-        for (const item of venta.items) {
-          const newQty = Number(((data.stock[item.productId] || 0) + item.qty).toFixed(4));
-          data.stock[item.productId] = newQty;
-          await this.store.put('stock', { id: item.productId, qty: newQty });
-        }
-      }
-
       await this.store.delete('ventas', id);
-      data.ventas = data.ventas.filter(item => item.id !== id);
+      await this.store.loadAll();
       await this.audit('Eliminación', 'Ventas', venta ? `${venta.cliente || 'Cliente mostrador'} - ${new Date(venta.createdAt).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })}` : 'Venta eliminada');
       this.modals.close('confirm');
-      this.components.ventas.render();
-      this.components.stock.render();
+      this.components.ventas.refreshPaymentMethodFilter();
+      this.components.ventas.renderList();
+      this.components.stock.renderList();
       this.components.cajas.render();
     }
 
     this.toasts.show('Eliminado correctamente');
     this.updateBadge();
+  }
+
+  handleRealtimeChange(message = {}) {
+    if (message.store) this.pendingRealtimeStores.add(message.store);
+    this.pendingRealtimeMessages.push(message);
+    clearTimeout(this.realtimeRefreshTimer);
+    this.realtimeRefreshTimer = setTimeout(() => this.applyRealtimeChanges(), 150);
+  }
+
+  handleCartStockChange(message = {}) {
+    if (Array.isArray(message.affectedProductIds) && !message.affectedProductIds.length) return;
+    const activeSection = document.querySelector('.section.active')?.id?.replace('sec-', '');
+    if (activeSection === 'mostrador') {
+      this.components.mostrador.renderProducts();
+      this.components.mostrador.renderCart();
+    }
+    if (activeSection === 'stock') this.components.stock.renderList();
+    if (activeSection === 'productos') this.components.productos.renderList();
+    this.updateBadge();
+  }
+
+  async applyRealtimeChanges() {
+    const changedStores = new Set(this.pendingRealtimeStores);
+    const messages = this.pendingRealtimeMessages.splice(0);
+    this.pendingRealtimeStores.clear();
+    try {
+      for (const message of messages) {
+        await this.applyRealtimeMessage(message, changedStores);
+      }
+      this.components.dashboard.data = null;
+      if (this.isSectionEnabled('productos')) {
+        this.components.productos.refreshTipoSelects();
+        this.components.productos.refreshProveedorSelects();
+      }
+
+      const activeSection = document.querySelector('.section.active')?.id?.replace('sec-', '');
+      await this.renderRealtimeSection(activeSection, changedStores);
+      this.updateBadge();
+    } catch (error) {
+      this.toasts.show(error.message || 'No se pudieron sincronizar los datos', 'error');
+    }
+  }
+
+  async applyRealtimeMessage(message, changedStores) {
+    const { store, action, id } = message;
+    if (!store || !id) return;
+    if (store === 'ventas') changedStores.add('stock');
+    if (store === 'productos') changedStores.add('stock');
+
+    if (action === 'delete') {
+      this.applyRealtimeDelete(store, id);
+      return;
+    }
+
+    const record = await this.store.getById(store, id);
+    this.applyRealtimeUpsert(store, record);
+  }
+
+  applyRealtimeUpsert(store, record) {
+    if (!record?.id) return;
+    if (store === 'stock') {
+      this.store.data.stock[record.id] = record.qty;
+      return;
+    }
+
+    const list = this.store.data[store];
+    if (!Array.isArray(list)) return;
+    const index = list.findIndex(item => item.id === record.id);
+    const previous = index >= 0 ? list[index] : null;
+    if (index >= 0) list[index] = record;
+    else list.push(record);
+
+    if (store === 'ventas' && !previous) {
+      for (const item of record.items || []) {
+        const currentQty = this.store.data.stock[item.productId] || 0;
+        this.store.data.stock[item.productId] = Number((currentQty - Number(item.qty || 0)).toFixed(4));
+      }
+    }
+  }
+
+  applyRealtimeDelete(store, id) {
+    if (store === 'stock') {
+      delete this.store.data.stock[id];
+      return;
+    }
+
+    const list = this.store.data[store];
+    if (!Array.isArray(list)) return;
+    const deleted = list.find(item => item.id === id);
+    this.store.data[store] = list.filter(item => item.id !== id);
+
+    if (store === 'productos') delete this.store.data.stock[id];
+
+    if (store === 'ventas' && deleted) {
+      for (const item of deleted.items || []) {
+        const currentQty = this.store.data.stock[item.productId] || 0;
+        this.store.data.stock[item.productId] = Number((currentQty + Number(item.qty || 0)).toFixed(4));
+      }
+    }
+  }
+
+  async renderRealtimeSection(section, changedStores = new Set()) {
+    const component = this.components[section];
+    if (!component) return;
+    if (!this.shouldRealtimeRender(section, changedStores)) return;
+
+    if (section === 'dashboard') {
+      component.data = await this.store.getDashboard();
+      component.render();
+      return;
+    }
+
+    if (section === 'mostrador') {
+      component.refreshFilters();
+      component.refreshPaymentMethods();
+      component.renderCajaStatus();
+      component.renderProducts();
+      component.renderCart();
+      return;
+    }
+
+    if (section === 'cajas') {
+      component.render();
+      return;
+    }
+
+    if (section === 'ventas') component.refreshPaymentMethodFilter?.();
+    if (component.renderList) component.renderList();
+  }
+
+  shouldRealtimeRender(section, changedStores) {
+    if (!changedStores.size) return true;
+    const dependencies = {
+      dashboard: ['proveedores', 'tipos', 'productos', 'stock', 'ventas', 'cajas', 'auditoria'],
+      proveedores: ['proveedores', 'productos'],
+      tipos: ['tipos', 'productos'],
+      productos: ['productos', 'stock', 'tipos', 'proveedores', 'ventas'],
+      metodosPago: ['metodosPago'],
+      cajas: ['cajas', 'ventas', 'metodosPago'],
+      ventas: ['ventas', 'metodosPago'],
+      mostrador: ['productos', 'stock', 'tipos', 'proveedores', 'metodosPago', 'cajas', 'ventas'],
+      stock: ['stock', 'productos', 'tipos', 'proveedores', 'ventas']
+    };
+
+    return (dependencies[section] || [section]).some(store => changedStores.has(store));
   }
 }
 
