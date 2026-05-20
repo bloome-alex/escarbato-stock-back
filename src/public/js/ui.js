@@ -90,12 +90,15 @@ export class NavigationManager {
       return;
     }
 
+    const activeSection = document.querySelector('.section.active')?.id.replace('sec-', '');
+
     document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('[data-nav]').forEach(el => el.classList.remove('active'));
     target.classList.add('active');
     document.querySelectorAll(`[data-nav="${section}"]`).forEach(el => el.classList.add('active'));
     this.updateHeader(section);
     this.closeSidebar();
+    if (activeSection !== section) this.app?.resetSectionFilters?.(section);
     await this.app.renderSection(section);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }

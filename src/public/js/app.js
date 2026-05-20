@@ -7,7 +7,7 @@ import { TiposComponent } from './components/tipos.js';
 import { ProductosComponent } from './components/productos.js';
 import { StockComponent } from './components/stock.js';
 import { VentasComponent } from './components/ventas.js';
-import { MostradorComponent } from './components/mostrador.js?v=20260519-1';
+import { MostradorComponent } from './components/mostrador.js?v=20260519-2';
 import { MetodosPagoComponent } from './components/metodos-pago.js';
 import { CajasComponent } from './components/cajas.js';
 import { isMobileListView } from './pagination.js';
@@ -311,6 +311,28 @@ class PetshopApp {
     }
 
     this.components[section].render();
+  }
+
+  resetSectionFilters(section) {
+    const target = document.getElementById('sec-' + section);
+    if (!target) return;
+
+    target.querySelectorAll('.toolbar input, .toolbar select, .toolbar textarea').forEach(control => {
+      if (control.type === 'checkbox' || control.type === 'radio') {
+        control.checked = control.defaultChecked;
+        return;
+      }
+
+      control.value = control.tagName === 'SELECT' ? (control.querySelector('option')?.value || '') : '';
+    });
+
+    const component = this.components[section];
+    if (component?.resetFilters) {
+      component.resetFilters();
+      return;
+    }
+
+    if (component && 'page' in component) component.page = 1;
   }
 
   getLowStockProducts() {

@@ -4,6 +4,7 @@ import { compareByName } from '../sort.js';
 const DEFAULT_CLIENT = 'mostrador';
 const PRODUCT_PAGE_SIZE = 24;
 const STOCK_DECIMALS = 4;
+const PREFERENCES_STORAGE_KEY = 'mostrador-preferences';
 const formatPercent = value => `${Number(value || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })}%`;
 
 export class MostradorComponent {
@@ -13,15 +14,19 @@ export class MostradorComponent {
     this.visibleCount = PRODUCT_PAGE_SIZE;
     this.filteredTotal = 0;
     this.filterKey = '';
-    this.viewMode = 'grid';
+    this.preferences = this.loadPreferences();
+    this.viewMode = this.preferences.viewMode;
     this.onWindowScroll = () => this.handleScroll();
   }
 
   template() {
+    const measureMode = this.preferences.measureMode;
+    const stockViewMode = this.preferences.stockViewMode;
+    const isGridView = this.viewMode === 'grid';
     return `<section class="section" id="sec-mostrador">
       <div id="counter-caja-status"></div>
       <div class="counter-shell">
-        <div class="counter-header-row"><div class="counter-client form-group"><label>Cliente</label><input type="text" id="mostrador-cliente" value="${DEFAULT_CLIENT}" autocomplete="off"></div><div class="counter-measure form-group"><label>Unidad de medición</label><select id="counter-measure-mode" class="filter-control"><option value="qty">Unidad</option><option value="amount">Pesos</option></select></div><div class="counter-stock-view form-group"><label>Visualizar stock</label><select id="counter-stock-view-mode" class="filter-control"><option value="qty">Unidades</option><option value="amount">Pesos</option></select></div><div class="counter-view-toggle form-group" aria-label="Modo de vista"><label>Vista</label><div class="counter-view-switch" role="group"><button type="button" class="counter-view-btn active" data-counter-view="grid" aria-label="Vista en cuadricula" aria-pressed="true"><span class="counter-view-icon counter-view-icon-grid" aria-hidden="true"></span></button><button type="button" class="counter-view-btn" data-counter-view="list" aria-label="Vista en listado" aria-pressed="false"><span class="counter-view-icon counter-view-icon-list" aria-hidden="true"></span></button></div></div></div>
+        <div class="counter-header-row"><div class="counter-client form-group"><label>Cliente</label><input type="text" id="mostrador-cliente" value="${DEFAULT_CLIENT}" autocomplete="off"></div><div class="counter-measure form-group"><label>Unidad de medición</label><select id="counter-measure-mode" class="filter-control"><option value="qty" ${measureMode === 'qty' ? 'selected' : ''}>Unidad</option><option value="amount" ${measureMode === 'amount' ? 'selected' : ''}>Pesos</option></select></div><div class="counter-stock-view form-group"><label>Visualizar stock</label><select id="counter-stock-view-mode" class="filter-control"><option value="qty" ${stockViewMode === 'qty' ? 'selected' : ''}>Unidades</option><option value="amount" ${stockViewMode === 'amount' ? 'selected' : ''}>Pesos</option></select></div><div class="counter-view-toggle form-group" aria-label="Modo de vista"><label>Vista</label><div class="counter-view-switch" role="group"><button type="button" class="counter-view-btn ${isGridView ? 'active' : ''}" data-counter-view="grid" aria-label="Vista en cuadricula" aria-pressed="${String(isGridView)}"><span class="counter-view-icon counter-view-icon-grid" aria-hidden="true"></span></button><button type="button" class="counter-view-btn ${!isGridView ? 'active' : ''}" data-counter-view="list" aria-label="Vista en listado" aria-pressed="${String(!isGridView)}"><span class="counter-view-icon counter-view-icon-list" aria-hidden="true"></span></button></div></div></div>
         <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar producto…" id="searchMostrador"></div><select id="filterMostradorTipo" class="filter-control"><option value="">Todos los tipos</option></select><select id="filterMostradorProveedor" class="filter-control"><option value="">Todos los proveedores</option></select><select id="filterMostradorStock" class="filter-control"><option value="">Todos</option><option value="disponible">Disponible</option><option value="sin-stock">Sin stock</option></select></div>
         <div class="counter-products" id="mostrador-products"></div>
         <div class="counter-load-more" id="mostrador-load-more" style="display:none"><span class="loading-spinner" aria-hidden="true"></span><span>Cargando más productos...</span></div>
@@ -43,11 +48,15 @@ export class MostradorComponent {
     document.getElementById('filterMostradorTipo').addEventListener('change', () => this.resetProducts());
     document.getElementById('filterMostradorProveedor').addEventListener('change', () => this.resetProducts());
     document.getElementById('filterMostradorStock').addEventListener('change', () => this.resetProducts());
-    document.getElementById('counter-measure-mode').addEventListener('change', () => {
+    document.getElementById('counter-measure-mode').addEventListener('change', event => {
+      this.preferences.measureMode = event.target.value === 'amount' ? 'amount' : 'qty';
+      this.savePreferences();
       this.renderProducts();
       this.renderCart();
     });
-    document.getElementById('counter-stock-view-mode').addEventListener('change', () => {
+    document.getElementById('counter-stock-view-mode').addEventListener('change', event => {
+      this.preferences.stockViewMode = event.target.value === 'amount' ? 'amount' : 'qty';
+      this.savePreferences();
       this.renderProducts();
       this.renderCart();
     });
@@ -89,6 +98,26 @@ export class MostradorComponent {
 
   formatMoney(value) {
     return value || value === 0 ? '$' + Number(value).toLocaleString('es-AR') : '—';
+  }
+
+  loadPreferences() {
+    const defaults = { measureMode: 'qty', stockViewMode: 'qty', viewMode: 'grid' };
+    try {
+      const saved = JSON.parse(localStorage.getItem(PREFERENCES_STORAGE_KEY) || '{}');
+      return {
+        measureMode: saved.measureMode === 'amount' ? 'amount' : defaults.measureMode,
+        stockViewMode: saved.stockViewMode === 'amount' ? 'amount' : defaults.stockViewMode,
+        viewMode: saved.viewMode === 'list' ? 'list' : defaults.viewMode
+      };
+    } catch {
+      return defaults;
+    }
+  }
+
+  savePreferences() {
+    try {
+      localStorage.setItem(PREFERENCES_STORAGE_KEY, JSON.stringify(this.preferences));
+    } catch {}
   }
 
   getProductPrice(producto) {
@@ -140,6 +169,8 @@ export class MostradorComponent {
 
   setViewMode(mode) {
     this.viewMode = mode === 'list' ? 'list' : 'grid';
+    this.preferences.viewMode = this.viewMode;
+    this.savePreferences();
     document.querySelectorAll('[data-counter-view]').forEach(button => {
       const active = button.dataset.counterView === this.viewMode;
       button.classList.toggle('active', active);
@@ -227,6 +258,13 @@ export class MostradorComponent {
   resetProducts() {
     this.visibleCount = PRODUCT_PAGE_SIZE;
     this.renderProducts();
+  }
+
+  resetFilters() {
+    form.clear(['searchMostrador', 'filterMostradorTipo', 'filterMostradorProveedor', 'filterMostradorStock']);
+    this.visibleCount = PRODUCT_PAGE_SIZE;
+    this.filteredTotal = 0;
+    this.filterKey = '';
   }
 
   getCurrentFilterKey() {
