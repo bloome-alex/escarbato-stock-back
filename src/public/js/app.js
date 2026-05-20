@@ -10,6 +10,7 @@ import { VentasComponent } from './components/ventas.js';
 import { MostradorComponent } from './components/mostrador.js?v=20260519-2';
 import { MetodosPagoComponent } from './components/metodos-pago.js';
 import { CajasComponent } from './components/cajas.js';
+import { UsuariosComponent } from './components/usuarios.js';
 import { isMobileListView } from './pagination.js';
 
 class PetshopApp {
@@ -25,7 +26,7 @@ class PetshopApp {
     this.pendingRealtimeStores = new Set();
     this.pendingRealtimeMessages = [];
     this.onWindowScroll = () => this.handleMobileListScroll();
-    this.sectionOrder = ['dashboard', 'proveedores', 'tipos', 'productos', 'metodosPago', 'cajas', 'ventas', 'mostrador', 'stock'];
+    this.sectionOrder = ['dashboard', 'proveedores', 'tipos', 'productos', 'metodosPago', 'cajas', 'ventas', 'mostrador', 'stock', 'usuarios'];
     this.sectionMenu = {
       dashboard: { group: 'Principal', icon: '🏠', label: 'Panel' },
       proveedores: { group: 'Gestión', icon: '🚚', label: 'Proveedores' },
@@ -35,7 +36,8 @@ class PetshopApp {
       cajas: { group: 'Gestión', icon: '💵', label: 'Cajas' },
       ventas: { group: 'Gestión', icon: '🧾', label: 'Ventas' },
       mostrador: { group: 'Gestión', icon: '🛒', label: 'Mostrador' },
-      stock: { group: 'Gestión', icon: '📊', label: 'Stock' }
+      stock: { group: 'Gestión', icon: '📊', label: 'Stock' },
+      usuarios: { group: 'Configuración', icon: '🔐', label: 'Usuario' }
     };
     this.sections = appConfig.sections || {};
     if (!this.sectionOrder.some(section => this.sections[section] !== false)) this.sections.dashboard = true;
@@ -48,7 +50,8 @@ class PetshopApp {
       cajas: new CajasComponent(this),
       stock: new StockComponent(this),
       ventas: new VentasComponent(this),
-      mostrador: new MostradorComponent(this)
+      mostrador: new MostradorComponent(this),
+      usuarios: new UsuariosComponent(this)
     };
   }
 
@@ -243,6 +246,8 @@ class PetshopApp {
       if (action === 'add-counter-item') this.components.mostrador.addItem(id);
       if (action === 'remove-counter-item') this.components.mostrador.removeItem(id);
       if (action === 'finish-counter-sale') return this.runButtonAction(actionButton, () => this.components.mostrador.finishSale(), 'Guardando');
+      if (action === 'refresh-users') return this.runButtonAction(actionButton, () => this.components.usuarios.render(), 'Actualizando');
+      if (action === 'save-user') return this.runButtonAction(actionButton, () => this.components.usuarios.save(id), 'Guardando');
       if (action === 'delete') this.confirmDelete(entity, id, name);
     });
 

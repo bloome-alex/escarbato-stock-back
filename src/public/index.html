@@ -971,6 +971,63 @@
     display: flex; gap: 10px; justify-content: flex-end; margin-top: 26px;
   }
 
+  .user-settings-shell {
+    min-height: min(560px, calc(100vh - 180px));
+    display: grid;
+    place-items: center;
+  }
+  .user-settings-card {
+    width: min(100%, 460px);
+    background: linear-gradient(180deg, var(--card), var(--warm-white));
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) + 4px);
+    box-shadow: var(--shadow-lg);
+    padding: 30px;
+  }
+  .user-settings-header {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    margin-bottom: 26px;
+  }
+  .user-settings-icon {
+    width: 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+    border-radius: 16px;
+    background: var(--sage-light);
+    color: var(--sage-dark);
+    font-size: 1.35rem;
+    flex: 0 0 auto;
+  }
+  .user-settings-kicker {
+    display: inline-block;
+    margin-bottom: 5px;
+    color: var(--sage-dark);
+    font-size: .72rem;
+    font-weight: 900;
+    letter-spacing: .08em;
+  }
+  .user-settings-header h2 {
+    font-family: 'Cinzel', serif;
+    color: var(--brown);
+    font-size: 1.25rem;
+    line-height: 1.15;
+    margin-bottom: 6px;
+  }
+  .user-settings-header p {
+    color: var(--text-soft);
+    font-size: .9rem;
+    line-height: 1.45;
+  }
+  .user-settings-save {
+    width: 100%;
+    justify-content: center;
+    margin-top: 8px;
+    min-height: 46px;
+  }
+
   /* ── STOCK ── */
   .stock-card {
     background: var(--card);

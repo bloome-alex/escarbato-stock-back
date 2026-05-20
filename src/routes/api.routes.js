@@ -16,6 +16,8 @@ export class ApiRoutes {
     this.app.post('/api/auth/login', this.authController.login);
 
     this.app.use('/api', this.authMiddleware.requireAuth);
+    this.app.get('/api/auth/users', this.authController.listUsers);
+    this.app.put('/api/auth/users/:id', this.authController.updateUser);
     this.app.get('/api/dashboard', this.dashboardController.getDashboard);
     this.app.get('/api/data', this.bootstrapDataController.getData);
     this.app.get('/api/reportes/productos.pdf', this.reportController.productsPdf);

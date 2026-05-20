@@ -6,3 +6,4 @@ export { Venta } from './venta.js';
 export { Auditoria } from './auditoria.js';
 export { MetodoPago } from './metodo-pago.js';
 export { Caja } from './caja.js';
+export { Usuario } from './usuario.js';

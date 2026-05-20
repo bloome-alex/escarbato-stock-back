@@ -1,6 +1,6 @@
 import { appConfig } from './config.js';
 
-const emptyData = () => ({ proveedores: [], tipos: [], productos: [], metodosPago: [], stock: {}, reservedStock: {}, ventas: [], cajas: [], auditoria: [] });
+const emptyData = () => ({ proveedores: [], tipos: [], productos: [], metodosPago: [], stock: {}, reservedStock: {}, ventas: [], cajas: [], auditoria: [], usuarios: [] });
 
 const reportTimestamp = (date = new Date()) => {
   const pad = value => String(value).padStart(2, '0');
@@ -13,6 +13,7 @@ class BackendStore {
     this.config = config;
     this.baseUrl = config.backendUrl.replace(/\/$/, '');
     this.token = sessionStorage.getItem('petshopAuthToken') || '';
+    this.currentUser = this.parseTokenUser(this.token);
     this.clientId = globalThis.crypto?.randomUUID ? globalThis.crypto.randomUUID() : this.createId();
     this.data = emptyData();
     this.socket = null;
@@ -68,6 +69,7 @@ class BackendStore {
     }
     const result = await response.json();
     this.token = result.token;
+    this.currentUser = result.user || null;
     sessionStorage.setItem('petshopAuthToken', this.token);
     if (modal) modal.remove();
   }
@@ -164,6 +166,23 @@ class BackendStore {
     await this.request(`/api/${store}/${encodeURIComponent(id)}`, { method: 'DELETE' });
   }
 
+  async getUsers() {
+    const users = await this.request('/api/auth/users');
+    this.data.usuarios = users;
+    return users;
+  }
+
+  async updateUser(user) {
+    const savedUser = await this.request(`/api/auth/users/${encodeURIComponent(user.id)}`, {
+      method: 'PUT',
+      body: JSON.stringify(user)
+    });
+    const index = this.data.usuarios.findIndex(item => item.id === savedUser.id);
+    if (index >= 0) this.data.usuarios[index] = savedUser;
+    else this.data.usuarios.push(savedUser);
+    return savedUser;
+  }
+
   async downloadProductsPdf(retry = true) {
     await this.ensureToken();
     const response = await fetch(`${this.baseUrl}/api/reportes/productos.pdf`, {
@@ -218,6 +237,17 @@ class BackendStore {
 
   createId() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  }
+
+  parseTokenUser(token) {
+    try {
+      const encodedPayload = ((token || '').split('.')[1] || '').replace(/-/g, '+').replace(/_/g, '/');
+      const paddedPayload = encodedPayload.padEnd(Math.ceil(encodedPayload.length / 4) * 4, '=');
+      const payload = JSON.parse(atob(paddedPayload));
+      return payload.id ? { id: payload.id, username: payload.username || '' } : null;
+    } catch {
+      return null;
+    }
   }
 
   connectRealtime() {

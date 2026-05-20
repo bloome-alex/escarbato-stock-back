@@ -7,7 +7,8 @@ const defaultSections = {
   cajas: true,
   ventas: true,
   mostrador: true,
-  stock: true
+  stock: true,
+  usuarios: true
 };
 
 const configuredSections = window.PETSHOP_CONFIG?.sections;

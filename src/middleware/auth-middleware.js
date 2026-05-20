@@ -1,29 +1,23 @@
-import crypto from 'node:crypto';
 import jwt from 'jsonwebtoken';
 
 export class AuthMiddleware {
-  constructor(config) {
+  constructor(config, authService) {
     this.config = config;
+    this.authService = authService;
     this.requireAuth = this.requireAuth.bind(this);
   }
 
-  credentialHash() {
-    return crypto
-      .createHash('sha256')
-      .update(`${this.config.authUsername}:${this.config.authPassword}`)
-      .digest('hex');
-  }
-
-  requireAuth(req, res, next) {
+  async requireAuth(req, res, next) {
     const [scheme, token] = (req.headers.authorization || '').split(' ');
     if (scheme !== 'Bearer' || !token) return res.status(401).json({ error: 'Token requerido' });
 
     try {
       const payload = jwt.verify(token, this.config.jwtSecret);
-      if (payload.username !== this.config.authUsername || payload.credentials !== this.credentialHash()) {
+      const user = await this.authService.getValidUser(payload.id, payload.credentials);
+      if (!user) {
         return res.status(401).json({ error: 'Token inválido' });
       }
-      req.user = payload;
+      req.user = { ...payload, username: user.username };
       next();
     } catch {
       res.status(401).json({ error: 'Token inválido o vencido' });

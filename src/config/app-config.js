@@ -9,6 +9,8 @@ export class AppConfig {
     this.jwtExpiresIn = env.JWT_EXPIRES_IN || '8h';
     this.authUsername = env.AUTH_USERNAME || 'admin';
     this.authPassword = env.AUTH_PASSWORD || 'admin';
+    this.supervisorUsername = env.SUPERVISOR_USERNAME || 'supervisor';
+    this.supervisorPassword = env.SUPERVISOR_PASSWORD || 'supervisor';
     this.corsOrigin = env.CORS_ORIGIN || '*';
     this.appName = env.APP_NAME || 'Escarbato';
     this.appAssetsPath = this.normalizeAssetsPath(env.APP_ASSETS_PATH || 'assets/escarbato');
@@ -37,7 +39,8 @@ export class AppConfig {
       cajas: this.envFlag(env, 'APP_SECTION_CAJAS_ENABLED'),
       ventas: this.envFlag(env, 'APP_SECTION_VENTAS_ENABLED'),
       mostrador: this.envFlag(env, 'APP_SECTION_MOSTRADOR_ENABLED'),
-      stock: this.envFlag(env, 'APP_SECTION_STOCK_ENABLED')
+      stock: this.envFlag(env, 'APP_SECTION_STOCK_ENABLED'),
+      usuarios: this.envFlag(env, 'APP_SECTION_USUARIOS_ENABLED')
     };
   }
 }

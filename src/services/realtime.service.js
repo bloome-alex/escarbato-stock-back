@@ -11,8 +11,8 @@ export class RealtimeService {
 
   attach(server) {
     this.wss = new WebSocketServer({ server, path: '/ws' });
-    this.wss.on('connection', (socket, req) => {
-      if (!this.authenticate(req)) {
+    this.wss.on('connection', async (socket, req) => {
+      if (!await this.authenticate(req)) {
         socket.close(1008, 'Token invalido');
         return;
       }

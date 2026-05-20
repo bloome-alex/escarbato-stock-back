@@ -13,6 +13,7 @@ import { AuthMiddleware } from '../middleware/auth-middleware.js';
 import { ApiRoutes } from '../routes/api.routes.js';
 import { PublicRoutes } from '../routes/public.routes.js';
 import { BootstrapDataService } from '../services/bootstrap-data.service.js';
+import { AuthService } from '../services/auth.service.js';
 import { DashboardService } from '../services/dashboard.service.js';
 import { DataStoreService } from '../services/data-store.service.js';
 import { ModelRegistry } from '../services/model-registry.js';
@@ -27,7 +28,8 @@ export class ServerApplication {
 
   build() {
     const modelRegistry = new ModelRegistry();
-    const authMiddleware = new AuthMiddleware(this.config);
+    const authService = new AuthService(this.config);
+    const authMiddleware = new AuthMiddleware(this.config, authService);
     const dataStoreService = new DataStoreService(modelRegistry);
     this.realtimeService = new RealtimeService(this.config, authMiddleware);
 
@@ -39,7 +41,7 @@ export class ServerApplication {
 
     new ApiRoutes(this.app, {
       authMiddleware,
-      authController: new AuthController(this.config, authMiddleware),
+      authController: new AuthController(this.config, authMiddleware, authService),
       systemController: new SystemController(this.config),
       dashboardController: new DashboardController(new DashboardService()),
       bootstrapDataController: new BootstrapDataController(new BootstrapDataService()),
