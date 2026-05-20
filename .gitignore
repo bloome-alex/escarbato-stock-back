@@ -1,3 +1,4 @@
 node_modules/
 .env
-ecosystem.config.js
+ecosystem.config.cjs
+*.ecosystem.config.cjs
