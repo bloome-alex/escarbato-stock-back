@@ -22,6 +22,7 @@ const corsOrigin = process.env.CORS_ORIGIN || '*';
 const appName = process.env.APP_NAME || 'Escarbato';
 const appAssetsPath = normalizeAssetsPath(process.env.APP_ASSETS_PATH || 'assets/escarbato');
 const publicDir = path.join(process.cwd(), 'src/public');
+const sectionConfig = getSectionConfig();
 
 app.use(cors({ origin: corsOrigin === '*' ? true : corsOrigin }));
 app.use(express.json({ limit: '1mb' }));
@@ -60,6 +61,26 @@ function normalizeAssetsPath(value) {
   return `/${pathValue || 'assets/escarbato'}`;
 }
 
+function envFlag(name, defaultValue = true) {
+  const value = process.env[name];
+  if (value === undefined || value === '') return defaultValue;
+  return !['0', 'false', 'no', 'off', 'disabled'].includes(String(value).trim().toLowerCase());
+}
+
+function getSectionConfig() {
+  return {
+    dashboard: envFlag('APP_SECTION_DASHBOARD_ENABLED'),
+    proveedores: envFlag('APP_SECTION_PROVEEDORES_ENABLED'),
+    tipos: envFlag('APP_SECTION_TIPOS_ENABLED'),
+    productos: envFlag('APP_SECTION_PRODUCTOS_ENABLED'),
+    metodosPago: envFlag('APP_SECTION_METODOS_PAGO_ENABLED'),
+    cajas: envFlag('APP_SECTION_CAJAS_ENABLED'),
+    ventas: envFlag('APP_SECTION_VENTAS_ENABLED'),
+    mostrador: envFlag('APP_SECTION_MOSTRADOR_ENABLED'),
+    stock: envFlag('APP_SECTION_STOCK_ENABLED')
+  };
+}
+
 function escapeHtml(value) {
   return String(value)
     .replace(/&/g, '&amp;')
@@ -76,7 +97,8 @@ function configuredPublicContent(content, fileName) {
   return content
     .replaceAll('Escarbato', configuredName)
     .replaceAll('/assets', appAssetsPath)
-    .replace(/(["'])assets\//g, `$1${appAssetsPath}/`);
+    .replace(/(["'])assets\//g, `$1${appAssetsPath}/`)
+    .replace('"__PETSHOP_SECTIONS_CONFIG__"', JSON.stringify(sectionConfig));
 }
 
 function serveConfiguredPublicFile(fileName, contentType) {
@@ -441,6 +463,10 @@ function requireAuth(req, res, next) {
 
 app.get('/api/health', (req, res) => {
   res.json({ ok: true });
+});
+
+app.get('/api/config', (req, res) => {
+  res.json({ sections: sectionConfig });
 });
 
 app.post('/api/auth/login', (req, res) => {

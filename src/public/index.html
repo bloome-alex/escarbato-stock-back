@@ -1777,38 +1777,7 @@
     <div class="logo-sub">Petshop Admin</div>
   </div>
 
-  <nav class="sidebar-nav">
-    <div class="nav-section-label">Principal</div>
-    <button class="nav-item active" data-nav="dashboard">
-      <span class="nav-icon">🏠</span> Panel
-    </button>
-
-    <div class="nav-section-label">Gestión</div>
-    <button class="nav-item" data-nav="proveedores">
-      <span class="nav-icon">🚚</span> Proveedores
-    </button>
-    <button class="nav-item" data-nav="tipos">
-      <span class="nav-icon">🏷️</span> Tipos de Producto
-    </button>
-    <button class="nav-item" data-nav="productos">
-      <span class="nav-icon">📦</span> Productos
-    </button>
-    <button class="nav-item" data-nav="metodosPago">
-      <span class="nav-icon">💳</span> Metodos de pago
-    </button>
-    <button class="nav-item" data-nav="cajas">
-      <span class="nav-icon">💵</span> Cajas
-    </button>
-    <button class="nav-item" data-nav="ventas">
-      <span class="nav-icon">🧾</span> Ventas
-    </button>
-    <button class="nav-item" data-nav="mostrador">
-      <span class="nav-icon">🛒</span> Mostrador
-    </button>
-    <button class="nav-item" data-nav="stock">
-      <span class="nav-icon">📊</span> Stock
-    </button>
-  </nav>
+  <nav class="sidebar-nav" id="sidebarNav"></nav>
 
   <div class="sidebar-footer">
     <button class="theme-toggle" id="themeToggleBtn" type="button" aria-label="Cambiar a modo oscuro" aria-pressed="false">
@@ -1840,7 +1809,8 @@
     dataProvider: 'backend',
     backendUrl: '',
     username: '',
-    password: ''
+    password: '',
+    sections: "__PETSHOP_SECTIONS_CONFIG__"
   };
 </script>
 <script type="module" src="js/app.js?v=20260519-1"></script>

@@ -65,6 +65,11 @@ export class NavigationManager {
   }
 
   async go(section) {
+    if (this.app?.isSectionEnabled && !this.app.isSectionEnabled(section)) {
+      this.app?.toasts?.show('La sección está deshabilitada', 'error');
+      return;
+    }
+
     if (section !== 'dashboard' && !this.app?.dataReady) {
       this.showLoading(section);
       try {

@@ -1,4 +1,5 @@
 import { DataStore } from './data-store.js';
+import { appConfig } from './config.js';
 import { ModalManager, NavigationManager, ThemeManager, ToastManager } from './ui.js?v=20260517-1';
 import { DashboardComponent } from './components/dashboard.js';
 import { ProveedoresComponent } from './components/proveedores.js';
@@ -21,6 +22,20 @@ class PetshopApp {
     this.dataReady = false;
     this.preloadPromise = null;
     this.onWindowScroll = () => this.handleMobileListScroll();
+    this.sectionOrder = ['dashboard', 'proveedores', 'tipos', 'productos', 'metodosPago', 'cajas', 'ventas', 'mostrador', 'stock'];
+    this.sectionMenu = {
+      dashboard: { group: 'Principal', icon: '🏠', label: 'Panel' },
+      proveedores: { group: 'Gestión', icon: '🚚', label: 'Proveedores' },
+      tipos: { group: 'Gestión', icon: '🏷️', label: 'Tipos de Producto' },
+      productos: { group: 'Gestión', icon: '📦', label: 'Productos' },
+      metodosPago: { group: 'Gestión', icon: '💳', label: 'Metodos de pago' },
+      cajas: { group: 'Gestión', icon: '💵', label: 'Cajas' },
+      ventas: { group: 'Gestión', icon: '🧾', label: 'Ventas' },
+      mostrador: { group: 'Gestión', icon: '🛒', label: 'Mostrador' },
+      stock: { group: 'Gestión', icon: '📊', label: 'Stock' }
+    };
+    this.sections = appConfig.sections || {};
+    if (!this.sectionOrder.some(section => this.sections[section] !== false)) this.sections.dashboard = true;
     this.components = {
       dashboard: new DashboardComponent(this),
       proveedores: new ProveedoresComponent(this),
@@ -35,6 +50,8 @@ class PetshopApp {
   }
 
   async init() {
+    await this.loadBackendConfig();
+    this.renderMenu();
     this.renderShell();
     this.setMenuDisabled(true);
     this.bindEvents();
@@ -45,16 +62,65 @@ class PetshopApp {
       this.toasts.show(error.message || 'No se pudo inicializar la aplicación', 'error');
       throw error;
     }
-    this.renderSection('dashboard');
     this.preloadPromise = this.preloadMenuData();
+    this.navigation.go(this.initialSection());
     this.startHealthCron();
+  }
+
+  initialSection() {
+    return this.sectionOrder.find(section => this.isSectionEnabled(section)) || 'dashboard';
+  }
+
+  isSectionEnabled(section) {
+    return this.sections[section] !== false;
+  }
+
+  enabledSections() {
+    return this.sectionOrder.filter(section => this.isSectionEnabled(section));
+  }
+
+  async loadBackendConfig() {
+    try {
+      const baseUrl = appConfig.backendUrl.replace(/\/$/, '');
+      const response = await fetch(`${baseUrl}/api/config`, { cache: 'no-store' });
+      if (!response.ok) return;
+      const config = await response.json();
+      if (config?.sections && typeof config.sections === 'object') {
+        this.sections = { ...this.sections, ...config.sections };
+      }
+    } catch {
+      // Si la configuración remota no está disponible, se usa la configuración inicial.
+    }
+
+    if (!this.sectionOrder.some(section => this.sections[section] !== false)) this.sections.dashboard = true;
+  }
+
+  renderMenu() {
+    const nav = document.getElementById('sidebarNav');
+    if (!nav) return;
+
+    const activeSection = this.initialSection();
+    const itemsByGroup = this.enabledSections().reduce((groups, section) => {
+      const item = this.sectionMenu[section];
+      if (!item) return groups;
+      if (!groups[item.group]) groups[item.group] = [];
+      groups[item.group].push({ section, ...item });
+      return groups;
+    }, {});
+
+    nav.innerHTML = Object.entries(itemsByGroup).map(([group, items]) => `
+      <div class="nav-section-label">${group}</div>
+      ${items.map(item => `<button class="nav-item${item.section === activeSection ? ' active' : ''}" data-nav="${item.section}"><span class="nav-icon">${item.icon}</span> ${item.label}</button>`).join('')}
+    `).join('');
   }
 
   async preloadMenuData() {
     try {
       await this.store.loadAll();
-      this.components.productos.refreshTipoSelects();
-      this.components.productos.refreshProveedorSelects();
+      if (this.isSectionEnabled('productos')) {
+        this.components.productos.refreshTipoSelects();
+        this.components.productos.refreshProveedorSelects();
+      }
       this.dataReady = true;
       this.setMenuDisabled(false);
       this.updateBadge();
@@ -102,36 +168,25 @@ class PetshopApp {
   }
 
   renderShell() {
-    document.getElementById('sectionsRoot').innerHTML = [
-      this.components.dashboard.template(),
-      this.components.proveedores.template(),
-      this.components.tipos.template(),
-      this.components.productos.template(),
-      this.components.metodosPago.template(),
-      this.components.cajas.template(),
-      this.components.stock.template(),
-      this.components.ventas.template(),
-      this.components.mostrador.template()
-    ].join('');
+    const sectionTemplates = this.enabledSections()
+      .map(section => this.components[section]?.template?.())
+      .filter(Boolean);
 
-    document.getElementById('modalsRoot').innerHTML = [
-      this.components.proveedores.modalTemplate(),
-      this.components.tipos.modalTemplate(),
-      this.components.productos.modalTemplate(),
-      this.components.metodosPago.modalTemplate(),
-      this.components.stock.modalTemplate(),
+    document.getElementById('sectionsRoot').innerHTML = sectionTemplates.join('');
+
+    const modalTemplates = [
+      this.isSectionEnabled('proveedores') ? this.components.proveedores.modalTemplate() : '',
+      this.isSectionEnabled('tipos') ? this.components.tipos.modalTemplate() : '',
+      this.isSectionEnabled('productos') ? this.components.productos.modalTemplate() : '',
+      this.isSectionEnabled('metodosPago') ? this.components.metodosPago.modalTemplate() : '',
+      this.isSectionEnabled('stock') ? this.components.stock.modalTemplate() : '',
       this.detailModalTemplate(),
       this.confirmModalTemplate()
-    ].join('');
+    ].filter(Boolean);
 
-    this.components.proveedores.bind();
-    this.components.tipos.bind();
-    this.components.productos.bind();
-    this.components.metodosPago.bind();
-    this.components.cajas.bind();
-    this.components.stock.bind();
-    this.components.ventas.bind();
-    this.components.mostrador.bind();
+    document.getElementById('modalsRoot').innerHTML = modalTemplates.join('');
+
+    this.enabledSections().forEach(section => this.components[section]?.bind?.());
   }
 
   confirmModalTemplate() {
@@ -244,6 +299,8 @@ class PetshopApp {
   }
 
   async renderSection(section) {
+    if (!this.isSectionEnabled(section) || !this.components[section]) return;
+
     if (section !== 'dashboard' && !this.dataReady) {
       try {
         await (this.preloadPromise || this.preloadMenuData());
@@ -307,7 +364,7 @@ class PetshopApp {
       await this.audit('Eliminación', 'Proveedores', deleted ? deleted.nombre : 'Proveedor eliminado');
       this.modals.close('confirm');
       this.components.proveedores.render();
-      this.components.productos.refreshProveedorSelects();
+      if (this.isSectionEnabled('productos')) this.components.productos.refreshProveedorSelects();
     }
 
     if (entity === 'tipo') {
@@ -317,7 +374,7 @@ class PetshopApp {
       await this.audit('Eliminación', 'Tipos de producto', deleted ? deleted.nombre : 'Tipo eliminado');
       this.modals.close('confirm');
       this.components.tipos.render();
-      this.components.productos.refreshTipoSelects();
+      if (this.isSectionEnabled('productos')) this.components.productos.refreshTipoSelects();
     }
 
     if (entity === 'prod') {
