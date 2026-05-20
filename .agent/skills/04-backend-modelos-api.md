@@ -33,19 +33,23 @@ export const Cliente = mongoose.model('Cliente', clienteSchema);
 ## Export e import
 
 - Exportar el modelo en `src/models/index.js`.
-- Importarlo en `src/server.js` dentro del import agrupado de modelos.
+- Importarlo donde corresponda segun la arquitectura modular, normalmente en `src/services/model-registry.js` o en el service especifico que lo use.
 
 ## Registro en API generica
 
-Agregar el store en `models`:
+Agregar el store en `ModelRegistry`:
 
 ```js
-const models = {
-  clientes: Cliente
-};
+export class ModelRegistry {
+  constructor() {
+    this.models = {
+      clientes: Cliente
+    };
+  }
+}
 ```
 
-Agregar campos buscables en `searchableFields`:
+Agregar campos buscables en `DataStoreService.searchableFields`:
 
 ```js
 const searchableFields = {
@@ -72,11 +76,11 @@ Si la entidad debe estar disponible offline o para relaciones:
 - Crear object store IndexedDB en `openDB()`.
 - Cargarla en `IndexedDbStore.loadAll()`.
 - Agregarla a `BackendStore` solo si requiere metodos especiales; si no, `put`, `delete` y `getPage` ya funcionan.
-- Agregarla en `/api/data` en `server.js`.
+- Agregarla en `BootstrapDataService` para que `/api/data` la devuelva.
 
 ## Validaciones especiales
 
-- Mantener validaciones especificas como funciones pequeñas (`validateClientePayload`) solo si la entidad lo necesita.
+- Mantener validaciones especificas como metodos pequeños (`validateClientePayload`) solo si la entidad lo necesita.
 - Reusar `validateUniqueName` si la entidad tiene `nombre` unico.
 - Ajustar `buildUpdatePayload` cuando haya campos calculados o fechas de actualizacion.
 
