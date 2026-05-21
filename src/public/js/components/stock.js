@@ -31,6 +31,16 @@ export class StockComponent {
       const input = event.target.closest('[data-stock-input]');
       if (input) this.scheduleInlineSave(input);
     });
+    document.getElementById('stock-list').addEventListener('focusin', event => {
+      const input = event.target.closest('[data-stock-input]');
+      if (input && input.value === '0') input.value = '';
+    });
+    document.getElementById('stock-list').addEventListener('focusout', event => {
+      const input = event.target.closest('[data-stock-input]');
+      if (!input || input.value !== '') return;
+      this.clearInlineSave(input.dataset.id);
+      input.value = this.app.store.data.stock[input.dataset.id] || 0;
+    });
     document.getElementById('stock-list').addEventListener('keydown', event => {
       const input = event.target.closest('[data-stock-input]');
       if (input && event.key === 'Enter') {
@@ -97,7 +107,7 @@ export class StockComponent {
       const status = this.getStatus(qty, min);
       const tipo = data.tipos.find(item => item.id === producto.tipoId);
       const proveedor = data.proveedores.find(item => item.id === producto.proveedorId);
-      return `<tr><td data-label="Producto"><strong>${producto.nombre}</strong></td><td data-label="Tipo">${tipo ? tipo.nombre : '—'}</td><td data-label="Proveedor">${proveedor ? proveedor.nombre : '—'}</td><td data-label="Mínimo">${min} u.</td><td data-label="Stock"><input class="stock-qty" type="number" min="0" step="1" value="${qty}" data-stock-input data-id="${producto.id}" aria-label="Stock de ${producto.nombre}"></td><td data-label="Estado"><span class="chip ${this.statusChip[status]}" data-stock-status>${this.statusLabel[status]}</span></td></tr>`;
+      return `<tr><td data-label="Producto"><strong>${producto.nombre}</strong></td><td data-label="Tipo">${tipo ? tipo.nombre : '—'}</td><td data-label="Proveedor">${proveedor ? proveedor.nombre : '—'}</td><td data-label="Mínimo">${min} u.</td><td data-label="Stock"><input class="stock-qty" type="number" min="0" step="any" value="${qty}" data-stock-input data-id="${producto.id}" aria-label="Stock de ${producto.nombre}"></td><td data-label="Estado"><span class="chip ${this.statusChip[status]}" data-stock-status>${this.statusLabel[status]}</span></td></tr>`;
     }).join('');
     document.getElementById('pager-stock').innerHTML = paginationTemplate('stock', pageState);
   }
@@ -121,14 +131,17 @@ export class StockComponent {
 
   async saveInline(input, keepFocus = false) {
     const id = input.dataset.id;
-    const qty = Number(input.value);
+    const value = input.value.trim();
     if (!id) return;
-    if (Number.isNaN(qty) || qty < 0 || !Number.isInteger(qty)) {
+    if (value === '') return;
+
+    const qty = Number(value);
+    if (Number.isNaN(qty) || qty < 0) {
       input.value = this.app.store.data.stock[id] || 0;
-      return this.app.toasts.show('Ingresá una cantidad entera válida', 'error');
+      return this.app.toasts.show('Ingresá una cantidad válida', 'error');
     }
 
-    const newQty = qty;
+    const newQty = Number(qty.toFixed(4));
     if (newQty === (this.app.store.data.stock[id] || 0)) {
       input.value = newQty;
       return;
