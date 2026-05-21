@@ -15,7 +15,7 @@ export class StockComponent {
 
   template() {
     return `<section class="section" id="sec-stock">
-      <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar producto en stock…" id="searchStock"></div><select id="filterStockStatus" class="filter-control"><option value="">Todos</option><option value="ok">Disponible</option><option value="low">Stock bajo</option><option value="out">Sin stock</option></select></div>
+      <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar producto en stock…" id="searchStock"></div><select id="filterStockTipo" class="filter-control"><option value="">Todos los tipos</option></select><select id="filterStockProveedor" class="filter-control"><option value="">Todos los proveedores</option></select><select id="filterStockStatus" class="filter-control"><option value="">Todos</option><option value="ok">Disponible</option><option value="low">Stock bajo</option><option value="out">Sin stock</option></select></div>
       <div class="table-wrap" id="stock-list"><table class="data-table"><thead><tr><th>Producto</th><th>Tipo de producto</th><th>Proveedor</th><th>Mínimo</th><th>Stock</th><th>Estado</th></tr></thead><tbody id="tbl-stock"></tbody></table></div><div id="empty-stock" class="empty-state" style="display:none"><div class="empty-icon">📊</div><p>Agregá productos para gestionar el stock</p></div><div id="pager-stock"></div>
     </section>`;
   }
@@ -26,6 +26,8 @@ export class StockComponent {
 
   bind() {
     document.getElementById('searchStock').addEventListener('input', () => this.resetAndRender());
+    document.getElementById('filterStockTipo').addEventListener('change', () => this.resetAndRender());
+    document.getElementById('filterStockProveedor').addEventListener('change', () => this.resetAndRender());
     document.getElementById('filterStockStatus').addEventListener('change', () => this.resetAndRender());
     document.getElementById('stock-list').addEventListener('input', event => {
       const input = event.target.closest('[data-stock-input]');
@@ -57,6 +59,28 @@ export class StockComponent {
     return 'ok';
   }
 
+  refreshTipoSelects() {
+    const filter = document.getElementById('filterStockTipo');
+    const selectedFilter = filter ? filter.value : '';
+    const opts = [...this.app.store.data.tipos]
+      .sort(compareByName)
+      .map(tipo => `<option value="${tipo.id}">${tipo.nombre}</option>`)
+      .join('');
+    document.getElementById('filterStockTipo').innerHTML = '<option value="">Todos los tipos</option>' + opts;
+    if (selectedFilter) filter.value = selectedFilter;
+  }
+
+  refreshProveedorSelects() {
+    const filter = document.getElementById('filterStockProveedor');
+    const selectedFilter = filter ? filter.value : '';
+    const opts = [...this.app.store.data.proveedores]
+      .sort(compareByName)
+      .map(prov => `<option value="${prov.id}">${prov.nombre}</option>`)
+      .join('');
+    document.getElementById('filterStockProveedor').innerHTML = '<option value="">Todos los proveedores</option><option value="sin-proveedor">Sin proveedor</option>' + opts;
+    if (selectedFilter) filter.value = selectedFilter;
+  }
+
   render() {
     clearTimeout(this.loadingTimer);
     document.getElementById('stock-list').innerHTML = loadingTemplate('Cargando stock...');
@@ -76,14 +100,21 @@ export class StockComponent {
   }
 
   renderList() {
+    this.refreshTipoSelects();
+    this.refreshProveedorSelects();
     const data = this.app.store.data;
     const q = (form.value('searchStock') || '').toLowerCase();
+    const tipoId = form.value('filterStockTipo');
+    const proveedorId = form.value('filterStockProveedor');
     const filter = form.value('filterStockStatus');
     const list = data.productos.filter(producto => {
       const qty = (data.stock[producto.id] || 0) - (data.reservedStock?.[producto.id] || 0);
       const min = producto.minStock ?? 0;
       const status = this.getStatus(qty, min);
-      return producto.nombre.toLowerCase().includes(q) && (!filter || status === filter);
+      const matchesProveedor = !proveedorId
+        || (proveedorId === 'sin-proveedor' && !producto.proveedorId)
+        || producto.proveedorId === proveedorId;
+      return producto.nombre.toLowerCase().includes(q) && (!tipoId || producto.tipoId === tipoId) && matchesProveedor && (!filter || status === filter);
     }).sort(compareByName);
 
     const listEl = document.getElementById('stock-list');
