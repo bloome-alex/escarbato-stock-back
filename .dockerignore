@@ -1,0 +1,12 @@
+.git
+.gitignore
+.opencode
+.agent
+node_modules
+npm-debug.log*
+Dockerfile
+.dockerignore
+.env
+.env.*
+*.ecosystem.config.cjs
+ecosystem.config.cjs
