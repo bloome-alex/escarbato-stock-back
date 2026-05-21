@@ -1,4 +1,4 @@
-const CACHE_NAME = 'escarbato-pwa-v16';
+const CACHE_NAME = 'escarbato-pwa-v17';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -7,8 +7,6 @@ const APP_SHELL = [
   '/assets/icon-192.png',
   '/assets/icon-512.png',
   '/assets/apple-touch-icon.png',
-  '/assets/icon-512.png',
-  '/assets/icon-512.png',
   '/js/app.js',
   '/js/config.js',
   '/js/data-store.js',
