@@ -42,6 +42,14 @@ export class PeluqueriaComponent {
     this.calendarEnd = CLOSE_MINUTES;
     this.dragState = null;
     this.loadingTimer = null;
+    this.turnosFilters = {
+      fechaDesde: dateKey(new Date()),
+      cliente: '',
+      servicioId: '',
+      tipoPerroId: '',
+      estado: '',
+      isPaid: ''
+    };
   }
 
   template() {
@@ -188,12 +196,68 @@ export class PeluqueriaComponent {
   }
 
   renderTurnos() {
-    const list = [...this.app.store.data.peluqueriaTurnos].sort((a, b) => `${b.fecha} ${b.hora}`.localeCompare(`${a.fecha} ${a.hora}`));
+    const filtros = this.turnosFilters;
+    const today = dateKey(new Date());
+
+    const servicioOptions = this.app.store.data.peluqueriaServicios.map(s => `<option value="${s.id}" ${s.id === filtros.servicioId ? 'selected' : ''}>${esc(s.nombre)}</option>`).join('');
+    const tipoOptions = this.app.store.data.peluqueriaTiposPerro.map(t => `<option value="${t.id}" ${t.id === filtros.tipoPerroId ? 'selected' : ''}>${esc(t.nombre)}</option>`).join('');
+
+    let list = [...this.app.store.data.peluqueriaTurnos].filter(turno => {
+      if (turno.fecha < filtros.fechaDesde) return false;
+      if (filtros.cliente && !turno.cliente.toLowerCase().includes(filtros.cliente.toLowerCase())) return false;
+      if (filtros.servicioId && turno.servicioId !== filtros.servicioId) return false;
+      if (filtros.tipoPerroId && turno.tipoPerroId !== filtros.tipoPerroId) return false;
+      if (filtros.estado && turno.estado !== filtros.estado) return false;
+      if (filtros.isPaid === 'true' && !turno.isPaid) return false;
+      if (filtros.isPaid === 'false' && turno.isPaid) return false;
+      return true;
+    }).sort((a, b) => `${a.fecha} ${a.hora}`.localeCompare(`${b.fecha} ${b.hora}`));
+
     const pageState = getResponsivePageItems(list, this.pages.turnos, DEFAULT_PAGE_SIZE);
     this.pages.turnos = pageState.page;
     this.totalPages = pageState.totalPages;
-    document.getElementById('peluqueria-content').innerHTML = `<div class="subsection-head"><div><h3>Turnos</h3><p>Administración manual de turnos de peluquería.</p></div><button class="btn btn-primary" data-action="new-peluqueria-turno">+ Nuevo turno</button></div><div class="table-wrap"><table class="data-table"><thead><tr><th>Fecha</th><th>Hora</th><th>Cliente</th><th>Servicio</th><th>Tipo</th><th>Estado</th><th>Pagado</th><th>Acciones</th></tr></thead><tbody>${pageState.items.map(turno => this.turnoRow(turno)).join('') || '<tr><td colspan="8">Aún no hay turnos.</td></tr>'}</tbody></table></div><div id="pager-peluqueria"></div>`;
+
+    document.getElementById('peluqueria-content').innerHTML = `<div class="subsection-head"><div><h3>Turnos</h3><p>Administración manual de turnos de peluquería.</p></div><button class="btn btn-primary" data-action="new-peluqueria-turno">+ Nuevo turno</button></div>
+    <div class="toolbar">
+      <label class="filter-field"><span>Fecha desde</span><input type="date" id="turnos-filter-fecha" class="filter-control" value="${filtros.fechaDesde}"></label>
+      <div class="search-box"><span class="search-icon">🔍</span><input type="text" id="turnos-filter-cliente" placeholder="Buscar por cliente…" value="${esc(filtros.cliente)}"></div>
+      <select id="turnos-filter-servicio" class="filter-control"><option value="">Todos los servicios</option>${servicioOptions}</select>
+      <select id="turnos-filter-tipo" class="filter-control"><option value="">Todos los tipos</option>${tipoOptions}</select>
+      <select id="turnos-filter-estado" class="filter-control"><option value="">Todos los estados</option>${ESTADOS.map(e => `<option value="${e}" ${filtros.estado === e ? 'selected' : ''}>${e}</option>`).join('')}</select>
+      <select id="turnos-filter-pagado" class="filter-control"><option value="">Todos</option><option value="true" ${filtros.isPaid === 'true' ? 'selected' : ''}>Sí</option><option value="false" ${filtros.isPaid === 'false' ? 'selected' : ''}>No</option></select>
+      <button class="btn btn-ghost" data-action="turnos-clear-filters">Limpiar</button>
+    </div>
+    <div class="table-wrap"><table class="data-table"><thead><tr><th>Fecha</th><th>Hora</th><th>Cliente</th><th>Servicio</th><th>Tipo</th><th>Estado</th><th>Pagado</th><th>Acciones</th></tr></thead><tbody>${pageState.items.map(turno => this.turnoRow(turno)).join('') || '<tr><td colspan="8">No hay turnos que coincidan con los filtros.</td></tr>'}</tbody></table></div>
+    <div id="pager-peluqueria"></div>`;
     document.getElementById('pager-peluqueria').innerHTML = paginationTemplate('peluqueria', pageState);
+    this.bindTurnosFilters();
+  }
+
+  bindTurnosFilters() {
+    const update = (key, value) => {
+      this.turnosFilters[key] = value;
+      this.pages.turnos = 1;
+      this.renderTurnos();
+    };
+    document.getElementById('turnos-filter-fecha')?.addEventListener('change', e => update('fechaDesde', e.target.value));
+    document.getElementById('turnos-filter-cliente')?.addEventListener('input', e => update('cliente', e.target.value));
+    document.getElementById('turnos-filter-servicio')?.addEventListener('change', e => update('servicioId', e.target.value));
+    document.getElementById('turnos-filter-tipo')?.addEventListener('change', e => update('tipoPerroId', e.target.value));
+    document.getElementById('turnos-filter-estado')?.addEventListener('change', e => update('estado', e.target.value));
+    document.getElementById('turnos-filter-pagado')?.addEventListener('change', e => update('isPaid', e.target.value));
+  }
+
+  clearTurnosFilters() {
+    this.turnosFilters = {
+      fechaDesde: dateKey(new Date()),
+      cliente: '',
+      servicioId: '',
+      tipoPerroId: '',
+      estado: '',
+      isPaid: ''
+    };
+    this.pages.turnos = 1;
+    this.renderTurnos();
   }
 
   turnoRow(turno) {
@@ -360,7 +424,7 @@ export class PeluqueriaComponent {
     if (turno) {
       items.push(`<button type="button" data-calendar-menu-action="view" data-id="${turno.id}">Ver turno</button>`);
       items.push(`<button type="button" data-calendar-menu-action="edit" data-id="${turno.id}">Editar turno</button>`);
-      if (!turno.isPaid) items.push(`<button type="button" data-calendar-menu-action="pay" data-id="${turno.id}">💰 Pagar</button>`);
+      if (!turno.isPaid) items.push(`<button type="button" data-calendar-menu-action="pay" data-id="${turno.id}">Pagar</button>`);
       items.push(`<button type="button" class="danger" data-calendar-menu-action="delete" data-id="${turno.id}">Eliminar turno</button>`);
     }
     if (!items.length) return;

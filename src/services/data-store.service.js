@@ -170,7 +170,7 @@ export class DataStoreService {
 
   getSort(store) {
     if (store === 'ventas' || store === 'auditoria' || store === 'cajas') return { createdAt: -1 };
-    if (store === 'peluqueriaTurnos') return { fecha: -1, hora: -1 };
+    if (store === 'peluqueriaTurnos') return { fecha: 1, hora: 1 };
     if (store === 'peluqueriaHorarios') return { diaSemana: 1 };
     if (store === 'stock') return { id: 1 };
     return { nombre: 1 };
