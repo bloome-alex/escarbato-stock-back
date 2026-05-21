@@ -1,6 +1,8 @@
 import jwt from 'jsonwebtoken';
 import { WebSocketServer } from 'ws';
 
+const HEARTBEAT_INTERVAL_MS = 3000;
+
 export class RealtimeService {
   constructor(config, authMiddleware) {
     this.config = config;
@@ -21,8 +23,15 @@ export class RealtimeService {
       socket.clientId = url.searchParams.get('clientId') || '';
       socket.send(JSON.stringify({ type: 'connected', at: new Date().toISOString() }));
       socket.send(JSON.stringify({ type: 'cart-stock-changed', reservations: this.getReservationsSnapshot(), at: new Date().toISOString() }));
+      const heartbeatTimer = setInterval(() => {
+        if (socket.readyState !== 1) return;
+        socket.send(JSON.stringify({ type: 'heartbeat', at: new Date().toISOString() }));
+      }, HEARTBEAT_INTERVAL_MS);
       socket.on('message', data => this.handleMessage(socket, data));
-      socket.on('close', () => this.clearClientReservations(socket.clientId, 'socket:close'));
+      socket.on('close', () => {
+        clearInterval(heartbeatTimer);
+        this.clearClientReservations(socket.clientId, 'socket:close');
+      });
       socket.on('error', () => {});
     });
   }
@@ -34,8 +43,7 @@ export class RealtimeService {
       if (!token) return false;
 
       const payload = jwt.verify(token, this.config.jwtSecret);
-      return payload.username === this.config.authUsername
-        && payload.credentials === this.authMiddleware.credentialHash();
+      return this.authMiddleware.authService.getValidUser(payload.id, payload.credentials);
     } catch {
       return false;
     }
@@ -60,6 +68,11 @@ export class RealtimeService {
     try {
       message = JSON.parse(data.toString());
     } catch {
+      return;
+    }
+
+    if (message.type === 'ping') {
+      if (socket.readyState === 1) socket.send(JSON.stringify({ type: 'pong', at: new Date().toISOString() }));
       return;
     }
 

@@ -14,11 +14,16 @@ export class ModalManager {
 
 export class ToastManager {
   show(message, type = 'success') {
+    if (type === 'error' && document.body?.dataset.connection === 'offline' && this.isOfflineNetworkMessage(message)) return;
     const el = document.createElement('div');
     el.className = 'toast ' + type;
     el.innerHTML = (type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️') + ' ' + message;
     document.getElementById('toastContainer').appendChild(el);
     setTimeout(() => el.remove(), 3000);
+  }
+
+  isOfflineNetworkMessage(message = '') {
+    return /sin conexi[oó]n|backend|sincron|failed to fetch|networkerror|no se pudo (completar|cargar|precargar|inicializar)|env[ií]o/i.test(String(message));
   }
 }
 

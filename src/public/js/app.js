@@ -26,6 +26,8 @@ class PetshopApp {
     this.realtimeRefreshTimer = null;
     this.pendingRealtimeStores = new Set();
     this.pendingRealtimeMessages = [];
+    this.isOffline = false;
+    this.connectionStatusTimer = null;
     this.onWindowScroll = () => this.handleMobileListScroll();
     this.sectionOrder = ['dashboard', 'proveedores', 'tipos', 'productos', 'stock', 'metodosPago', 'cajas', 'ventas', 'mostrador', 'peluqueria', 'usuarios'];
     this.sectionMenu = {
@@ -124,21 +126,39 @@ class PetshopApp {
   }
 
   async preloadMenuData() {
+    if (this.store.hasCachedData?.()) {
+      this.finishDataPreload();
+      if (this.store.token) {
+        this.store.loadAll()
+          .then(() => {
+            this.finishDataPreload();
+            const activeSection = document.querySelector('.section.active')?.id?.replace('sec-', '');
+            if (activeSection) this.renderSection(activeSection);
+          })
+          .catch(() => {});
+      }
+      return true;
+    }
+
     try {
       await this.store.loadAll();
-      this.components.dashboard.data = null;
-      if (this.isSectionEnabled('productos')) {
-        this.components.productos.refreshTipoSelects();
-        this.components.productos.refreshProveedorSelects();
-      }
-      this.dataReady = true;
-      this.setMenuDisabled(false);
-      this.updateBadge();
+      this.finishDataPreload();
       return true;
     } catch (error) {
       this.toasts.show(error.message || 'No se pudieron precargar las secciones', 'error');
       return false;
     }
+  }
+
+  finishDataPreload() {
+    this.components.dashboard.data = null;
+    if (this.isSectionEnabled('productos')) {
+      this.components.productos.refreshTipoSelects();
+      this.components.productos.refreshProveedorSelects();
+    }
+    this.dataReady = true;
+    this.setMenuDisabled(false);
+    this.updateBadge();
   }
 
   async ensureDataReady() {
@@ -155,6 +175,26 @@ class PetshopApp {
       item.setAttribute('aria-disabled', String(disabled));
       item.title = disabled ? 'Apartado deshabilitado: requiere precarga completa de datos' : '';
     });
+  }
+
+  setConnectionStatus(isOffline) {
+    this.isOffline = Boolean(isOffline);
+    document.body.dataset.connection = this.isOffline ? 'offline' : 'online';
+    const status = document.getElementById('connectionStatus');
+    if (!status) return;
+
+    clearTimeout(this.connectionStatusTimer);
+    if (!this.isOffline) {
+      status.hidden = true;
+      return;
+    }
+
+    status.hidden = false;
+    if (window.matchMedia?.('(max-width: 900px)').matches) {
+      this.connectionStatusTimer = setTimeout(() => {
+        status.hidden = true;
+      }, 10000);
+    }
   }
 
   startHealthCron() {
@@ -409,7 +449,10 @@ class PetshopApp {
       createdAt: new Date().toISOString()
     };
     const savedRecord = await this.store.put('auditoria', record);
-    this.store.data.auditoria.push(savedRecord || record);
+    const currentRecord = savedRecord || record;
+    const index = this.store.data.auditoria.findIndex(item => item.id === currentRecord.id);
+    if (index >= 0) this.store.data.auditoria[index] = currentRecord;
+    else this.store.data.auditoria.push(currentRecord);
     if (document.getElementById('dash-audit')) this.components.dashboard.renderAudit();
   }
 

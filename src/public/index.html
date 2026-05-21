@@ -322,6 +322,7 @@
     position: sticky;
     top: 0;
     z-index: 50;
+    isolation: isolate;
     backdrop-filter: blur(14px);
     box-shadow: var(--topbar-shadow);
   }
@@ -337,6 +338,32 @@
     display: flex;
     align-items: center;
     gap: 10px;
+  }
+
+  .connection-status {
+    position: fixed;
+    left: 50%;
+    top: 14px;
+    transform: translateX(-50%);
+    width: max-content;
+    max-width: min(920px, calc(100vw - 360px));
+    padding: 8px 14px;
+    border: 1px solid rgba(217,75,75,.28);
+    border-radius: 999px;
+    background: var(--danger-light);
+    color: var(--alert-text);
+    font-size: .84rem;
+    font-weight: 700;
+    text-align: center;
+    box-shadow: var(--compact-shadow);
+    white-space: normal;
+    line-height: 1.25;
+    pointer-events: none;
+    z-index: 10000;
+  }
+
+  .connection-status[hidden] {
+    display: none;
   }
 
   .download-menu {
@@ -1573,6 +1600,18 @@
     }
     .topbar-title { font-size: 1.04rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .topbar-actions .btn { min-height: 42px; padding: 0 12px; white-space: nowrap; }
+    .connection-status {
+      left: 50%;
+      right: auto;
+      top: 10px;
+      transform: translateX(-50%);
+      width: calc(100% - 88px);
+      max-width: 520px;
+      white-space: normal;
+      line-height: 1.25;
+      border-radius: 16px;
+      z-index: 10000;
+    }
 
     .toolbar {
       display: grid;
@@ -2675,6 +2714,7 @@
       <img src="assets/logo.png" alt="Escarbato">
       <div class="topbar-title" id="topbarTitle">Panel</div>
     </div>
+    <div class="connection-status" id="connectionStatus" hidden>Sin conexión. Tus datos se sincronizarán al reconectarte.</div>
     <div class="topbar-actions" id="topbarActions"></div>
   </header>
 

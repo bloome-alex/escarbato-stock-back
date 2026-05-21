@@ -165,9 +165,12 @@ export class CajasComponent {
     const now = new Date().toISOString();
     const caja = { id: this.app.store.createId(), status: 'abierta', openedAt: now, closedAt: '', initialAmounts, createdAt: now };
     const savedCaja = await this.app.store.put('cajas', caja);
+    const currentCaja = savedCaja || caja;
     this.app.store.data.cajas = this.app.store.data.cajas || [];
-    this.app.store.data.cajas.push(savedCaja || caja);
-    await this.app.audit('Creación', 'Cajas', `Caja abierta - ${this.formatDate((savedCaja || caja).openedAt)}`);
+    const index = this.app.store.data.cajas.findIndex(item => item.id === currentCaja.id);
+    if (index >= 0) this.app.store.data.cajas[index] = currentCaja;
+    else this.app.store.data.cajas.push(currentCaja);
+    await this.app.audit('Creación', 'Cajas', `Caja abierta - ${this.formatDate(currentCaja.openedAt)}`);
     this.render();
     this.app.components.mostrador.render();
     this.app.toasts.show('Caja abierta');

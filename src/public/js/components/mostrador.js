@@ -523,10 +523,13 @@ export class MostradorComponent {
     };
 
     const savedVenta = await this.app.store.put('ventas', venta);
+    const currentVenta = savedVenta || venta;
     this.app.store.data.ventas = this.app.store.data.ventas || [];
-    this.app.store.data.ventas.push(savedVenta || venta);
+    const index = this.app.store.data.ventas.findIndex(item => item.id === currentVenta.id);
+    if (index >= 0) this.app.store.data.ventas[index] = currentVenta;
+    else this.app.store.data.ventas.push(currentVenta);
     await this.app.store.loadAll();
-    await this.app.audit('Creación', 'Ventas', `${(savedVenta || venta).cliente || 'Cliente mostrador'} - ${this.formatMoney((savedVenta || venta).finalTotal)}`);
+    await this.app.audit('Creación', 'Ventas', `${currentVenta.cliente || 'Cliente mostrador'} - ${this.formatMoney(currentVenta.finalTotal)}`);
 
     this.cart = [];
     this.clearCartReservations();

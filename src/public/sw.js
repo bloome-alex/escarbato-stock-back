@@ -1,4 +1,4 @@
-const CACHE_NAME = 'escarbato-pwa-v13';
+const CACHE_NAME = 'escarbato-pwa-v16';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -15,6 +15,7 @@ const APP_SHELL = [
   '/js/pagination.js',
   '/js/sort.js',
   '/js/ui.js',
+  '/js/ui.js?v=20260517-1',
   '/js/components/dashboard.js',
   '/js/components/productos.js',
   '/js/components/metodos-pago.js',
@@ -23,7 +24,10 @@ const APP_SHELL = [
   '/js/components/stock.js',
   '/js/components/tipos.js',
   '/js/components/ventas.js',
-  '/js/components/mostrador.js'
+  '/js/components/mostrador.js',
+  '/js/components/mostrador.js?v=20260519-2',
+  '/js/components/peluqueria.js',
+  '/js/components/usuarios.js'
 ];
 
 self.addEventListener('install', event => {

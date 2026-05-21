@@ -61,22 +61,25 @@ export class DashboardComponent {
     }
 
     const data = this.data;
-    document.getElementById('stat-prov').textContent = data.totals.proveedores;
-    document.getElementById('stat-tipos').textContent = data.totals.tipos;
-    document.getElementById('stat-prod').textContent = data.totals.productos;
-    document.getElementById('stat-low').textContent = data.totals.lowStock;
+    const totals = data.totals || {};
+    const stockAlerts = data.stockAlerts || [];
+    const recentProducts = data.recentProducts || [];
+    document.getElementById('stat-prov').textContent = totals.proveedores || 0;
+    document.getElementById('stat-tipos').textContent = totals.tipos || 0;
+    document.getElementById('stat-prod').textContent = totals.productos || 0;
+    document.getElementById('stat-low').textContent = totals.lowStock || 0;
     this.app.updateBadge();
 
     const alertsEl = document.getElementById('dash-alerts');
-    alertsEl.innerHTML = data.stockAlerts.length
-      ? data.stockAlerts.map(product => {
+    alertsEl.innerHTML = stockAlerts.length
+      ? stockAlerts.map(product => {
         return `<div class="alert-item"><span class="alert-icon">⚠️</span><span>${product.nombre} — <strong>${product.qty}</strong> unidades · mín. ${product.minStock ?? 0}</span><span class="chip ${product.qty === 0 ? 'chip-out' : 'chip-low'}" style="margin-left:auto">${product.status}</span></div>`;
       }).join('')
       : '<div class="empty-state" style="padding:24px"><p style="font-size:.85rem">Sin alertas 🎉</p></div>';
 
     const recentEl = document.getElementById('dash-recent');
-    recentEl.innerHTML = data.recentProducts.length
-      ? data.recentProducts.map(product => {
+    recentEl.innerHTML = recentProducts.length
+      ? recentProducts.map(product => {
         const finalPrice = product.precioFinal ?? product.precio;
         const price = finalPrice || finalPrice === 0 ? '$' + Number(finalPrice).toLocaleString('es-AR') : '—';
         return `<div class="recent-item"><div><div class="recent-name">${product.nombre}</div><div class="recent-sub">${product.tipoNombre || '—'}</div></div><span class="tag tag-green">${price}</span></div>`;
