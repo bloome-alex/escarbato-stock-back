@@ -85,9 +85,7 @@ export class UsuariosComponent {
     this.app.toasts.show('Usuario guardado correctamente');
 
     if (invalidatesCurrentSession) {
-      sessionStorage.removeItem('petshopAuthToken');
-      this.app.store.token = '';
-      this.app.toasts.show('Volvé a iniciar sesión con la nueva contraseña');
+      await this.app.store.handleAuthRejected('Volvé a iniciar sesión con la nueva contraseña');
     }
   }
 }

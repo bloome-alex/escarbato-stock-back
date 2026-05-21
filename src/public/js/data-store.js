@@ -18,6 +18,7 @@ class BackendStore {
     this.data = emptyData();
     this.socket = null;
     this.realtimeReconnectTimer = null;
+    this.loginPromise = null;
   }
 
   async init() {
@@ -27,11 +28,21 @@ class BackendStore {
     window.addEventListener('pagehide', () => this.sendRealtime({ type: 'cart:clear' }));
   }
 
-  async ensureToken() {
+  async ensureToken({ interactive = false } = {}) {
     if (this.token) return;
 
+    if (this.loginPromise) return this.loginPromise;
+    this.loginPromise = this.login({ interactive });
+    try {
+      await this.loginPromise;
+    } finally {
+      this.loginPromise = null;
+    }
+  }
+
+  async login({ interactive = false } = {}) {
     let username, password, modal;
-    if (this.config.username && this.config.password) {
+    if (!interactive && this.config.username && this.config.password) {
       username = this.config.username;
       password = this.config.password;
     } else {
@@ -63,7 +74,7 @@ class BackendStore {
         input.value = '';
         input.focus();
         this.app?.toasts?.show('Usuario o contraseña incorrectos', 'error');
-        return this.ensureToken();
+        return this.login({ interactive: true });
       }
       this.app?.toasts?.show('Usuario o contraseña incorrectos', 'error');
       throw new Error('No se pudo iniciar sesión en el backend');
@@ -73,6 +84,16 @@ class BackendStore {
     this.currentUser = result.user || null;
     sessionStorage.setItem('petshopAuthToken', this.token);
     if (modal) modal.remove();
+  }
+
+  async handleAuthRejected(message = 'La sesión venció. Iniciá sesión nuevamente') {
+    sessionStorage.removeItem('petshopAuthToken');
+    this.token = '';
+    this.currentUser = null;
+    this.disconnectRealtime();
+    this.app?.toasts?.show(message, 'error');
+    await this.ensureToken({ interactive: true });
+    this.connectRealtime();
   }
 
   askCredentials() {
@@ -120,8 +141,7 @@ class BackendStore {
     });
 
     if (response.status === 401 && retry) {
-      sessionStorage.removeItem('petshopAuthToken');
-      this.token = '';
+      await this.handleAuthRejected();
       return this.request(path, options, false);
     }
 
@@ -190,8 +210,7 @@ class BackendStore {
       headers: { Authorization: `Bearer ${this.token}` }
     });
     if (response.status === 401 && retry) {
-      sessionStorage.removeItem('petshopAuthToken');
-      this.token = '';
+      await this.handleAuthRejected();
       return this.downloadProductsPdf(false);
     }
     if (!response.ok) {
@@ -216,8 +235,7 @@ class BackendStore {
       headers: { Authorization: `Bearer ${this.token}` }
     });
     if (response.status === 401 && retry) {
-      sessionStorage.removeItem('petshopAuthToken');
-      this.token = '';
+      await this.handleAuthRejected();
       return this.downloadProductsXlsx(false);
     }
     if (!response.ok) {
@@ -253,6 +271,7 @@ class BackendStore {
 
   connectRealtime() {
     if (!('WebSocket' in window) || this.socket) return;
+    if (!this.token) return;
     if (this.realtimeReconnectTimer) {
       clearTimeout(this.realtimeReconnectTimer);
       this.realtimeReconnectTimer = null;
@@ -265,7 +284,8 @@ class BackendStore {
     url.search = new URLSearchParams({ token: this.token, clientId: this.clientId }).toString();
 
     this.socket = new WebSocket(url.toString());
-    this.socket.addEventListener('message', event => {
+    const socket = this.socket;
+    socket.addEventListener('message', event => {
       const message = JSON.parse(event.data || '{}');
       if (message.clientId && message.clientId === this.clientId) return;
       if (message.type === 'cart-stock-changed') {
@@ -275,8 +295,8 @@ class BackendStore {
       }
       if (message.type === 'data-changed') this.app?.handleRealtimeChange?.(message);
     });
-    this.socket.addEventListener('close', event => {
-      this.socket = null;
+    socket.addEventListener('close', event => {
+      if (this.socket === socket) this.socket = null;
       if (event.code === 1008) return;
       if (this.realtimeReconnectTimer) return;
       this.realtimeReconnectTimer = setTimeout(() => {
@@ -284,7 +304,18 @@ class BackendStore {
         this.connectRealtime();
       }, 2000);
     });
-    this.socket.addEventListener('error', () => this.socket?.close());
+    socket.addEventListener('error', () => socket.close());
+  }
+
+  disconnectRealtime() {
+    if (this.realtimeReconnectTimer) {
+      clearTimeout(this.realtimeReconnectTimer);
+      this.realtimeReconnectTimer = null;
+    }
+    if (!this.socket) return;
+    const socket = this.socket;
+    this.socket = null;
+    socket.close(1008, 'auth');
   }
 
   sendRealtime(message) {
