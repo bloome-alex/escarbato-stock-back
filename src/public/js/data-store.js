@@ -1,6 +1,6 @@
 import { appConfig } from './config.js';
 
-const emptyData = () => ({ proveedores: [], tipos: [], productos: [], metodosPago: [], stock: {}, reservedStock: {}, ventas: [], cajas: [], auditoria: [], usuarios: [] });
+const emptyData = () => ({ proveedores: [], tipos: [], productos: [], metodosPago: [], stock: {}, reservedStock: {}, ventas: [], cajas: [], peluqueriaTiposPerro: [], peluqueriaServicios: [], peluqueriaTurnos: [], peluqueriaHorarios: [], auditoria: [], usuarios: [] });
 
 const reportTimestamp = (date = new Date()) => {
   const pad = value => String(value).padStart(2, '0');

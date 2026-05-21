@@ -34,7 +34,8 @@ export class NavigationManager {
       cajas: 'Cajas',
       stock: 'Stock',
       ventas: 'Ventas',
-      mostrador: 'Mostrador'
+      mostrador: 'Mostrador',
+      peluqueria: 'Peluquería'
     };
     this.sectionActions = {
       proveedores: '<button class="btn btn-primary" data-action="new-proveedor">+ Nuevo proveedor</button>',

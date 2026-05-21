@@ -12,7 +12,11 @@ export class DataStoreService {
       metodosPago: ['nombre'],
       stock: ['id'],
       ventas: ['cliente', 'items.productName', 'metodoPago.nombre'],
-      cajas: ['status', 'initialAmounts.metodoPagoNombre']
+      cajas: ['status', 'initialAmounts.metodoPagoNombre'],
+      peluqueriaTiposPerro: ['nombre', 'desc'],
+      peluqueriaServicios: ['nombre', 'desc', 'preciosPorTipo.tipoPerroNombre'],
+      peluqueriaTurnos: ['cliente', 'servicioNombre', 'tipoPerroNombre', 'estado'],
+      peluqueriaHorarios: ['nombreDia']
     };
   }
 
@@ -53,6 +57,9 @@ export class DataStoreService {
 
     if (store === 'productos') this.validateProductoPayload(payload);
     if (store === 'cajas') await this.validateCajaPayload(payload);
+    if (store === 'peluqueriaServicios') this.validatePeluqueriaServicioPayload(payload);
+    if (store === 'peluqueriaTurnos') this.validatePeluqueriaTurnoPayload(payload);
+    if (store === 'peluqueriaHorarios') this.validatePeluqueriaHorarioPayload(payload);
     if (store === 'ventas') return this.upsertVenta(Model, id, payload);
     await this.validateUniqueName(store, payload);
 
@@ -163,12 +170,14 @@ export class DataStoreService {
 
   getSort(store) {
     if (store === 'ventas' || store === 'auditoria' || store === 'cajas') return { createdAt: -1 };
+    if (store === 'peluqueriaTurnos') return { fecha: -1, hora: -1 };
+    if (store === 'peluqueriaHorarios') return { diaSemana: 1 };
     if (store === 'stock') return { id: 1 };
     return { nombre: 1 };
   }
 
   getSortCollation(store) {
-    if (store === 'ventas' || store === 'auditoria' || store === 'cajas') return null;
+    if (store === 'ventas' || store === 'auditoria' || store === 'cajas' || store === 'peluqueriaTurnos') return null;
     return { locale: 'es', numericOrdering: true, strength: 2 };
   }
 
@@ -179,12 +188,14 @@ export class DataStoreService {
     if (store === 'proveedores') return 'Ya existe un proveedor con ese nombre';
     if (store === 'tipos') return 'Ya existe un tipo de producto con ese nombre';
     if (store === 'metodosPago') return 'Ya existe un método de pago con ese nombre';
+    if (store === 'peluqueriaTiposPerro') return 'Ya existe un tipo de perro con ese nombre';
+    if (store === 'peluqueriaServicios') return 'Ya existe un servicio de peluquería con ese nombre';
     if (store === 'productos') return 'Ya existe un producto con ese nombre para el proveedor seleccionado';
     return 'Ya existe un registro con esos datos';
   }
 
   async validateUniqueName(store, payload) {
-    if (!['proveedores', 'tipos', 'productos', 'metodosPago'].includes(store)) return;
+    if (!['proveedores', 'tipos', 'productos', 'metodosPago', 'peluqueriaTiposPerro', 'peluqueriaServicios'].includes(store)) return;
 
     const nombre = String(payload.nombre || '').trim();
     if (!nombre) return;
@@ -215,7 +226,7 @@ export class DataStoreService {
       return serverPayload;
     }
 
-    if (store === 'ventas' || store === 'auditoria' || store === 'cajas') {
+    if (store === 'ventas' || store === 'auditoria' || store === 'cajas' || store === 'peluqueriaTurnos') {
       delete serverPayload.createdAt;
       return {
         $set: serverPayload,
@@ -255,5 +266,32 @@ export class DataStoreService {
     const openCaja = await Caja.findOne({ status: 'abierta' }).lean();
     if (!openCaja) throw new HttpError('No hay una caja abierta. Abrí una caja antes de realizar ventas.');
     payload.cajaId = openCaja.id;
+  }
+
+  validatePeluqueriaServicioPayload(payload) {
+    payload.preciosPorTipo = Array.isArray(payload.preciosPorTipo) ? payload.preciosPorTipo : [];
+    payload.preciosPorTipo = payload.preciosPorTipo.map(item => ({
+      tipoPerroId: String(item.tipoPerroId || '').trim(),
+      tipoPerroNombre: String(item.tipoPerroNombre || '').trim(),
+      precio: Math.max(0, Number(item.precio || 0)),
+      duracionMinutos: Math.max(5, Number.parseInt(item.duracionMinutos, 10) || 60)
+    })).filter(item => item.tipoPerroId);
+  }
+
+  validatePeluqueriaTurnoPayload(payload) {
+    const estado = String(payload.estado || 'pendiente').trim().toLowerCase();
+    payload.estado = ['pendiente', 'en curso', 'completado', 'cancelado'].includes(estado) ? estado : 'pendiente';
+    payload.precio = Math.max(0, Number(payload.precio || 0));
+    payload.duracionMinutos = Math.max(5, Number.parseInt(payload.duracionMinutos, 10) || 60);
+  }
+
+  validatePeluqueriaHorarioPayload(payload) {
+    payload.diaSemana = Math.min(7, Math.max(1, Number.parseInt(payload.diaSemana, 10) || 1));
+    payload.rangos = Array.isArray(payload.rangos) ? payload.rangos : [];
+    payload.rangos = payload.rangos.map(rango => ({
+      desde: String(rango.desde || '').trim(),
+      hasta: String(rango.hasta || '').trim(),
+      turnosSimultaneos: Math.max(1, Number.parseInt(rango.turnosSimultaneos, 10) || 1)
+    })).filter(rango => /^\d{2}:\d{2}$/.test(rango.desde) && /^\d{2}:\d{2}$/.test(rango.hasta) && rango.desde < rango.hasta);
   }
 }

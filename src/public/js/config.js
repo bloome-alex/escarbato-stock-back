@@ -7,6 +7,7 @@ const defaultSections = {
   cajas: true,
   ventas: true,
   mostrador: true,
+  peluqueria: true,
   stock: true,
   usuarios: true
 };

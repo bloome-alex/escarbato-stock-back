@@ -7,3 +7,7 @@ export { Auditoria } from './auditoria.js';
 export { MetodoPago } from './metodo-pago.js';
 export { Caja } from './caja.js';
 export { Usuario } from './usuario.js';
+export { PeluqueriaTipoPerro } from './peluqueria-tipo-perro.js';
+export { PeluqueriaServicio } from './peluqueria-servicio.js';
+export { PeluqueriaTurno } from './peluqueria-turno.js';
+export { PeluqueriaHorario } from './peluqueria-horario.js';

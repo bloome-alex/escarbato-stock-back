@@ -1,4 +1,4 @@
-import { Auditoria, Caja, MetodoPago, Producto, Proveedor, Stock, Tipo, Venta } from '../models/index.js';
+import { Auditoria, Caja, MetodoPago, PeluqueriaHorario, PeluqueriaServicio, PeluqueriaTipoPerro, PeluqueriaTurno, Producto, Proveedor, Stock, Tipo, Venta } from '../models/index.js';
 
 export class ModelRegistry {
   constructor() {
@@ -10,6 +10,10 @@ export class ModelRegistry {
       stock: Stock,
       ventas: Venta,
       cajas: Caja,
+      peluqueriaTiposPerro: PeluqueriaTipoPerro,
+      peluqueriaServicios: PeluqueriaServicio,
+      peluqueriaTurnos: PeluqueriaTurno,
+      peluqueriaHorarios: PeluqueriaHorario,
       auditoria: Auditoria
     };
   }

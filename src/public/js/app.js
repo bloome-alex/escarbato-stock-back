@@ -10,6 +10,7 @@ import { VentasComponent } from './components/ventas.js';
 import { MostradorComponent } from './components/mostrador.js?v=20260519-2';
 import { MetodosPagoComponent } from './components/metodos-pago.js';
 import { CajasComponent } from './components/cajas.js';
+import { PeluqueriaComponent } from './components/peluqueria.js';
 import { UsuariosComponent } from './components/usuarios.js';
 import { isMobileListView } from './pagination.js';
 
@@ -26,7 +27,7 @@ class PetshopApp {
     this.pendingRealtimeStores = new Set();
     this.pendingRealtimeMessages = [];
     this.onWindowScroll = () => this.handleMobileListScroll();
-    this.sectionOrder = ['dashboard', 'proveedores', 'tipos', 'productos', 'metodosPago', 'cajas', 'ventas', 'mostrador', 'stock', 'usuarios'];
+    this.sectionOrder = ['dashboard', 'proveedores', 'tipos', 'productos', 'stock', 'metodosPago', 'cajas', 'ventas', 'mostrador', 'peluqueria', 'usuarios'];
     this.sectionMenu = {
       dashboard: { group: 'Principal', icon: '🏠', label: 'Panel' },
       proveedores: { group: 'Gestión', icon: '🚚', label: 'Proveedores' },
@@ -36,6 +37,7 @@ class PetshopApp {
       cajas: { group: 'Gestión', icon: '💵', label: 'Cajas' },
       ventas: { group: 'Gestión', icon: '🧾', label: 'Ventas' },
       mostrador: { group: 'Gestión', icon: '🛒', label: 'Mostrador' },
+      peluqueria: { group: 'Gestión', icon: '✂️', label: 'Peluquería' },
       stock: { group: 'Gestión', icon: '📊', label: 'Stock' },
       usuarios: { group: 'Configuración', icon: '🔐', label: 'Usuario' }
     };
@@ -51,6 +53,7 @@ class PetshopApp {
       stock: new StockComponent(this),
       ventas: new VentasComponent(this),
       mostrador: new MostradorComponent(this),
+      peluqueria: new PeluqueriaComponent(this),
       usuarios: new UsuariosComponent(this)
     };
   }
@@ -187,6 +190,7 @@ class PetshopApp {
       this.isSectionEnabled('productos') ? this.components.productos.modalTemplate() : '',
       this.isSectionEnabled('metodosPago') ? this.components.metodosPago.modalTemplate() : '',
       this.isSectionEnabled('stock') ? this.components.stock.modalTemplate() : '',
+      this.isSectionEnabled('peluqueria') ? this.components.peluqueria.modalTemplate() : '',
       this.detailModalTemplate(),
       this.confirmModalTemplate()
     ].filter(Boolean);
@@ -248,6 +252,26 @@ class PetshopApp {
       if (action === 'finish-counter-sale') return this.runButtonAction(actionButton, () => this.components.mostrador.finishSale(), 'Guardando');
       if (action === 'refresh-users') return this.runButtonAction(actionButton, () => this.components.usuarios.render(), 'Actualizando');
       if (action === 'save-user') return this.runButtonAction(actionButton, () => this.components.usuarios.save(id), 'Guardando');
+      if (action === 'new-peluqueria-tipo') return this.components.peluqueria.openNewTipo();
+      if (action === 'edit-peluqueria-tipo') return this.components.peluqueria.editTipo(id);
+      if (action === 'view-peluqueria-tipo') return this.components.peluqueria.viewTipo(id);
+      if (action === 'save-peluqueria-tipo') return this.runButtonAction(actionButton, () => this.components.peluqueria.saveTipo(), 'Guardando');
+      if (action === 'new-peluqueria-servicio') return this.components.peluqueria.openNewServicio();
+      if (action === 'edit-peluqueria-servicio') return this.components.peluqueria.editServicio(id);
+      if (action === 'view-peluqueria-servicio') return this.components.peluqueria.viewServicio(id);
+      if (action === 'save-peluqueria-servicio') return this.runButtonAction(actionButton, () => this.components.peluqueria.saveServicio(), 'Guardando');
+      if (action === 'new-peluqueria-turno') return this.components.peluqueria.openNewTurno();
+      if (action === 'new-peluqueria-turno-at') return this.components.peluqueria.openNewTurno({ fecha: actionButton.dataset.date, hora: actionButton.dataset.time, servicioId: actionButton.dataset.service, tipoPerroId: actionButton.dataset.type });
+      if (action === 'edit-peluqueria-turno') return this.components.peluqueria.editTurno(id);
+      if (action === 'view-peluqueria-turno') return this.components.peluqueria.viewTurno(id);
+      // if (action === 'view-peluqueria-calendar-cell') return this.components.peluqueria.viewCalendarCell(actionButton.dataset.date, actionButton.dataset.time);
+      if (action === 'save-peluqueria-turno') return this.runButtonAction(actionButton, () => this.components.peluqueria.saveTurno(), 'Guardando');
+      if (action === 'peluqueria-prev-week') return this.components.peluqueria.changeWeek(-7);
+      if (action === 'peluqueria-next-week') return this.components.peluqueria.changeWeek(7);
+      if (action === 'peluqueria-current-week') { this.components.peluqueria.weekStart = this.components.peluqueria.getWeekStart(new Date()); return this.components.peluqueria.renderCalendario(); }
+      if (action === 'add-peluqueria-horario-rango') return this.components.peluqueria.addHorarioRango(actionButton.dataset.day);
+      if (action === 'remove-peluqueria-horario-rango') return this.components.peluqueria.removeHorarioRango(actionButton.dataset.day, actionButton.dataset.index);
+      if (action === 'save-peluqueria-horarios') return this.runButtonAction(actionButton, () => this.components.peluqueria.saveHorarios(), 'Guardando');
       if (action === 'delete') this.confirmDelete(entity, id, name);
     });
 
@@ -440,6 +464,33 @@ class PetshopApp {
       this.components.cajas.render();
     }
 
+    if (entity === 'peluqueria-tipo') {
+      const deleted = data.peluqueriaTiposPerro.find(item => item.id === id);
+      await this.store.delete('peluqueriaTiposPerro', id);
+      data.peluqueriaTiposPerro = data.peluqueriaTiposPerro.filter(item => item.id !== id);
+      await this.audit('Eliminación', 'Peluquería - tipos de perros', deleted ? deleted.nombre : 'Tipo eliminado');
+      this.modals.close('confirm');
+      this.components.peluqueria.renderActiveTab();
+    }
+
+    if (entity === 'peluqueria-servicio') {
+      const deleted = data.peluqueriaServicios.find(item => item.id === id);
+      await this.store.delete('peluqueriaServicios', id);
+      data.peluqueriaServicios = data.peluqueriaServicios.filter(item => item.id !== id);
+      await this.audit('Eliminación', 'Peluquería - servicios', deleted ? deleted.nombre : 'Servicio eliminado');
+      this.modals.close('confirm');
+      this.components.peluqueria.renderActiveTab();
+    }
+
+    if (entity === 'peluqueria-turno') {
+      const deleted = data.peluqueriaTurnos.find(item => item.id === id);
+      await this.store.delete('peluqueriaTurnos', id);
+      data.peluqueriaTurnos = data.peluqueriaTurnos.filter(item => item.id !== id);
+      await this.audit('Eliminación', 'Peluquería - turnos', deleted ? `${deleted.cliente} - ${deleted.fecha} ${deleted.hora}` : 'Turno eliminado');
+      this.modals.close('confirm');
+      this.components.peluqueria.renderActiveTab();
+    }
+
     this.toasts.show('Eliminado correctamente');
     this.updateBadge();
   }
@@ -569,6 +620,10 @@ class PetshopApp {
     }
 
     if (section === 'ventas') component.refreshPaymentMethodFilter?.();
+    if (section === 'peluqueria') {
+      component.renderActiveTab();
+      return;
+    }
     if (component.renderList) component.renderList();
   }
 
@@ -583,6 +638,7 @@ class PetshopApp {
       cajas: ['cajas', 'ventas', 'metodosPago'],
       ventas: ['ventas', 'metodosPago'],
       mostrador: ['productos', 'stock', 'tipos', 'proveedores', 'metodosPago', 'cajas', 'ventas'],
+      peluqueria: ['peluqueriaTiposPerro', 'peluqueriaServicios', 'peluqueriaTurnos', 'peluqueriaHorarios'],
       stock: ['stock', 'productos', 'tipos', 'proveedores', 'ventas']
     };
 
