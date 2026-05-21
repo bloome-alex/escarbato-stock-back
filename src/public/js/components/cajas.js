@@ -38,9 +38,21 @@ export class CajasComponent {
     });
   }
 
+  getCajaPeluqueriaTurnos(caja) {
+    if (!caja) return [];
+    const openedAt = new Date(caja.openedAt);
+    const closedAt = caja.closedAt ? new Date(caja.closedAt) : new Date();
+    return (this.app.store.data.peluqueriaTurnos || []).filter(turno => {
+      if (!turno.isPaid || !turno.paidDate) return false;
+      const paidDate = new Date(turno.paidDate);
+      return paidDate >= openedAt && paidDate <= closedAt;
+    });
+  }
+
   getPaymentRows(caja) {
     const initialAmounts = caja?.initialAmounts || [];
     const ventas = this.getCajaVentas(caja);
+    const peluqueriaTurnos = this.getCajaPeluqueriaTurnos(caja);
     const methodMap = new Map();
     initialAmounts.forEach(amount => {
       methodMap.set(amount.metodoPagoId, {
@@ -58,6 +70,19 @@ export class CajasComponent {
         methodMap.set(id, { id, nombre: method.nombre || 'Sin método', inicial: 0, ingresos: 0 });
       }
       methodMap.get(id).ingresos += Number(venta.finalTotal || 0);
+    });
+
+    peluqueriaTurnos.forEach(turno => {
+      const method = turno.paidMethod || {};
+      const id = method.id || 'sin-metodo';
+      if (!methodMap.has(id)) {
+        methodMap.set(id, { id, nombre: method.nombre || 'Sin método', inicial: 0, ingresos: 0 });
+      }
+      const precioBase = Number(turno.precio || 0);
+      const descuento = Number(method.descuento || 0);
+      const recargo = Number(method.recargo || 0);
+      const finalTotal = precioBase - (precioBase * descuento) / 100 + (precioBase * recargo) / 100;
+      methodMap.get(id).ingresos += finalTotal;
     });
 
     return [...methodMap.values()].map(row => ({
@@ -165,10 +190,19 @@ export class CajasComponent {
     if (!caja) return this.app.toasts.show('No se encontró la caja', 'error');
     const rows = this.getPaymentRows(caja);
     const ventas = this.getCajaVentas(caja);
+    const peluqueriaTurnos = this.getCajaPeluqueriaTurnos(caja);
     const paymentRows = rows.map(row => `<tr><td data-label="Método"><strong>${row.nombre}</strong></td><td class="price-value" data-label="Inicio">${this.formatMoney(row.inicial)}</td><td class="price-value" data-label="Ingresos">${this.formatMoney(row.ingresos)}</td><td class="price-value" data-label="Debería haber">${this.formatMoney(row.esperado)}</td></tr>`).join('');
     const salesRows = ventas.map(venta => `<tr><td data-label="Fecha">${this.formatDate(venta.createdAt)}</td><td data-label="Cliente">${venta.cliente || 'Cliente mostrador'}</td><td data-label="Método">${venta.metodoPago?.nombre || 'Sin método'}</td><td class="price-value" data-label="Total">${this.formatMoney(venta.finalTotal)}</td></tr>`).join('') || '<tr><td colspan="4">No hubo ventas durante esta caja.</td></tr>';
+    const peluqueriaRows = peluqueriaTurnos.map(turno => {
+      const method = turno.paidMethod || {};
+      const precioBase = Number(turno.precio || 0);
+      const descuento = Number(method.descuento || 0);
+      const recargo = Number(method.recargo || 0);
+      const finalTotal = precioBase - (precioBase * descuento) / 100 + (precioBase * recargo) / 100;
+      return `<tr><td data-label="Fecha turno">${this.formatDate(turno.fecha)}</td><td data-label="Cliente">${turno.cliente}</td><td data-label="Servicio">${turno.servicioNombre}</td><td data-label="Método">${method.nombre || 'Sin método'}</td><td class="price-value" data-label="Total">${this.formatMoney(finalTotal)}</td></tr>`;
+    }).join('') || '<tr><td colspan="5">No hubo turnos de peluquería pagados durante esta caja.</td></tr>';
     const totalIngresos = rows.reduce((sum, row) => sum + row.ingresos, 0);
     const totalEsperado = rows.reduce((sum, row) => sum + row.esperado, 0);
-    this.app.showDetail('Detalle de caja', `<div class="sale-detail-grid"><div><span>Fecha de apertura</span><strong>${this.formatDate(caja.openedAt)}</strong></div><div><span>Fecha de cierre</span><strong>${this.formatDate(caja.closedAt)}</strong></div><div><span>Estado</span><strong>${caja.status === 'abierta' ? 'Abierta' : 'Cerrada'}</strong></div><div><span>Total ingresos</span><strong class="price-value">${this.formatMoney(totalIngresos)}</strong></div><div><span>Total esperado</span><strong class="price-value">${this.formatMoney(totalEsperado)}</strong></div></div><h3 style="margin:18px 0 10px">Montos por método de pago</h3><div class="table-wrap sale-cart-wrap"><table><thead><tr><th>Método</th><th>Inicio</th><th>Ingresos</th><th>Debería haber</th></tr></thead><tbody>${paymentRows}</tbody></table></div><h3 style="margin:18px 0 10px">Ventas de la caja</h3><div class="table-wrap sale-cart-wrap"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>Método</th><th>Total</th></tr></thead><tbody>${salesRows}</tbody></table></div>`);
+    this.app.showDetail('Detalle de caja', `<div class="sale-detail-grid"><div><span>Fecha de apertura</span><strong>${this.formatDate(caja.openedAt)}</strong></div><div><span>Fecha de cierre</span><strong>${this.formatDate(caja.closedAt)}</strong></div><div><span>Estado</span><strong>${caja.status === 'abierta' ? 'Abierta' : 'Cerrada'}</strong></div><div><span>Total ingresos</span><strong class="price-value">${this.formatMoney(totalIngresos)}</strong></div><div><span>Total esperado</span><strong class="price-value">${this.formatMoney(totalEsperado)}</strong></div></div><h3 style="margin:18px 0 10px">Montos por método de pago</h3><div class="table-wrap sale-cart-wrap"><table><thead><tr><th>Método</th><th>Inicio</th><th>Ingresos</th><th>Debería haber</th></tr></thead><tbody>${paymentRows}</tbody></table></div><h3 style="margin:18px 0 10px">Ventas de la caja</h3><div class="table-wrap sale-cart-wrap"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>Método</th><th>Total</th></tr></thead><tbody>${salesRows}</tbody></table></div><h3 style="margin:18px 0 10px">Peluquería</h3><div class="table-wrap sale-cart-wrap"><table><thead><tr><th>Fecha turno</th><th>Cliente</th><th>Servicio</th><th>Método</th><th>Total</th></tr></thead><tbody>${peluqueriaRows}</tbody></table></div>`);
   }
 }

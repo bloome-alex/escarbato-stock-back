@@ -16,6 +16,14 @@ const peluqueriaTurnoSchema = new mongoose.Schema({
   precio: { type: Number, default: 0, min: 0 },
   duracionMinutos: { type: Number, default: 60, min: 5 },
   observaciones: { type: String, default: '' },
+  isPaid: { type: Boolean, default: false },
+  paidDate: { type: String, default: '' },
+  paidMethod: {
+    id: { type: String, default: '' },
+    nombre: { type: String, default: '' },
+    descuento: { type: Number, default: 0 },
+    recargo: { type: Number, default: 0 }
+  },
   createdAt: { type: String, default: () => new Date().toISOString() }
 }, { versionKey: false });
 

@@ -58,7 +58,11 @@ export class PeluqueriaComponent {
   }
 
   modalTemplate() {
-    return `${this.tipoModalTemplate()}${this.servicioModalTemplate()}${this.turnoModalTemplate()}`;
+    return `${this.tipoModalTemplate()}${this.servicioModalTemplate()}${this.turnoModalTemplate()}${this.pagoModalTemplate()}`;
+  }
+
+  pagoModalTemplate() {
+    return `<div class="modal-overlay" id="modal-peluqueria-pago"><div class="modal"><div class="modal-title"><span id="peluqueria-pago-title">Abonar turno</span><button class="modal-close" data-close-modal="peluqueria-pago">✕</button></div><input type="hidden" id="peluqueria-pago-turno-id"><div class="peluqueria-pago-info"></div><div class="form-group"><label>Método de pago *</label><select id="peluqueria-pago-metodo"></select></div><div id="peluqueria-pago-resumen" class="peluqueria-pago-resumen"></div><div class="modal-actions"><button class="btn btn-ghost" data-close-modal="peluqueria-pago">Cancelar</button><button class="btn btn-primary" data-action="do-peluqueria-pago">💰 Abonar</button></div></div></div>`;
   }
 
   tipoModalTemplate() {
@@ -188,12 +192,14 @@ export class PeluqueriaComponent {
     const pageState = getResponsivePageItems(list, this.pages.turnos, DEFAULT_PAGE_SIZE);
     this.pages.turnos = pageState.page;
     this.totalPages = pageState.totalPages;
-    document.getElementById('peluqueria-content').innerHTML = `<div class="subsection-head"><div><h3>Turnos</h3><p>Administración manual de turnos de peluquería.</p></div><button class="btn btn-primary" data-action="new-peluqueria-turno">+ Nuevo turno</button></div><div class="table-wrap"><table class="data-table"><thead><tr><th>Fecha</th><th>Hora</th><th>Cliente</th><th>Servicio</th><th>Tipo</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>${pageState.items.map(turno => this.turnoRow(turno)).join('') || '<tr><td colspan="7">Aún no hay turnos.</td></tr>'}</tbody></table></div><div id="pager-peluqueria"></div>`;
+    document.getElementById('peluqueria-content').innerHTML = `<div class="subsection-head"><div><h3>Turnos</h3><p>Administración manual de turnos de peluquería.</p></div><button class="btn btn-primary" data-action="new-peluqueria-turno">+ Nuevo turno</button></div><div class="table-wrap"><table class="data-table"><thead><tr><th>Fecha</th><th>Hora</th><th>Cliente</th><th>Servicio</th><th>Tipo</th><th>Estado</th><th>Pagado</th><th>Acciones</th></tr></thead><tbody>${pageState.items.map(turno => this.turnoRow(turno)).join('') || '<tr><td colspan="8">Aún no hay turnos.</td></tr>'}</tbody></table></div><div id="pager-peluqueria"></div>`;
     document.getElementById('pager-peluqueria').innerHTML = paginationTemplate('peluqueria', pageState);
   }
 
   turnoRow(turno) {
-    return `<tr><td data-label="Fecha"><strong>${formatDate(turno.fecha)}</strong></td><td data-label="Hora">${esc(turno.hora)}</td><td data-label="Cliente">${esc(turno.cliente)}</td><td data-label="Servicio">${esc(turno.servicioNombre)}</td><td data-label="Tipo">${esc(turno.tipoPerroNombre)}</td><td data-label="Estado"><span class="appointment-state state-${String(turno.estado).replace(/ /g, '-')}">${esc(turno.estado)}</span></td><td data-label="Acciones"><div class="td-actions"><button class="btn btn-ghost btn-sm btn-icon" data-action="view-peluqueria-turno" data-id="${turno.id}" title="Visualizar">👁️</button><button class="btn btn-ghost btn-sm btn-icon" data-action="edit-peluqueria-turno" data-id="${turno.id}" title="Editar">✏️</button><button class="btn btn-danger btn-sm btn-icon" data-action="delete" data-entity="peluqueria-turno" data-id="${turno.id}" data-name="${esc(turno.cliente)} - ${esc(turno.fecha)} ${esc(turno.hora)}" title="Eliminar">🗑️</button></div></td></tr>`;
+    const paidBadge = turno.isPaid ? '<span class="chip chip-ok">✓ Pagado</span>' : '<span class="chip">Pendiente</span>';
+    const payButton = turno.isPaid ? '' : `<button class="btn btn-ghost btn-sm btn-icon" data-action="pay-peluqueria-turno" data-id="${turno.id}" title="Abonar">💰</button>`;
+    return `<tr><td data-label="Fecha"><strong>${formatDate(turno.fecha)}</strong></td><td data-label="Hora">${esc(turno.hora)}</td><td data-label="Cliente">${esc(turno.cliente)}</td><td data-label="Servicio">${esc(turno.servicioNombre)}</td><td data-label="Tipo">${esc(turno.tipoPerroNombre)}</td><td data-label="Estado"><span class="appointment-state state-${String(turno.estado).replace(/ /g, '-')}">${esc(turno.estado)}</span></td><td data-label="Pagado">${paidBadge}</td><td data-label="Acciones"><div class="td-actions"><button class="btn btn-ghost btn-sm btn-icon" data-action="view-peluqueria-turno" data-id="${turno.id}" title="Visualizar">👁️</button><button class="btn btn-ghost btn-sm btn-icon" data-action="edit-peluqueria-turno" data-id="${turno.id}" title="Editar">✏️</button>${payButton}<button class="btn btn-danger btn-sm btn-icon" data-action="delete" data-entity="peluqueria-turno" data-id="${turno.id}" data-name="${esc(turno.cliente)} - ${esc(turno.fecha)} ${esc(turno.hora)}" title="Eliminar">🗑️</button></div></td></tr>`;
   }
 
   renderCalendario() {
@@ -354,6 +360,7 @@ export class PeluqueriaComponent {
     if (turno) {
       items.push(`<button type="button" data-calendar-menu-action="view" data-id="${turno.id}">Ver turno</button>`);
       items.push(`<button type="button" data-calendar-menu-action="edit" data-id="${turno.id}">Editar turno</button>`);
+      if (!turno.isPaid) items.push(`<button type="button" data-calendar-menu-action="pay" data-id="${turno.id}">💰 Pagar</button>`);
       items.push(`<button type="button" class="danger" data-calendar-menu-action="delete" data-id="${turno.id}">Eliminar turno</button>`);
     }
     if (!items.length) return;
@@ -390,6 +397,7 @@ export class PeluqueriaComponent {
     this.closeCalendarContextMenu();
     if (dataset.calendarMenuAction === 'view') return this.viewTurno(dataset.id);
     if (dataset.calendarMenuAction === 'edit') return this.editTurno(dataset.id);
+    if (dataset.calendarMenuAction === 'pay') return this.payTurno(dataset.id);
     if (dataset.calendarMenuAction === 'delete') {
       const selected = turno || this.app.store.data.peluqueriaTurnos.find(item => item.id === dataset.id);
       return this.app.confirmDelete('peluqueria-turno', dataset.id, selected ? `${selected.cliente} - ${selected.fecha} ${selected.hora}` : 'Turno');
@@ -596,7 +604,9 @@ export class PeluqueriaComponent {
   viewTurno(id) {
     const turno = this.app.store.data.peluqueriaTurnos.find(item => item.id === id);
     if (!turno) return;
-    this.app.showDetail('Turno de peluquería', `<div class="detail-list"><div><span>Fecha y hora</span><strong>${formatDate(turno.fecha)} ${esc(turno.hora)}</strong></div><div><span>Cliente</span><strong>${esc(turno.cliente)}</strong></div><div><span>Servicio</span><strong>${esc(turno.servicioNombre)}</strong></div><div><span>Tipo de perro</span><strong>${esc(turno.tipoPerroNombre)}</strong></div><div><span>Estado</span><strong>${esc(turno.estado)}</strong></div><div><span>Precio</span><strong>${formatMoney(turno.precio)}</strong></div><div><span>Duración</span><strong>${turno.duracionMinutos} min</strong></div><div><span>Observaciones</span><strong>${esc(turno.observaciones || '-')}</strong></div></div>`);
+    const paidLabel = turno.isPaid ? '<span class="chip chip-ok">✓ Abonado</span>' : '<span class="chip">Pendiente</span>';
+    const paidInfo = turno.isPaid && turno.paidDate ? `<div><span>Fecha de pago</span><strong>${formatDate(turno.paidDate)}</strong></div><div><span>Método de pago</span><strong>${esc(turno.paidMethod?.nombre || '-')}</strong></div>` : '';
+    this.app.showDetail('Turno de peluquería', `<div class="detail-list"><div><span>Fecha y hora</span><strong>${formatDate(turno.fecha)} ${esc(turno.hora)}</strong></div><div><span>Cliente</span><strong>${esc(turno.cliente)}</strong></div><div><span>Servicio</span><strong>${esc(turno.servicioNombre)}</strong></div><div><span>Tipo de perro</span><strong>${esc(turno.tipoPerroNombre)}</strong></div><div><span>Estado</span><strong>${esc(turno.estado)}</strong></div><div><span>Pagado</span><strong>${paidLabel}</strong></div>${paidInfo}<div><span>Precio</span><strong>${formatMoney(turno.precio)}</strong></div><div><span>Duración</span><strong>${turno.duracionMinutos} min</strong></div><div><span>Observaciones</span><strong>${esc(turno.observaciones || '-')}</strong></div></div>`);
   }
 
   refreshTurnoSelects(servicioId = '', tipoPerroId = '') {
@@ -665,6 +675,76 @@ export class PeluqueriaComponent {
     this.app.modals.close('peluqueria-turno');
     this.renderActiveTab();
     this.app.toasts.show('Turno guardado ✅');
+  }
+
+  payTurno(id) {
+    const turno = this.app.store.data.peluqueriaTurnos.find(item => item.id === id);
+    if (!turno) return;
+    if (turno.isPaid) return this.app.toasts.show('Este turno ya está abonado', 'error');
+    form.set('peluqueria-pago-turno-id', id);
+    document.getElementById('peluqueria-pago-metodo').innerHTML = '<option value="">Seleccionar método de pago</option>' + this.app.store.data.metodosPago.map(item => `<option value="${item.id}" data-descuento="${item.descuento}" data-recargo="${item.recargo}">${esc(item.nombre)}</option>`).join('');
+    const info = document.querySelector('#modal-peluqueria-pago .peluqueria-pago-info');
+    info.innerHTML = `<div class="detail-list"><div><span>Cliente</span><strong>${esc(turno.cliente)}</strong></div><div><span>Servicio</span><strong>${esc(turno.servicioNombre)}</strong></div><div><span>Fecha y hora</span><strong>${formatDate(turno.fecha)} ${esc(turno.hora)}</strong></div><div><span>Precio original</span><strong>${formatMoney(turno.precio)}</strong></div></div>`;
+    this.updatePagoResumen();
+    document.getElementById('peluqueria-pago-metodo').onchange = () => this.updatePagoResumen();
+    this.app.modals.open('peluqueria-pago');
+  }
+
+  updatePagoResumen() {
+    const turnoId = form.value('peluqueria-pago-turno-id');
+    const turno = this.app.store.data.peluqueriaTurnos.find(item => item.id === turnoId);
+    if (!turno) return;
+    const methodSelect = document.getElementById('peluqueria-pago-metodo');
+    const selected = methodSelect.options[methodSelect.selectedIndex];
+    if (!selected?.value) {
+      document.getElementById('peluqueria-pago-resumen').innerHTML = '';
+      return;
+    }
+    const descuento = Number(selected.dataset.descuento || 0);
+    const recargo = Number(selected.dataset.recargo || 0);
+    const precioBase = Number(turno.precio || 0);
+    const montoDescuento = (precioBase * descuento) / 100;
+    const montoRecargo = (precioBase * recargo) / 100;
+    const finalTotal = precioBase - montoDescuento + montoRecargo;
+    const rows = [];
+    if (descuento > 0) rows.push(`<div><span>Descuento (${descuento}%)</span><span class="text-success">- ${formatMoney(montoDescuento)}</span></div>`);
+    if (recargo > 0) rows.push(`<div><span>Recargo (${recargo}%)</span><span class="text-danger">+ ${formatMoney(montoRecargo)}</span></div>`);
+    rows.push(`<div class="total-row"><span>Total a pagar</span><strong>${formatMoney(finalTotal)}</strong></div>`);
+    document.getElementById('peluqueria-pago-resumen').innerHTML = `<div class="detail-list">${rows.join('')}</div>`;
+  }
+
+  async doPago() {
+    const turnoId = form.value('peluqueria-pago-turno-id');
+    const metodoId = form.value('peluqueria-pago-metodo');
+    if (!turnoId || !metodoId) return this.app.toasts.show('Seleccioná un método de pago', 'error');
+    const turno = this.app.store.data.peluqueriaTurnos.find(item => item.id === turnoId);
+    if (!turno) return;
+    if (turno.isPaid) return this.app.toasts.show('Este turno ya está abonado', 'error');
+    const metodo = this.app.store.data.metodosPago.find(item => item.id === metodoId);
+    if (!metodo) return;
+    const openCaja = this.app.store.data.cajas.find(caja => caja.status === 'abierta');
+    if (!openCaja) return this.app.toasts.show('No hay caja abierta. Abrí una caja antes de cobrar.', 'error');
+    const precioBase = Number(turno.precio || 0);
+    const descuento = Number(metodo.descuento || 0);
+    const recargo = Number(metodo.recargo || 0);
+    const finalTotal = precioBase - (precioBase * descuento) / 100 + (precioBase * recargo) / 100;
+    const updatedTurno = {
+      ...turno,
+      isPaid: true,
+      paidDate: new Date().toISOString(),
+      paidMethod: {
+        id: metodo.id,
+        nombre: metodo.nombre,
+        descuento,
+        recargo
+      }
+    };
+    await this.app.store.put('peluqueriaTurnos', updatedTurno);
+    this.upsertLocal('peluqueriaTurnos', updatedTurno);
+    await this.app.audit('Cobro', 'Peluquería - turnos', `${turno.cliente} - ${turno.fecha} ${turno.hora} - ${metodo.nombre} - ${formatMoney(finalTotal)}`);
+    this.app.modals.close('peluqueria-pago');
+    this.renderActiveTab();
+    this.app.toasts.show('Turno abonado correctamente ✅');
   }
 
   upsertLocal(store, record) {

@@ -264,6 +264,8 @@ class PetshopApp {
       if (action === 'new-peluqueria-turno-at') return this.components.peluqueria.openNewTurno({ fecha: actionButton.dataset.date, hora: actionButton.dataset.time, servicioId: actionButton.dataset.service, tipoPerroId: actionButton.dataset.type });
       if (action === 'edit-peluqueria-turno') return this.components.peluqueria.editTurno(id);
       if (action === 'view-peluqueria-turno') return this.components.peluqueria.viewTurno(id);
+      if (action === 'pay-peluqueria-turno') return this.components.peluqueria.payTurno(id);
+      if (action === 'do-peluqueria-pago') return this.runButtonAction(actionButton, () => this.components.peluqueria.doPago(), 'Procesando');
       // if (action === 'view-peluqueria-calendar-cell') return this.components.peluqueria.viewCalendarCell(actionButton.dataset.date, actionButton.dataset.time);
       if (action === 'save-peluqueria-turno') return this.runButtonAction(actionButton, () => this.components.peluqueria.saveTurno(), 'Guardando');
       if (action === 'peluqueria-prev-week') return this.components.peluqueria.changeWeek(-7);
