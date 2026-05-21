@@ -17,6 +17,7 @@ class BackendStore {
     this.clientId = globalThis.crypto?.randomUUID ? globalThis.crypto.randomUUID() : this.createId();
     this.data = emptyData();
     this.socket = null;
+    this.realtimeReconnectTimer = null;
   }
 
   async init() {
@@ -252,6 +253,10 @@ class BackendStore {
 
   connectRealtime() {
     if (!('WebSocket' in window) || this.socket) return;
+    if (this.realtimeReconnectTimer) {
+      clearTimeout(this.realtimeReconnectTimer);
+      this.realtimeReconnectTimer = null;
+    }
 
     const httpBase = this.baseUrl || window.location.origin;
     const url = new URL(httpBase, window.location.origin);
@@ -270,9 +275,14 @@ class BackendStore {
       }
       if (message.type === 'data-changed') this.app?.handleRealtimeChange?.(message);
     });
-    this.socket.addEventListener('close', () => {
+    this.socket.addEventListener('close', event => {
       this.socket = null;
-      setTimeout(() => this.connectRealtime(), 2000);
+      if (event.code === 1008) return;
+      if (this.realtimeReconnectTimer) return;
+      this.realtimeReconnectTimer = setTimeout(() => {
+        this.realtimeReconnectTimer = null;
+        this.connectRealtime();
+      }, 2000);
     });
     this.socket.addEventListener('error', () => this.socket?.close());
   }
