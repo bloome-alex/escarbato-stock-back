@@ -216,7 +216,14 @@ export class PeluqueriaComponent {
 
   renderDayColumn(day) {
     const key = dateKey(day);
-    const appointments = this.app.store.data.peluqueriaTurnos.filter(turno => turno.fecha === key);
+    const filtroServicio = this.calendarServicioId;
+    const filtroTipo = this.calendarTipoPerroId;
+    const appointments = this.app.store.data.peluqueriaTurnos.filter(turno => {
+      if (turno.fecha !== key) return false;
+      if (filtroServicio && turno.servicioId !== filtroServicio) return false;
+      if (filtroTipo && turno.tipoPerroId !== filtroTipo) return false;
+      return true;
+    });
     const layouts = this.getAppointmentLayouts(appointments);
     return `<div class="day-column"><div class="day-head">${formatDate(key)}</div><div class="day-body" data-calendar-date="${key}">${this.renderClosedBlocks(key)}${this.renderAvailableSlots(key)}${appointments.map(turno => this.renderAppointmentBlock(turno, layouts.get(turno.id))).join('')}</div></div>`;
   }
