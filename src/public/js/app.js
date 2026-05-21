@@ -271,7 +271,7 @@ class PetshopApp {
       if (action === 'save-peluqueria-turno') return this.runButtonAction(actionButton, () => this.components.peluqueria.saveTurno(), 'Guardando');
       if (action === 'peluqueria-prev-week') return this.components.peluqueria.changeWeek(-7);
       if (action === 'peluqueria-next-week') return this.components.peluqueria.changeWeek(7);
-      if (action === 'peluqueria-current-week') { this.components.peluqueria.weekStart = this.components.peluqueria.getWeekStart(new Date()); return this.components.peluqueria.renderCalendario(); }
+      if (action === 'peluqueria-current-week') return this.components.peluqueria.currentWeek();
       if (action === 'add-peluqueria-horario-rango') return this.components.peluqueria.addHorarioRango(actionButton.dataset.day);
       if (action === 'remove-peluqueria-horario-rango') return this.components.peluqueria.removeHorarioRango(actionButton.dataset.day, actionButton.dataset.index);
       if (action === 'save-peluqueria-horarios') return this.runButtonAction(actionButton, () => this.components.peluqueria.saveHorarios(), 'Guardando');

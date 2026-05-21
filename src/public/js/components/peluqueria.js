@@ -42,6 +42,7 @@ export class PeluqueriaComponent {
     this.calendarEnd = CLOSE_MINUTES;
     this.dragState = null;
     this.loadingTimer = null;
+    this.lastMobileLayout = null;
     this.turnosFilters = {
       fechaDesde: dateKey(new Date()),
       cliente: '',
@@ -54,14 +55,31 @@ export class PeluqueriaComponent {
 
   template() {
     return `<section class="section" id="sec-peluqueria">
-      <div class="grooming-tabs" role="tablist">
-        <button class="grooming-tab active" data-grooming-tab="calendario">Calendario semanal</button>
-        <button class="grooming-tab" data-grooming-tab="turnos">Turnos</button>
-        <button class="grooming-tab" data-grooming-tab="servicios">Servicios</button>
-        <button class="grooming-tab" data-grooming-tab="tipos">Tipos de perros</button>
-        <button class="grooming-tab" data-grooming-tab="horarios">Horarios</button>
+      <div class="grooming-desktop">
+        <div class="grooming-tabs" role="tablist">
+          <button class="grooming-tab active" data-grooming-tab="calendario">Calendario semanal</button>
+          <button class="grooming-tab" data-grooming-tab="turnos">Turnos</button>
+          <button class="grooming-tab" data-grooming-tab="servicios">Servicios</button>
+          <button class="grooming-tab" data-grooming-tab="tipos">Tipos de perros</button>
+          <button class="grooming-tab" data-grooming-tab="horarios">Horarios</button>
+        </div>
+        <div id="peluqueria-content"></div>
       </div>
-      <div id="peluqueria-content"></div>
+      <div class="grooming-mobile">
+        <div class="grooming-mobile-hero">
+          <span>Peluquería</span>
+          <strong id="peluqueria-mobile-title">Calendario semanal</strong>
+          <button class="btn btn-primary" data-action="new-peluqueria-turno">+ Turno</button>
+        </div>
+        <div class="grooming-mobile-tabs" role="tablist">
+          <button class="grooming-mobile-tab active" data-grooming-tab="calendario">Agenda</button>
+          <button class="grooming-mobile-tab" data-grooming-tab="turnos">Turnos</button>
+          <button class="grooming-mobile-tab" data-grooming-tab="servicios">Servicios</button>
+          <button class="grooming-mobile-tab" data-grooming-tab="tipos">Tipos</button>
+          <button class="grooming-mobile-tab" data-grooming-tab="horarios">Horarios</button>
+        </div>
+        <div id="peluqueria-mobile-content"></div>
+      </div>
     </section>`;
   }
 
@@ -90,24 +108,59 @@ export class PeluqueriaComponent {
       this.activeTab = button.dataset.groomingTab;
       this.render();
     }));
+    window.addEventListener('resize', () => {
+      if (!document.getElementById('sec-peluqueria')?.classList.contains('active')) return;
+      const isMobile = this.isMobileLayout();
+      if (this.lastMobileLayout === isMobile) return;
+      this.render();
+    });
   }
 
   render() {
     document.querySelectorAll('[data-grooming-tab]').forEach(button => button.classList.toggle('active', button.dataset.groomingTab === this.activeTab));
-    const content = document.getElementById('peluqueria-content');
+    const title = document.getElementById('peluqueria-mobile-title');
+    if (title) title.textContent = this.tabTitle(this.activeTab);
+    this.lastMobileLayout = this.isMobileLayout();
+    const content = this.contentTarget();
     if (!content) return;
+    const inactiveContent = document.getElementById(this.isMobileLayout() ? 'peluqueria-content' : 'peluqueria-mobile-content');
+    if (inactiveContent) inactiveContent.innerHTML = '';
     clearTimeout(this.loadingTimer);
     content.innerHTML = loadingTemplate('Cargando peluquería...');
     this.loadingTimer = setTimeout(() => this.renderActiveTab(), 80);
   }
 
   renderActiveTab() {
+    if (this.isMobileLayout()) return this.renderMobileActiveTab();
     document.getElementById('peluqueria-content')?.classList.toggle('is-calendar', this.activeTab === 'calendario');
     if (this.activeTab === 'tipos') return this.renderTipos();
     if (this.activeTab === 'servicios') return this.renderServicios();
     if (this.activeTab === 'turnos') return this.renderTurnos();
     if (this.activeTab === 'horarios') return this.renderHorarios();
     return this.renderCalendario();
+  }
+
+  contentTarget() {
+    return document.getElementById(this.isMobileLayout() ? 'peluqueria-mobile-content' : 'peluqueria-content');
+  }
+
+  isMobileLayout() {
+    return window.matchMedia?.('(max-width: 760px)').matches;
+  }
+
+  tabTitle(tab) {
+    return { calendario: 'Calendario semanal', turnos: 'Turnos', servicios: 'Servicios', tipos: 'Tipos de perros', horarios: 'Horarios' }[tab] || 'Peluquería';
+  }
+
+  renderMobileActiveTab() {
+    const content = document.getElementById('peluqueria-mobile-content');
+    if (!content) return;
+    content.classList.toggle('is-calendar', this.activeTab === 'calendario');
+    if (this.activeTab === 'tipos') return this.renderMobileTipos();
+    if (this.activeTab === 'servicios') return this.renderMobileServicios();
+    if (this.activeTab === 'turnos') return this.renderMobileTurnos();
+    if (this.activeTab === 'horarios') return this.renderMobileHorarios();
+    return this.renderMobileCalendario();
   }
 
   setPage(page) {
@@ -163,7 +216,7 @@ export class PeluqueriaComponent {
     }
     await this.app.audit('Edición', 'Peluquería - horarios', 'Horarios de disponibilidad actualizados');
     this.app.toasts.show('Horarios guardados ✅');
-    this.renderHorarios();
+    this.renderActiveTab();
   }
 
   renderTipos() {
@@ -237,7 +290,7 @@ export class PeluqueriaComponent {
     const update = (key, value) => {
       this.turnosFilters[key] = value;
       this.pages.turnos = 1;
-      this.renderTurnos();
+      this.renderActiveTab();
     };
     document.getElementById('turnos-filter-fecha')?.addEventListener('change', e => update('fechaDesde', e.target.value));
     document.getElementById('turnos-filter-cliente')?.addEventListener('input', e => update('cliente', e.target.value));
@@ -257,13 +310,136 @@ export class PeluqueriaComponent {
       isPaid: ''
     };
     this.pages.turnos = 1;
-    this.renderTurnos();
+    this.renderActiveTab();
   }
 
   turnoRow(turno) {
     const paidBadge = turno.isPaid ? '<span class="chip chip-ok">✓ Pagado</span>' : '<span class="chip">Pendiente</span>';
     const payButton = turno.isPaid ? '' : `<button class="btn btn-ghost btn-sm btn-icon" data-action="pay-peluqueria-turno" data-id="${turno.id}" title="Abonar">💰</button>`;
     return `<tr><td data-label="Fecha"><strong>${formatDate(turno.fecha)}</strong></td><td data-label="Hora">${esc(turno.hora)}</td><td data-label="Cliente">${esc(turno.cliente)}</td><td data-label="Servicio">${esc(turno.servicioNombre)}</td><td data-label="Tipo">${esc(turno.tipoPerroNombre)}</td><td data-label="Estado"><span class="appointment-state state-${String(turno.estado).replace(/ /g, '-')}">${esc(turno.estado)}</span></td><td data-label="Pagado">${paidBadge}</td><td data-label="Acciones"><div class="td-actions"><button class="btn btn-ghost btn-sm btn-icon" data-action="view-peluqueria-turno" data-id="${turno.id}" title="Visualizar">👁️</button><button class="btn btn-ghost btn-sm btn-icon" data-action="edit-peluqueria-turno" data-id="${turno.id}" title="Editar">✏️</button>${payButton}<button class="btn btn-danger btn-sm btn-icon" data-action="delete" data-entity="peluqueria-turno" data-id="${turno.id}" data-name="${esc(turno.cliente)} - ${esc(turno.fecha)} ${esc(turno.hora)}" title="Eliminar">🗑️</button></div></td></tr>`;
+  }
+
+  renderMobileCalendario() {
+    const days = Array.from({ length: 7 }, (_, index) => new Date(this.weekStart.getTime() + index * DAY_MS));
+    const bounds = this.getCalendarBounds(days);
+    this.calendarStart = bounds.start;
+    this.calendarEnd = bounds.end;
+    const serviceOptions = this.app.store.data.peluqueriaServicios.map(item => `<option value="${item.id}" ${item.id === this.calendarServicioId ? 'selected' : ''}>${esc(item.nombre)}</option>`).join('');
+    const typeOptions = this.app.store.data.peluqueriaTiposPerro.map(item => `<option value="${item.id}" ${item.id === this.calendarTipoPerroId ? 'selected' : ''}>${esc(item.nombre)}</option>`).join('');
+    document.getElementById('peluqueria-mobile-content').innerHTML = `<div class="mobile-agenda-panel"><div class="mobile-week-head"><button class="calendar-arrow" data-action="peluqueria-prev-week" aria-label="Semana anterior">‹</button><div><span>Semana</span><strong>${formatDate(dateKey(this.weekStart))} - ${formatDate(dateKey(days[6]))}</strong></div><button class="calendar-arrow" data-action="peluqueria-next-week" aria-label="Semana siguiente">›</button></div><div class="mobile-filter-card"><select id="peluqueria-mobile-calendar-servicio" class="filter-control"><option value="">Todos los servicios</option>${serviceOptions}</select><select id="peluqueria-mobile-calendar-tipo" class="filter-control"><option value="">Todos los tipos</option>${typeOptions}</select><div class="mobile-filter-row"><input type="date" class="filter-control" id="peluqueria-mobile-week-picker" value="${dateKey(this.weekStart)}"><button class="btn btn-ghost" data-action="peluqueria-current-week">Hoy</button></div></div><div class="mobile-agenda-days">${days.map(day => this.renderMobileAgendaDay(day)).join('')}</div></div>`;
+    this.bindMobileCalendarControls();
+  }
+
+  renderMobileAgendaDay(day) {
+    const key = dateKey(day);
+    const appointments = this.filteredDayAppointments(key);
+    const slots = this.renderMobileAvailableSlots(key);
+    const body = [...appointments.map(turno => this.mobileTurnoCard(turno, 'agenda')), ...slots].join('') || '<p class="empty-note">Sin turnos ni huecos disponibles.</p>';
+    return `<article class="mobile-day-card"><div class="mobile-day-head"><strong>${formatDate(key)}</strong><span>${this.getDateRanges(key).length ? 'Abierto' : 'Cerrado'}</span></div><div class="mobile-day-list">${body}</div></article>`;
+  }
+
+  filteredDayAppointments(fecha) {
+    return this.app.store.data.peluqueriaTurnos.filter(turno => {
+      if (turno.fecha !== fecha) return false;
+      if (this.calendarServicioId && turno.servicioId !== this.calendarServicioId) return false;
+      if (this.calendarTipoPerroId && turno.tipoPerroId !== this.calendarTipoPerroId) return false;
+      return true;
+    }).sort((a, b) => a.hora.localeCompare(b.hora));
+  }
+
+  renderMobileAvailableSlots(fecha) {
+    const servicioId = this.calendarServicioId;
+    const tipoPerroId = this.calendarTipoPerroId;
+    const config = this.getServiceTypeConfig(servicioId, tipoPerroId);
+    const slotDuration = Number(config?.duracionMinutos || 60);
+    const slots = [];
+    for (const rango of this.getDateRanges(fecha)) {
+      const from = timeToMinutes(rango.desde);
+      const to = timeToMinutes(rango.hasta);
+      const firstHour = Math.ceil(from / 60) * 60;
+      for (let minutes = firstHour; minutes + slotDuration <= to; minutes += 60) {
+        if (this.availableCapacity(fecha, minutesToTime(minutes), slotDuration) <= 0) continue;
+        if (this.getHourAppointments(fecha, minutes).length) continue;
+        slots.push(`<button class="mobile-slot-card" data-action="new-peluqueria-turno-at" data-date="${fecha}" data-time="${minutesToTime(minutes)}" data-service="${servicioId}" data-type="${tipoPerroId}"><span>${minutesToTime(minutes)}</span><strong>Agregar turno</strong></button>`);
+      }
+    }
+    return slots;
+  }
+
+  bindMobileCalendarControls() {
+    document.getElementById('peluqueria-mobile-calendar-servicio')?.addEventListener('change', event => {
+      this.calendarServicioId = event.target.value;
+      this.renderMobileCalendario();
+    });
+    document.getElementById('peluqueria-mobile-calendar-tipo')?.addEventListener('change', event => {
+      this.calendarTipoPerroId = event.target.value;
+      this.renderMobileCalendario();
+    });
+    document.getElementById('peluqueria-mobile-week-picker')?.addEventListener('change', event => {
+      this.weekStart = this.getWeekStart(new Date(`${event.target.value}T00:00:00`));
+      this.renderMobileCalendario();
+    });
+  }
+
+  renderMobileTurnos() {
+    const filtros = this.turnosFilters;
+    const servicioOptions = this.app.store.data.peluqueriaServicios.map(s => `<option value="${s.id}" ${s.id === filtros.servicioId ? 'selected' : ''}>${esc(s.nombre)}</option>`).join('');
+    const tipoOptions = this.app.store.data.peluqueriaTiposPerro.map(t => `<option value="${t.id}" ${t.id === filtros.tipoPerroId ? 'selected' : ''}>${esc(t.nombre)}</option>`).join('');
+    const list = [...this.app.store.data.peluqueriaTurnos].filter(turno => {
+      if (turno.fecha < filtros.fechaDesde) return false;
+      if (filtros.cliente && !turno.cliente.toLowerCase().includes(filtros.cliente.toLowerCase())) return false;
+      if (filtros.servicioId && turno.servicioId !== filtros.servicioId) return false;
+      if (filtros.tipoPerroId && turno.tipoPerroId !== filtros.tipoPerroId) return false;
+      if (filtros.estado && turno.estado !== filtros.estado) return false;
+      if (filtros.isPaid === 'true' && !turno.isPaid) return false;
+      if (filtros.isPaid === 'false' && turno.isPaid) return false;
+      return true;
+    }).sort((a, b) => `${a.fecha} ${a.hora}`.localeCompare(`${b.fecha} ${b.hora}`));
+    const pageState = getResponsivePageItems(list, this.pages.turnos, DEFAULT_PAGE_SIZE);
+    this.pages.turnos = pageState.page;
+    this.totalPages = pageState.totalPages;
+    document.getElementById('peluqueria-mobile-content').innerHTML = `<div class="mobile-filter-card"><label>Desde<input type="date" id="turnos-filter-fecha" class="filter-control" value="${filtros.fechaDesde}"></label><input type="text" id="turnos-filter-cliente" class="filter-control" placeholder="Buscar cliente" value="${esc(filtros.cliente)}"><select id="turnos-filter-servicio" class="filter-control"><option value="">Todos los servicios</option>${servicioOptions}</select><select id="turnos-filter-tipo" class="filter-control"><option value="">Todos los tipos</option>${tipoOptions}</select><select id="turnos-filter-estado" class="filter-control"><option value="">Todos los estados</option>${ESTADOS.map(e => `<option value="${e}" ${filtros.estado === e ? 'selected' : ''}>${e}</option>`).join('')}</select><select id="turnos-filter-pagado" class="filter-control"><option value="">Todos</option><option value="true" ${filtros.isPaid === 'true' ? 'selected' : ''}>Pagados</option><option value="false" ${filtros.isPaid === 'false' ? 'selected' : ''}>Pendientes</option></select><button class="btn btn-ghost" data-action="turnos-clear-filters">Limpiar filtros</button></div><div class="mobile-card-list">${pageState.items.map(turno => this.mobileTurnoCard(turno)).join('') || '<p class="empty-note">No hay turnos que coincidan con los filtros.</p>'}</div><div id="pager-peluqueria"></div>`;
+    document.getElementById('pager-peluqueria').innerHTML = paginationTemplate('peluqueria', pageState);
+    this.bindTurnosFilters();
+  }
+
+  mobileTurnoCard(turno, variant = '') {
+    const paidBadge = turno.isPaid ? '<span class="chip chip-ok">Pagado</span>' : '<span class="chip">Pendiente</span>';
+    const payButton = turno.isPaid ? '' : `<button class="btn btn-ghost btn-sm" data-action="pay-peluqueria-turno" data-id="${turno.id}">Pagar</button>`;
+    return `<article class="mobile-appointment-card ${variant === 'agenda' ? 'is-agenda' : ''}"><button class="mobile-card-main" data-action="view-peluqueria-turno" data-id="${turno.id}"><span>${formatDate(turno.fecha)} · ${esc(turno.hora)}</span><strong>${esc(turno.cliente)}</strong><em>${esc(turno.servicioNombre)} / ${esc(turno.tipoPerroNombre)}</em></button><div class="mobile-card-meta"><span class="appointment-state state-${String(turno.estado).replace(/ /g, '-')}">${esc(turno.estado)}</span>${paidBadge}</div><div class="mobile-card-actions"><button class="btn btn-ghost btn-sm" data-action="edit-peluqueria-turno" data-id="${turno.id}">Editar</button>${payButton}<button class="btn btn-danger btn-sm" data-action="delete" data-entity="peluqueria-turno" data-id="${turno.id}" data-name="${esc(turno.cliente)} - ${esc(turno.fecha)} ${esc(turno.hora)}">Eliminar</button></div></article>`;
+  }
+
+  renderMobileServicios() {
+    const list = [...this.app.store.data.peluqueriaServicios].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
+    const pageState = getResponsivePageItems(list, this.pages.servicios, DEFAULT_PAGE_SIZE);
+    this.pages.servicios = pageState.page;
+    this.totalPages = pageState.totalPages;
+    document.getElementById('peluqueria-mobile-content').innerHTML = `<div class="mobile-card-list">${pageState.items.map(servicio => this.mobileServicioCard(servicio)).join('') || '<p class="empty-note">Aún no hay servicios.</p>'}</div><div id="pager-peluqueria"></div>`;
+    document.getElementById('pager-peluqueria').innerHTML = paginationTemplate('peluqueria', pageState);
+  }
+
+  mobileServicioCard(servicio) {
+    const configs = servicio.preciosPorTipo || [];
+    const prices = configs.map(item => `<div class="mobile-price-row"><div><strong>${esc(item.tipoPerroNombre)}</strong><span>${item.duracionMinutos} min</span></div><em>${formatMoney(item.precio)}</em></div>`).join('') || '<p class="empty-note">Sin precios configurados por tipo.</p>';
+    return `<article class="mobile-service-card"><div class="mobile-record-top"><div class="mobile-record-icon">✂</div><div><span>Servicio</span><strong>${esc(servicio.nombre)}</strong><p>${esc(servicio.desc || 'Sin descripción')}</p></div></div><div class="mobile-record-summary"><span>${configs.length} tipo(s)</span><span>${configs[0] ? `Desde ${formatMoney(Math.min(...configs.map(item => Number(item.precio || 0))))}` : 'Sin precio'}</span></div><div class="mobile-price-list">${prices}</div><div class="mobile-record-actions"><button class="btn btn-ghost btn-sm" data-action="view-peluqueria-servicio" data-id="${servicio.id}">Ver</button><button class="btn btn-ghost btn-sm" data-action="edit-peluqueria-servicio" data-id="${servicio.id}">Editar</button><button class="btn btn-danger btn-sm" data-action="delete" data-entity="peluqueria-servicio" data-id="${servicio.id}" data-name="${esc(servicio.nombre)}">Eliminar</button></div></article>`;
+  }
+
+  renderMobileTipos() {
+    const list = [...this.app.store.data.peluqueriaTiposPerro].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
+    const pageState = getResponsivePageItems(list, this.pages.tipos, DEFAULT_PAGE_SIZE);
+    this.pages.tipos = pageState.page;
+    this.totalPages = pageState.totalPages;
+    document.getElementById('peluqueria-mobile-content').innerHTML = `<div class="mobile-card-list">${pageState.items.map(tipo => this.mobileTipoCard(tipo)).join('') || '<p class="empty-note">Aún no hay tipos de perros.</p>'}</div><div id="pager-peluqueria"></div>`;
+    document.getElementById('pager-peluqueria').innerHTML = paginationTemplate('peluqueria', pageState);
+  }
+
+  mobileTipoCard(tipo) {
+    const count = this.app.store.data.peluqueriaServicios.filter(servicio => (servicio.preciosPorTipo || []).some(item => item.tipoPerroId === tipo.id)).length;
+    return `<article class="mobile-type-card"><div class="mobile-record-top"><div class="mobile-record-icon">🐶</div><div><span>Tipo de perro</span><strong>${esc(tipo.nombre)}</strong><p>${esc(tipo.desc || 'Sin descripción')}</p></div></div><div class="mobile-type-metric"><strong>${count}</strong><span>servicio(s) configurados</span></div><div class="mobile-record-actions"><button class="btn btn-ghost btn-sm" data-action="view-peluqueria-tipo" data-id="${tipo.id}">Ver</button><button class="btn btn-ghost btn-sm" data-action="edit-peluqueria-tipo" data-id="${tipo.id}">Editar</button><button class="btn btn-danger btn-sm" data-action="delete" data-entity="peluqueria-tipo" data-id="${tipo.id}" data-name="${esc(tipo.nombre)}">Eliminar</button></div></article>`;
+  }
+
+  renderMobileHorarios() {
+    document.getElementById('peluqueria-mobile-content').innerHTML = `<div class="schedule-grid mobile-schedule-grid">${DIAS.map(dia => this.horarioDayCard(dia)).join('')}</div>`;
   }
 
   renderCalendario() {
@@ -820,7 +996,12 @@ export class PeluqueriaComponent {
 
   changeWeek(days) {
     this.weekStart = new Date(this.weekStart.getTime() + days * DAY_MS);
-    this.renderCalendario();
+    this.renderActiveTab();
+  }
+
+  currentWeek() {
+    this.weekStart = this.getWeekStart(new Date());
+    this.renderActiveTab();
   }
 
   isInsideAvailability(fecha, hora, duracionMinutos) {
@@ -896,7 +1077,7 @@ export class PeluqueriaComponent {
     const moved = { ...turno, fecha, hora };
     await this.app.store.put('peluqueriaTurnos', moved);
     this.upsertLocal('peluqueriaTurnos', moved);
-    this.renderCalendario();
+    this.renderActiveTab();
     this.app.toasts.show('Turno movido ✅');
   }
 }
