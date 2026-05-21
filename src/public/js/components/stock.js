@@ -1,5 +1,5 @@
 import { form } from '../ui.js';
-import { DEFAULT_PAGE_SIZE, getResponsivePageItems, loadingTemplate, paginationTemplate } from '../pagination.js';
+import { DEFAULT_PAGE_SIZE, getResponsivePageItems, loadingTemplate, paginationTemplate } from '../pagination.js?v=20260521-1';
 import { compareByName } from '../sort.js';
 
 export class StockComponent {

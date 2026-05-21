@@ -11,6 +11,7 @@ const APP_SHELL = [
   '/js/config.js',
   '/js/data-store.js',
   '/js/pagination.js',
+  '/js/pagination.js?v=20260521-1',
   '/js/sort.js',
   '/js/ui.js',
   '/js/ui.js?v=20260517-1',

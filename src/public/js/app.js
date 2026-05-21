@@ -12,7 +12,7 @@ import { MetodosPagoComponent } from './components/metodos-pago.js';
 import { CajasComponent } from './components/cajas.js';
 import { PeluqueriaComponent } from './components/peluqueria.js';
 import { UsuariosComponent } from './components/usuarios.js';
-import { isMobileListView } from './pagination.js';
+import { isMobileListView } from './pagination.js?v=20260521-1';
 
 class PetshopApp {
   constructor() {
