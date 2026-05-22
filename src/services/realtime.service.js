@@ -77,7 +77,7 @@ export class RealtimeService {
       if (!tenant) return false;
       const payload = jwt.verify(token, tenant.jwtSecret);
       return this.connectionManager.runWithTenant(tenant, async () => {
-        const user = await this.authMiddleware.authService.getValidUser(payload.id, payload.credentials);
+        const user = await this.authMiddleware.authService.getValidUser(payload.id, payload.tokenVersion);
         return user ? tenant : false;
       });
     } catch {

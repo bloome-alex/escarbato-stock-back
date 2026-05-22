@@ -100,14 +100,19 @@ export class EmpresaService {
   async initializeTenantUsers(empresa) {
     const Usuario = await this.connectionManager.getModel('usuarios', empresa.dbName);
     await Usuario.deleteMany({ id: { $nin: ['auth', 'supervisor'] } });
+    await this.syncTenantUser(Usuario, 'auth', empresa.authUsername, empresa.authPasswordHash);
+    await this.syncTenantUser(Usuario, 'supervisor', empresa.supervisorUsername, empresa.supervisorPasswordHash);
+  }
+
+  async syncTenantUser(Usuario, id, username, passwordHash) {
+    const current = await Usuario.findOne({ id }).lean();
+    const tokenVersion = current?.passwordHash && current.passwordHash !== passwordHash
+      ? (current.tokenVersion ?? 0) + 1
+      : current?.tokenVersion ?? 0;
+
     await Usuario.findOneAndUpdate(
-      { id: 'auth' },
-      { id: 'auth', role: 'auth', username: empresa.authUsername, passwordHash: empresa.authPasswordHash },
-      { upsert: true, runValidators: true, setDefaultsOnInsert: true }
-    );
-    await Usuario.findOneAndUpdate(
-      { id: 'supervisor' },
-      { id: 'supervisor', role: 'supervisor', username: empresa.supervisorUsername, passwordHash: empresa.supervisorPasswordHash },
+      { id },
+      { id, role: id, username, passwordHash, tokenVersion, isActive: true },
       { upsert: true, runValidators: true, setDefaultsOnInsert: true }
     );
   }

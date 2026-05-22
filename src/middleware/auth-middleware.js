@@ -14,11 +14,11 @@ export class AuthMiddleware {
 
     try {
       const payload = jwt.verify(token, req.empresa.jwtSecret);
-      const user = await this.authService.getValidUser(payload.id, payload.credentials);
+      const user = await this.authService.getValidUser(payload.id, payload.tokenVersion);
       if (!user) {
         return res.status(401).json({ error: 'Token inválido' });
       }
-      req.user = { ...payload, username: user.username, empresaId: req.empresa?.id };
+      req.user = { id: user.id, username: user.username, role: user.role, empresaId: req.empresa?.id, tokenVersion: user.tokenVersion ?? 0 };
       next();
     } catch {
       res.status(401).json({ error: 'Token inválido o vencido' });

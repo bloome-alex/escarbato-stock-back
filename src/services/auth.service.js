@@ -22,7 +22,8 @@ export class AuthService {
       id,
       role: id,
       username: String(username || id).trim() || id,
-      passwordHash: UsuarioModel.hashPassword(password || id)
+      passwordHash: UsuarioModel.hashPassword(password || id),
+      tokenVersion: 0
     };
   }
 
@@ -33,11 +34,12 @@ export class AuthService {
     return user;
   }
 
-  async getValidUser(id, credentials) {
+  async getValidUser(id, tokenVersion) {
     const UsuarioModel = await this.getUsuarioModel();
     const user = await UsuarioModel.findOne({ id }).lean();
-    if (!user || user.passwordHash !== credentials) return null;
-    return user;
+    const currentTokenVersion = user?.tokenVersion ?? 0;
+    if (!user || user.isActive === false || currentTokenVersion !== tokenVersion) return null;
+    return { ...user, tokenVersion: currentTokenVersion };
   }
 
   async listUsers(currentUserId) {
@@ -67,9 +69,11 @@ export class AuthService {
     }
 
     const UsuarioModel = await this.getUsuarioModel();
+    const update = { $set: payload };
+    if (payload.passwordHash) update.$inc = { tokenVersion: 1 };
     const record = await UsuarioModel.findOneAndUpdate(
       { id },
-      payload,
+      update,
       { new: true, runValidators: true }
     );
     if (!record) throw new HttpError('Usuario no encontrado', 404);

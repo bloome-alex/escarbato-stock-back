@@ -6,7 +6,9 @@ const usuarioSchema = new mongoose.Schema({
   ...baseFields,
   username: { type: String, required: true, trim: true },
   passwordHash: { type: String, required: true },
-  role: { type: String, required: true, enum: ['auth', 'supervisor'] }
+  role: { type: String, required: true, enum: ['auth', 'supervisor'] },
+  isActive: { type: Boolean, default: true },
+  tokenVersion: { type: Number, default: 0 }
 }, { versionKey: false });
 
 usuarioSchema.index({ username: 1 }, { unique: true, collation: { locale: 'es', strength: 2 } });

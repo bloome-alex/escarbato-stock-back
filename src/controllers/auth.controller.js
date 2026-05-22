@@ -20,7 +20,7 @@ export class AuthController {
       }
 
       const token = jwt.sign(
-        { id: user.id, username: user.username, role: user.role, credentials: user.passwordHash, empresaId: req.empresa?.id },
+        { id: user.id, username: user.username, role: user.role, empresaId: req.empresa?.id, tokenVersion: user.tokenVersion ?? 0 },
         req.empresa.jwtSecret,
         { expiresIn: this.config.jwtExpiresIn }
       );
