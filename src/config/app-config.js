@@ -10,6 +10,7 @@ export class AppConfig {
     this.adminUsername = env.ADMIN_USERNAME || 'admin';
     this.adminPassword = env.ADMIN_PASSWORD || 'admin123';
     this.adminDomain = env.ADMIN_DOMAIN || '127.0.0.1';
+    this.trustedProxyIps = this.envList(env.TRUSTED_PROXY_IPS);
     this.publicDir = path.join(process.cwd(), 'src/public');
     this.sections = this.getSectionConfig(env);
   }
@@ -23,6 +24,13 @@ export class AppConfig {
     const value = env[name];
     if (value === undefined || value === '') return defaultValue;
     return !['0', 'false', 'no', 'off', 'disabled'].includes(String(value).trim().toLowerCase());
+  }
+
+  envList(value) {
+    return String(value || '')
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
   }
 
   getSectionConfig(env) {

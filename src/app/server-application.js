@@ -12,6 +12,7 @@ import { SystemController } from '../controllers/system.controller.js';
 import { ErrorHandler } from '../middleware/error-handler.js';
 import { AdminMiddleware } from '../middleware/admin-middleware.js';
 import { AuthMiddleware } from '../middleware/auth-middleware.js';
+import { ProxyHeaderMiddleware } from '../middleware/proxy-header-middleware.js';
 import { SubdomainMiddleware } from '../middleware/subdomain-middleware.js';
 import { AdminRoutes } from '../routes/admin.routes.js';
 import { ApiRoutes } from '../routes/api.routes.js';
@@ -42,10 +43,13 @@ export class ServerApplication {
     const authMiddleware = new AuthMiddleware(this.config, authService);
     const adminConfig = new AdminConfig(this.config);
     const adminMiddleware = new AdminMiddleware(adminConfig);
+    const proxyHeaderMiddleware = new ProxyHeaderMiddleware(this.config);
     const auditoriaService = new AuditoriaService();
     const dataStoreService = new DataStoreService(modelRegistry);
     this.realtimeService = new RealtimeService(this.config, authMiddleware, this.connectionManager);
 
+    proxyHeaderMiddleware.configure(this.app);
+    this.app.use(proxyHeaderMiddleware.rejectUntrustedForwardedHeaders);
     this.app.use(cors({ origin: this.config.corsOrigin === '*' ? true : this.config.corsOrigin }));
     this.app.use(express.json({ limit: '1mb' }));
 

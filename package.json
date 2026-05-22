@@ -7,6 +7,7 @@
     "start": "node ./src/server.js",
     "dev": "node --watch ./src/server.js",
     "check": "node --check ./src/server.js",
+    "test:security": "node ./test/security-proxy-spoof.test.js",
     "smoke:multi-tenant": "node ./src/scripts/smoke-multitenant.js",
     "stock:min-zero": "node ./src/scripts/set-min-stock-zero.js",
     "seed:demo": "node ./src/scripts/seed-demo-data.js"
@@ -19,6 +20,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.9.5",
     "pdfkit": "^0.18.0",
+    "proxy-addr": "^2.0.7",
     "ws": "^8.20.1"
   }
 }
