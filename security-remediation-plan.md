@@ -6,44 +6,6 @@ Corregir los riesgos detectados en la revision del refactor multi-empresa, prior
 
 ## Prioridad Alta
 
-### 1. Restriccion admin por IP spoofeable
-
-**Problema:** el backend confia directamente en `X-Forwarded-For` y `X-Real-IP`. Si el servicio queda accesible sin pasar por un reverse proxy confiable, un cliente puede falsificar esos headers y simular la IP VPN/admin.
-
-**Solucion tecnica:**
-
-- Definir explicitamente si Express corre detras de proxy y configurar `trust proxy` solo para IPs/rangos confiables del reverse proxy.
-- Rechazar headers `X-Forwarded-For` y `X-Real-IP` si el request no proviene de un proxy confiable.
-- Usar `req.ip` como fuente canonica despues de configurar correctamente `trust proxy`.
-- Documentar que el backend no debe exponerse directamente a internet si la proteccion admin depende del proxy/VPN.
-- Agregar una prueba HTTP que verifique que un `X-Forwarded-For` falsificado no habilita admin cuando el origen no es confiable.
-
-### 2. XSS almacenado por render con `innerHTML`
-
-**Problema:** varios componentes renderizan datos de negocio con `innerHTML` sin escapar. Un valor malicioso almacenado en MongoDB podria ejecutar JavaScript en el navegador y robar tokens o manipular la UI.
-
-**Solucion tecnica:**
-
-- Introducir una politica unica de render seguro para la UI.
-- Escapar todo dato proveniente de backend antes de insertarlo en strings HTML.
-- Preferir `textContent`, `createElement` o helpers de template seguro para valores dinamicos.
-- Revisar todos los componentes que construyen tablas, modales y detalles con datos de negocio.
-- Cubrir al menos entidades principales: proveedores, tipos, productos, metodos de pago, ventas, cajas, peluqueria y usuarios.
-- Agregar casos de prueba manuales o automatizados con valores como `<img src=x onerror=alert(1)>` para confirmar que se muestran como texto.
-
-### 3. JWT de empresa contiene hash de password
-
-**Problema:** el payload del JWT incluye `credentials` con el hash de password. Si el token se filtra, tambien se filtra material reutilizable para cracking offline y validacion de sesion.
-
-**Solucion tecnica:**
-
-- Quitar el hash de password del JWT.
-- Incorporar un campo de version de credenciales o `tokenVersion` en el usuario tenant.
-- Incluir en el JWT solo identificadores y metadatos no sensibles: `id`, `username`, `role`, `empresaId`, `tokenVersion`.
-- Al cambiar password, incrementar `tokenVersion` para invalidar tokens anteriores.
-- En middleware auth, validar usuario activo y coincidencia de `tokenVersion`.
-- Considerar expiraciones cortas y refresh controlado si se requiere UX prolongada.
-
 ### 4. Password hashing debil con SHA-256 sin salt
 
 **Problema:** SHA-256 rapido y sin salt facilita ataques offline si se filtra la base de datos.
