@@ -59,7 +59,7 @@ Mantener variables en `:root` y version dark en `:root[data-theme="dark"]`:
 ## Branding configurable
 
 - El backend puede reemplazar nombre de app y assets al servir `index.html`, `manifest.webmanifest` y `sw.js`.
-- Usar variables como `APP_NAME` y `APP_ASSETS_PATH`.
+- Usar la configuracion de empresa resuelta por subdominio, no variables de entorno de branding.
 - Mantener rutas de imagen relativas a `/assets` para que puedan ser reemplazadas.
 
 ## Criterios de aceptacion

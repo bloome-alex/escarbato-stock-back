@@ -2,10 +2,15 @@ import 'dotenv/config';
 import mongoose from 'mongoose';
 import { Auditoria, Caja, MetodoPago, Producto, Proveedor, Stock, Tipo, Venta } from '../models/index.js';
 
-const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/escarbato_petshop';
-const mongoDbName = process.env.MONGODB_DB_NAME;
+const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017';
+const mongoDbName = process.argv.find(arg => arg.startsWith('--db='))?.slice('--db='.length);
 const resetAll = process.argv.includes('--reset-all');
 const demoIdPattern = /^demo-/;
+
+if (!mongoDbName) {
+  console.error('Uso: npm run seed:demo -- --db=<dbNameEmpresa>');
+  process.exit(1);
+}
 
 const models = [Proveedor, Tipo, Producto, Stock, MetodoPago, Caja, Venta, Auditoria];
 
@@ -167,7 +172,7 @@ async function seed() {
 }
 
 try {
-  await mongoose.connect(mongoUri, mongoDbName ? { dbName: mongoDbName } : undefined);
+  await mongoose.connect(mongoUri, { dbName: mongoDbName });
   await seed();
   console.log('Datos demo cargados correctamente.');
   console.log(`Proveedores: ${proveedores.length}`);

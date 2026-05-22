@@ -31,7 +31,8 @@ export class DataStoreController {
         store: req.params.store,
         action: 'upsert',
         id: req.params.id,
-        clientId: req.get('X-Client-Id') || ''
+        clientId: req.get('X-Client-Id') || '',
+        tenantDbName: req.empresa?.dbName || null
       });
       res.json(record);
     } catch (error) {
@@ -46,7 +47,8 @@ export class DataStoreController {
         store: req.params.store,
         action: 'delete',
         id: req.params.id,
-        clientId: req.get('X-Client-Id') || ''
+        clientId: req.get('X-Client-Id') || '',
+        tenantDbName: req.empresa?.dbName || null
       });
       res.status(204).end();
     } catch (error) {

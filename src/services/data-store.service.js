@@ -1,4 +1,3 @@
-import { Caja, Stock } from '../models/index.js';
 import { HttpError } from '../utils/http-error.js';
 import { Sanitizer } from '../utils/sanitize.js';
 
@@ -21,7 +20,7 @@ export class DataStoreService {
   }
 
   async list(store, queryParams) {
-    const Model = this.getModelOrFail(store);
+    const Model = await this.getModelOrFail(store);
     const { page, limit, skip } = this.getPagination(queryParams);
     const query = this.buildListQuery(store, queryParams);
     const collation = this.getSortCollation(store);
@@ -45,14 +44,14 @@ export class DataStoreService {
   }
 
   async getById(store, id) {
-    const Model = this.getModelOrFail(store);
+    const Model = await this.getModelOrFail(store);
     const record = await Model.findOne({ id });
     if (!record) throw new HttpError('Registro no encontrado', 404);
     return Sanitizer.record(record);
   }
 
   async upsert(store, id, body) {
-    const Model = this.getModelOrFail(store);
+    const Model = await this.getModelOrFail(store);
     const payload = { ...body, id };
 
     if (store === 'productos') this.validateProductoPayload(payload);
@@ -72,7 +71,7 @@ export class DataStoreService {
   }
 
   async delete(store, id) {
-    const Model = this.getModelOrFail(store);
+    const Model = await this.getModelOrFail(store);
     if (store === 'ventas') await this.restoreVentaStockBeforeDelete(Model, id);
     await Model.deleteOne({ id });
   }
@@ -97,7 +96,8 @@ export class DataStoreService {
         const qty = Number(item.qty || 0);
         if (!productId || qty <= 0) throw new HttpError('La venta contiene productos inválidos');
 
-        const stockRecord = await Stock.findOneAndUpdate(
+        const StockModel = await this.getModelOrFail('stock');
+        const stockRecord = await StockModel.findOneAndUpdate(
           { id: productId, qty: { $gte: qty } },
           { $inc: { qty: -qty } },
           { new: true, runValidators: true }
@@ -117,7 +117,8 @@ export class DataStoreService {
       );
       return Sanitizer.record(record);
     } catch (error) {
-      await Promise.all(decrementedItems.map(item => Stock.updateOne(
+      const StockModel = await this.getModelOrFail('stock');
+      await Promise.all(decrementedItems.map(item => StockModel.updateOne(
         { id: item.productId },
         { $inc: { qty: item.qty } },
         { runValidators: true }
@@ -130,15 +131,16 @@ export class DataStoreService {
     const venta = await Model.findOne({ id }).lean();
     if (!venta) return;
 
-    await Promise.all((venta.items || []).map(item => Stock.updateOne(
+    const StockModel = await this.getModelOrFail('stock');
+    await Promise.all((venta.items || []).map(item => StockModel.updateOne(
       { id: item.productId },
       { $inc: { qty: Number(item.qty || 0) } },
       { upsert: true, runValidators: true }
     )));
   }
 
-  getModelOrFail(store) {
-    const Model = this.modelRegistry.get(store);
+  async getModelOrFail(store) {
+    const Model = await this.modelRegistry.getActive(store);
     if (!Model) throw new HttpError('Store no encontrado', 404);
     return Model;
   }
@@ -200,7 +202,7 @@ export class DataStoreService {
     const nombre = String(payload.nombre || '').trim();
     if (!nombre) return;
 
-    const Model = this.modelRegistry.get(store);
+    const Model = await this.modelRegistry.getActive(store);
     const query = store === 'productos'
       ? { nombre, proveedorId: payload.proveedorId || null, id: { $ne: payload.id } }
       : { nombre, id: { $ne: payload.id } };
@@ -248,14 +250,16 @@ export class DataStoreService {
     })).filter(amount => amount.metodoPagoId && amount.metodoPagoNombre);
 
     if (status === 'abierta') {
-      const openCaja = await Caja.findOne({ status: 'abierta', id: { $ne: payload.id } }).lean();
+      const CajaModel = await this.getModelOrFail('cajas');
+      const openCaja = await CajaModel.findOne({ status: 'abierta', id: { $ne: payload.id } }).lean();
       if (openCaja) throw new HttpError('Ya hay una caja abierta. Cerrala antes de abrir otra.');
       payload.openedAt = payload.openedAt || new Date().toISOString();
       payload.closedAt = '';
       return;
     }
 
-    const existing = await Caja.findOne({ id: payload.id }).lean();
+    const CajaModel = await this.getModelOrFail('cajas');
+    const existing = await CajaModel.findOne({ id: payload.id }).lean();
     if (!existing) throw new HttpError('No se encontró la caja a cerrar', 404);
     payload.openedAt = existing.openedAt;
     payload.initialAmounts = existing.initialAmounts || [];
@@ -263,7 +267,8 @@ export class DataStoreService {
   }
 
   async validateVentaPayload(payload) {
-    const openCaja = await Caja.findOne({ status: 'abierta' }).lean();
+    const CajaModel = await this.getModelOrFail('cajas');
+    const openCaja = await CajaModel.findOne({ status: 'abierta' }).lean();
     if (!openCaja) throw new HttpError('No hay una caja abierta. Abrí una caja antes de realizar ventas.');
     payload.cajaId = openCaja.id;
   }

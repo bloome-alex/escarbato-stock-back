@@ -2,26 +2,21 @@ import path from 'node:path';
 
 export class AppConfig {
   constructor(env = process.env) {
-    this.port = env.PORT || 3000;
-    this.mongoUri = env.MONGODB_URI || 'mongodb://127.0.0.1:27017/escarbato_petshop';
-    this.mongoDbName = env.MONGODB_DB_NAME;
-    this.jwtSecret = env.JWT_SECRET || 'change-me';
-    this.jwtExpiresIn = env.JWT_EXPIRES_IN || '8h';
-    this.authUsername = env.AUTH_USERNAME || 'admin';
-    this.authPassword = env.AUTH_PASSWORD || 'admin';
-    this.supervisorUsername = env.SUPERVISOR_USERNAME || 'supervisor';
-    this.supervisorPassword = env.SUPERVISOR_PASSWORD || 'supervisor';
-    this.corsOrigin = env.CORS_ORIGIN || '*';
-    this.appName = env.APP_NAME || 'Escarbato';
-    this.businessType = env.APP_BUSINESS_TYPE || 'Petshop';
-    this.appAssetsPath = this.normalizeAssetsPath(env.APP_ASSETS_PATH || 'assets/escarbato');
+    this.port = 3000;
+    this.mongoUri = env.MONGODB_URI || 'mongodb://127.0.0.1:27017';
+    this.mongoDbAdminName = env.MONGODB_DB_ADMIN_NAME || 'admin';
+    this.jwtExpiresIn = '12h';
+    this.corsOrigin = '*';
+    this.adminUsername = env.ADMIN_USERNAME || 'admin';
+    this.adminPassword = env.ADMIN_PASSWORD || 'admin123';
+    this.adminDomain = env.ADMIN_DOMAIN || '127.0.0.1';
     this.publicDir = path.join(process.cwd(), 'src/public');
     this.sections = this.getSectionConfig(env);
   }
 
   normalizeAssetsPath(value) {
     const pathValue = String(value || '').trim().replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
-    return `/${pathValue || 'assets/escarbato'}`;
+    return `/${pathValue || 'assets'}`;
   }
 
   envFlag(env, name, defaultValue = true) {

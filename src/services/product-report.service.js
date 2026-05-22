@@ -1,10 +1,10 @@
 import ExcelJS from 'exceljs';
 import PDFDocument from 'pdfkit';
-import { Producto, Proveedor, Tipo } from '../models/index.js';
 
 export class ProductReportService {
-  constructor(config) {
+  constructor(config, modelRegistry) {
     this.config = config;
+    this.modelRegistry = modelRegistry;
   }
 
   async writePdf(res) {
@@ -28,10 +28,14 @@ export class ProductReportService {
 
   getReportData() {
     return Promise.all([
+      this.modelRegistry.getActive('productos'),
+      this.modelRegistry.getActive('proveedores'),
+      this.modelRegistry.getActive('tipos')
+    ]).then(([Producto, Proveedor, Tipo]) => Promise.all([
       Producto.find().lean(),
       Proveedor.find().lean(),
       Tipo.find().lean()
-    ]);
+    ]));
   }
 
   formatMoney(value) {
@@ -157,11 +161,12 @@ export class ProductReportService {
 
   buildProductsXlsx(productos, proveedores, tipos) {
     const workbook = new ExcelJS.Workbook();
+    const tenant = this.modelRegistry.connectionManager?.getActiveTenant();
     const tipoById = new Map(tipos.map(tipo => [tipo.id, tipo.nombre]));
     const usedSheetNames = new Set();
     const productGroups = this.getProductsByProvider(productos, proveedores, tipos);
 
-    workbook.creator = `${this.config.appName} ${this.config.businessType}`;
+    workbook.creator = [tenant?.name, tenant?.businessType].filter(Boolean).join(' ') || 'Escarbato Stock';
     workbook.created = new Date();
 
     if (!productGroups.length) {

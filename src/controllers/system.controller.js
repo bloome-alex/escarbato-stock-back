@@ -10,6 +10,12 @@ export class SystemController {
   }
 
   configResponse(req, res) {
-    res.json({ sections: this.config.sections });
+    if (!req.empresa) return res.status(404).json({ error: 'Empresa no encontrada' });
+    res.json({
+      sections: this.config.sections,
+      appName: req.empresa.name,
+      businessType: req.empresa.businessType,
+      assetsPath: req.empresa.assetsPath
+    });
   }
 }

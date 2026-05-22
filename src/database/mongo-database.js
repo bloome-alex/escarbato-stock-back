@@ -6,7 +6,7 @@ export class MongoDatabase {
   }
 
   async connect() {
-    const options = this.config.mongoDbName ? { dbName: this.config.mongoDbName } : undefined;
+    const options = { dbName: this.config.mongoDbAdminName };
     await mongoose.connect(this.config.mongoUri, options);
   }
 }

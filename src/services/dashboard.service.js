@@ -1,8 +1,18 @@
-import { Auditoria, Producto, Proveedor, Stock, Tipo } from '../models/index.js';
 import { Sanitizer } from '../utils/sanitize.js';
 
 export class DashboardService {
+  constructor(modelRegistry) {
+    this.modelRegistry = modelRegistry;
+  }
+
   async getDashboard() {
+    const [Proveedor, Tipo, Producto, Stock, Auditoria] = await Promise.all([
+      this.modelRegistry.getActive('proveedores'),
+      this.modelRegistry.getActive('tipos'),
+      this.modelRegistry.getActive('productos'),
+      this.modelRegistry.getActive('stock'),
+      this.modelRegistry.getActive('auditoria')
+    ]);
     const [proveedoresCount, tipos, productos, stockRecords, recentProducts, auditActivity] = await Promise.all([
       Proveedor.countDocuments(),
       Tipo.find().lean(),

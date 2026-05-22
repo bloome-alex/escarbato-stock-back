@@ -1,7 +1,8 @@
 import { Auditoria, Caja, MetodoPago, PeluqueriaHorario, PeluqueriaServicio, PeluqueriaTipoPerro, PeluqueriaTurno, Producto, Proveedor, Stock, Tipo, Venta } from '../models/index.js';
 
 export class ModelRegistry {
-  constructor() {
+  constructor(connectionManager = null) {
+    this.connectionManager = connectionManager;
     this.models = {
       proveedores: Proveedor,
       tipos: Tipo,
@@ -20,5 +21,10 @@ export class ModelRegistry {
 
   get(store) {
     return this.models[store] || null;
+  }
+
+  async getActive(store) {
+    if (!this.connectionManager) return this.get(store);
+    return this.connectionManager.getModel(store);
   }
 }

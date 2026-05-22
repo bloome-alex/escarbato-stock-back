@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin multi-empresa</title>
+<style>
+  :root { color-scheme: light dark; font-family: Inter, system-ui, sans-serif; }
+  body { margin: 0; min-height: 100vh; background: #f6f2ea; color: #2d2017; }
+  main { max-width: 1080px; margin: 0 auto; padding: 32px 18px; }
+  .shell { display: grid; gap: 18px; }
+  .card { background: #fff; border: 1px solid #e8ddd0; border-radius: 18px; box-shadow: 0 10px 30px rgba(92,61,46,.08); padding: 20px; }
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  h1, h2 { margin: 0; }
+  h1 { font-size: clamp(26px, 5vw, 42px); }
+  h2 { font-size: 20px; }
+  input, select, button { border-radius: 10px; border: 1px solid #d8cabd; padding: 10px 12px; font: inherit; }
+  button { cursor: pointer; border: 0; background: #4e8055; color: #fff; font-weight: 700; }
+  button.secondary { background: #efe7dc; color: #2d2017; }
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .danger { background: #b3261e; }
+  .hidden { display: none; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 10px; border-bottom: 1px solid #eee2d6; text-align: left; }
+  .muted { color: #7a6355; }
+  .error { color: #b3261e; min-height: 22px; }
+  @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } .top { align-items: flex-start; flex-direction: column; } }
+</style>
+</head>
+<body><main id="admin-root"></main><script type="module" src="/js/admin.js"></script></body>
+</html>
