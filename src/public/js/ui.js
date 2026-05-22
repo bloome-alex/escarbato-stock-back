@@ -30,6 +30,8 @@ export class ToastManager {
 export class NavigationManager {
   constructor(app) {
     this.app = app;
+    this.touchStart = null;
+    this.lockedScrollY = 0;
     this.sectionTitles = {
       dashboard: 'Panel',
       proveedores: 'Proveedores',
@@ -60,6 +62,8 @@ export class NavigationManager {
     document.addEventListener('keydown', event => {
       if (event.key === 'Escape') this.closeSidebar();
     });
+    document.addEventListener('touchstart', event => this.handleTouchStart(event), { passive: true });
+    document.addEventListener('touchend', event => this.handleTouchEnd(event), { passive: true });
     this.updateHeader('dashboard');
   }
 
@@ -118,16 +122,61 @@ export class NavigationManager {
 
   toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
+    if (sidebar.classList.contains('open')) this.closeSidebar();
+    else this.openSidebar();
+  }
+
+  openSidebar() {
+    const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebarOverlay');
-    const isOpen = sidebar.classList.toggle('open');
-    overlay.classList.toggle('open', isOpen);
-    document.getElementById('hamburgerBtn').setAttribute('aria-expanded', String(isOpen));
+    sidebar.classList.add('open');
+    overlay.classList.add('open');
+    document.getElementById('hamburgerBtn').setAttribute('aria-expanded', 'true');
+    this.lockBodyScroll();
   }
 
   closeSidebar() {
     document.getElementById('sidebar').classList.remove('open');
     document.getElementById('sidebarOverlay').classList.remove('open');
     document.getElementById('hamburgerBtn').setAttribute('aria-expanded', 'false');
+    this.unlockBodyScroll();
+  }
+
+  handleTouchStart(event) {
+    if (!event.changedTouches?.length) return;
+    const touch = event.changedTouches[0];
+    this.touchStart = {
+      x: touch.clientX,
+      y: touch.clientY,
+      sidebarOpen: document.getElementById('sidebar')?.classList.contains('open')
+    };
+  }
+
+  handleTouchEnd(event) {
+    if (!this.touchStart || !event.changedTouches?.length) return;
+    const touch = event.changedTouches[0];
+    const deltaX = touch.clientX - this.touchStart.x;
+    const deltaY = touch.clientY - this.touchStart.y;
+    const isHorizontalSwipe = Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY) * 1.4;
+    const isEdgeSwipe = this.touchStart.x <= 32;
+
+    if (isHorizontalSwipe && !this.touchStart.sidebarOpen && isEdgeSwipe && deltaX > 0) this.openSidebar();
+    if (isHorizontalSwipe && this.touchStart.sidebarOpen && deltaX < 0) this.closeSidebar();
+    this.touchStart = null;
+  }
+
+  lockBodyScroll() {
+    if (document.body.classList.contains('sidebar-open')) return;
+    this.lockedScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+    document.body.style.top = `-${this.lockedScrollY}px`;
+    document.body.classList.add('sidebar-open');
+  }
+
+  unlockBodyScroll() {
+    if (!document.body.classList.contains('sidebar-open')) return;
+    document.body.classList.remove('sidebar-open');
+    document.body.style.top = '';
+    window.scrollTo(0, this.lockedScrollY);
   }
 }
 
