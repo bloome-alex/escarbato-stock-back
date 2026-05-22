@@ -1,4 +1,4 @@
-import { form } from '../ui.js';
+import { escapeHtml, form } from '../ui.js';
 import { DEFAULT_PAGE_SIZE, getResponsivePageItems, loadingTemplate, paginationTemplate } from '../pagination.js?v=20260521-1';
 import { compareByName } from '../sort.js';
 
@@ -64,7 +64,7 @@ export class StockComponent {
     const selectedFilter = filter ? filter.value : '';
     const opts = [...this.app.store.data.tipos]
       .sort(compareByName)
-      .map(tipo => `<option value="${tipo.id}">${tipo.nombre}</option>`)
+      .map(tipo => `<option value="${escapeHtml(tipo.id)}">${escapeHtml(tipo.nombre)}</option>`)
       .join('');
     document.getElementById('filterStockTipo').innerHTML = '<option value="">Todos los tipos</option>' + opts;
     if (selectedFilter) filter.value = selectedFilter;
@@ -75,7 +75,7 @@ export class StockComponent {
     const selectedFilter = filter ? filter.value : '';
     const opts = [...this.app.store.data.proveedores]
       .sort(compareByName)
-      .map(prov => `<option value="${prov.id}">${prov.nombre}</option>`)
+      .map(prov => `<option value="${escapeHtml(prov.id)}">${escapeHtml(prov.nombre)}</option>`)
       .join('');
     document.getElementById('filterStockProveedor').innerHTML = '<option value="">Todos los proveedores</option><option value="sin-proveedor">Sin proveedor</option>' + opts;
     if (selectedFilter) filter.value = selectedFilter;
@@ -138,7 +138,7 @@ export class StockComponent {
       const status = this.getStatus(qty, min);
       const tipo = data.tipos.find(item => item.id === producto.tipoId);
       const proveedor = data.proveedores.find(item => item.id === producto.proveedorId);
-      return `<tr><td data-label="Producto"><strong>${producto.nombre}</strong></td><td data-label="Tipo">${tipo ? tipo.nombre : '—'}</td><td data-label="Proveedor">${proveedor ? proveedor.nombre : '—'}</td><td data-label="Mínimo">${min} u.</td><td data-label="Stock"><input class="stock-qty" type="number" min="0" step="any" value="${qty}" data-stock-input data-id="${producto.id}" aria-label="Stock de ${producto.nombre}"></td><td data-label="Estado"><span class="chip ${this.statusChip[status]}" data-stock-status>${this.statusLabel[status]}</span></td></tr>`;
+      return `<tr><td data-label="Producto"><strong>${escapeHtml(producto.nombre)}</strong></td><td data-label="Tipo">${tipo ? escapeHtml(tipo.nombre) : '—'}</td><td data-label="Proveedor">${proveedor ? escapeHtml(proveedor.nombre) : '—'}</td><td data-label="Mínimo">${min} u.</td><td data-label="Stock"><input class="stock-qty" type="number" min="0" step="any" value="${qty}" data-stock-input data-id="${escapeHtml(producto.id)}" aria-label="Stock de ${escapeHtml(producto.nombre)}"></td><td data-label="Estado"><span class="chip ${this.statusChip[status]}" data-stock-status>${this.statusLabel[status]}</span></td></tr>`;
     }).join('');
     document.getElementById('pager-stock').innerHTML = paginationTemplate('stock', pageState);
   }

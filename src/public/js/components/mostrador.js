@@ -1,4 +1,4 @@
-import { form } from '../ui.js';
+import { escapeHtml, form } from '../ui.js';
 import { compareByName } from '../sort.js';
 
 const DEFAULT_CLIENT = 'mostrador';
@@ -245,7 +245,7 @@ export class MostradorComponent {
     const selected = select.value;
     const options = [...(this.app.store.data.metodosPago || [])]
       .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
-      .map(method => `<option value="${method.id}">${method.nombre}</option>`)
+      .map(method => `<option value="${escapeHtml(method.id)}">${escapeHtml(method.nombre)}</option>`)
       .join('');
     select.innerHTML = '<option value="">Seleccionar método</option>' + options;
     if (selected && (this.app.store.data.metodosPago || []).some(method => method.id === selected)) select.value = selected;
@@ -259,8 +259,8 @@ export class MostradorComponent {
 
     const selectedTipo = tipoFilter.value;
     const selectedProveedor = proveedorFilter.value;
-    const tipos = [...(data.tipos || [])].sort(compareByName).map(tipo => `<option value="${tipo.id}">${tipo.nombre}</option>`).join('');
-    const proveedores = [...(data.proveedores || [])].sort(compareByName).map(proveedor => `<option value="${proveedor.id}">${proveedor.nombre}</option>`).join('');
+    const tipos = [...(data.tipos || [])].sort(compareByName).map(tipo => `<option value="${escapeHtml(tipo.id)}">${escapeHtml(tipo.nombre)}</option>`).join('');
+    const proveedores = [...(data.proveedores || [])].sort(compareByName).map(proveedor => `<option value="${escapeHtml(proveedor.id)}">${escapeHtml(proveedor.nombre)}</option>`).join('');
 
     tipoFilter.innerHTML = '<option value="">Todos los tipos</option>' + tipos;
     proveedorFilter.innerHTML = '<option value="">Todos los proveedores</option><option value="sin-proveedor">Sin proveedor</option>' + proveedores;
@@ -366,7 +366,7 @@ export class MostradorComponent {
       const available = this.getAvailableStock(producto.id);
       const maxValue = this.getInputMax(available, this.getProductPrice(producto), measureMode);
       const inputDisabled = available <= 0 ? 'disabled' : '';
-      return `<article class="counter-product-card"><div class="counter-product-main"><strong>${producto.nombre}</strong><div>${tipo ? tipo.nombre : 'Sin tipo'} · ${proveedor ? proveedor.nombre : 'Sin proveedor'}</div><span class="price-value">${this.formatMoney(this.getProductPrice(producto))}</span></div><div class="counter-stock"><span>Stock</span><strong>${this.formatStockValue(producto, available)}</strong></div><div class="counter-add"><input type="number" min="0" step="1" max="${maxValue}" placeholder="${valuePlaceholder}" data-counter-value="${producto.id}" ${inputDisabled}><button class="btn btn-amber btn-sm counter-add-btn" data-action="add-counter-item" data-id="${producto.id}" disabled>Agregar</button></div></article>`;
+      return `<article class="counter-product-card"><div class="counter-product-main"><strong>${escapeHtml(producto.nombre)}</strong><div>${tipo ? escapeHtml(tipo.nombre) : 'Sin tipo'} · ${proveedor ? escapeHtml(proveedor.nombre) : 'Sin proveedor'}</div><span class="price-value">${this.formatMoney(this.getProductPrice(producto))}</span></div><div class="counter-stock"><span>Stock</span><strong>${this.formatStockValue(producto, available)}</strong></div><div class="counter-add"><input type="number" min="0" step="1" max="${maxValue}" placeholder="${escapeHtml(valuePlaceholder)}" data-counter-value="${escapeHtml(producto.id)}" ${inputDisabled}><button class="btn btn-amber btn-sm counter-add-btn" data-action="add-counter-item" data-id="${escapeHtml(producto.id)}" disabled>Agregar</button></div></article>`;
     }).join('');
     if (loadMore) loadMore.style.display = this.visibleCount < list.length ? '' : 'none';
   }
@@ -466,7 +466,7 @@ export class MostradorComponent {
       const subtotal = item.subtotal ?? item.qty * item.price;
       const inputValue = mode === 'amount' ? Number(subtotal).toFixed(2) : item.qty;
       const maxValue = this.getInputMax(stock, item.price, mode);
-      return `<div class="cart-line"><div class="cart-line-header"><div><strong>${item.productName}</strong><span>${this.formatMoney(item.price)} c/u · Subtotal ${this.formatMoney(subtotal)}</span></div><button class="btn btn-danger btn-icon btn-sm" data-action="remove-counter-item" data-id="${item.productId}" aria-label="Eliminar producto" title="Eliminar">🗑️</button></div><div class="cart-line-meta"><div><span>Stock</span><strong>${this.formatStockValue(producto || { precioFinal: item.price }, stock)}</strong></div><div><span>En carrito</span><strong>${this.formatQty(item.qty)} u.</strong></div></div><label class="cart-line-input"><span>${inputLabel}</span><input type="number" min="0" step="1" max="${maxValue}" value="${inputValue}" data-cart-value="${item.productId}" aria-label="${inputLabel} de ${item.productName}"></label></div>`;
+      return `<div class="cart-line"><div class="cart-line-header"><div><strong>${escapeHtml(item.productName)}</strong><span>${this.formatMoney(item.price)} c/u · Subtotal ${this.formatMoney(subtotal)}</span></div><button class="btn btn-danger btn-icon btn-sm" data-action="remove-counter-item" data-id="${escapeHtml(item.productId)}" aria-label="Eliminar producto" title="Eliminar">🗑️</button></div><div class="cart-line-meta"><div><span>Stock</span><strong>${this.formatStockValue(producto || { precioFinal: item.price }, stock)}</strong></div><div><span>En carrito</span><strong>${this.formatQty(item.qty)} u.</strong></div></div><label class="cart-line-input"><span>${escapeHtml(inputLabel)}</span><input type="number" min="0" step="1" max="${maxValue}" value="${inputValue}" data-cart-value="${escapeHtml(item.productId)}" aria-label="${escapeHtml(inputLabel)} de ${escapeHtml(item.productName)}"></label></div>`;
     }).join('');
   }
 
@@ -476,7 +476,7 @@ export class MostradorComponent {
     const adjustments = [];
     if (totals.descuento > 0) adjustments.push(`<div><span>Descuento ${formatPercent(totals.descuento)}</span><strong>-${this.formatMoney(totals.discountAmount)}</strong></div>`);
     if (totals.recargo > 0) adjustments.push(`<div><span>Recargo ${formatPercent(totals.recargo)}</span><strong>+${this.formatMoney(totals.surchargeAmount)}</strong></div>`);
-    return `<div class="detail-list"><div><span>Método de pago</span><strong>${method.nombre}</strong></div><div><span>Total calculado</span><strong>${this.formatMoney(totals.subtotal)}</strong></div>${adjustments.join('') || '<div><span>Ajustes</span><strong>Sin descuento ni recargo</strong></div>'}</div>`;
+    return `<div class="detail-list"><div><span>Método de pago</span><strong>${escapeHtml(method.nombre)}</strong></div><div><span>Total calculado</span><strong>${this.formatMoney(totals.subtotal)}</strong></div>${adjustments.join('') || '<div><span>Ajustes</span><strong>Sin descuento ni recargo</strong></div>'}</div>`;
   }
 
   openCart() {

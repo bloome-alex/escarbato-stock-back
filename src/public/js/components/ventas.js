@@ -1,4 +1,4 @@
-import { form } from '../ui.js';
+import { escapeHtml, form } from '../ui.js';
 import { DEFAULT_PAGE_SIZE, getResponsivePageItems, loadingTemplate, paginationTemplate } from '../pagination.js?v=20260521-1';
 
 export class VentasComponent {
@@ -35,7 +35,7 @@ export class VentasComponent {
 
     const selected = select.value;
     const methods = [...(this.app.store.data.metodosPago || [])].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
-    select.innerHTML = `<option value="">Todos los métodos</option>${methods.map(method => `<option value="${method.id}">${method.nombre}</option>`).join('')}`;
+    select.innerHTML = `<option value="">Todos los métodos</option>${methods.map(method => `<option value="${escapeHtml(method.id)}">${escapeHtml(method.nombre)}</option>`).join('')}`;
     select.value = methods.some(method => method.id === selected) ? selected : '';
   }
 
@@ -103,9 +103,9 @@ export class VentasComponent {
 
     empty.style.display = 'none';
     tbody.innerHTML = pageItems.map(venta => {
-      const products = venta.items.map(item => `${item.productName} x ${this.formatQty(item.qty)}`).join(', ');
+      const products = venta.items.map(item => `${escapeHtml(item.productName)} x ${this.formatQty(item.qty)}`).join(', ');
       const name = `${venta.cliente || 'Cliente mostrador'} - ${this.formatDate(venta.createdAt)}`;
-      return `<tr><td data-label="Fecha"><strong>${this.formatDate(venta.createdAt)}</strong></td><td data-label="Cliente">${venta.cliente || 'Cliente mostrador'}</td><td data-label="Método">${this.paymentLabel(venta)}</td><td data-label="Productos">${products}</td><td data-label="Calculado">${this.formatMoney(venta.calculatedTotal)}</td><td class="price-value" data-label="Final">${this.formatMoney(venta.finalTotal)}</td><td data-label="Acciones"><div class="td-actions"><button class="btn btn-ghost btn-sm btn-icon" data-action="view-venta" data-id="${venta.id}" aria-label="Visualizar venta" title="Visualizar">👁️</button><button class="btn btn-danger btn-sm btn-icon" data-action="delete" data-entity="venta" data-id="${venta.id}" data-name="${name}" aria-label="Eliminar venta" title="Eliminar">🗑️</button></div></td></tr>`;
+      return `<tr><td data-label="Fecha"><strong>${this.formatDate(venta.createdAt)}</strong></td><td data-label="Cliente">${escapeHtml(venta.cliente || 'Cliente mostrador')}</td><td data-label="Método">${escapeHtml(this.paymentLabel(venta))}</td><td data-label="Productos">${products}</td><td data-label="Calculado">${this.formatMoney(venta.calculatedTotal)}</td><td class="price-value" data-label="Final">${this.formatMoney(venta.finalTotal)}</td><td data-label="Acciones"><div class="td-actions"><button class="btn btn-ghost btn-sm btn-icon" data-action="view-venta" data-id="${escapeHtml(venta.id)}" aria-label="Visualizar venta" title="Visualizar">👁️</button><button class="btn btn-danger btn-sm btn-icon" data-action="delete" data-entity="venta" data-id="${escapeHtml(venta.id)}" data-name="${escapeHtml(name)}" aria-label="Eliminar venta" title="Eliminar">🗑️</button></div></td></tr>`;
     }).join('');
     document.getElementById('pager-ventas').innerHTML = paginationTemplate('ventas', pageState);
   }
@@ -114,9 +114,9 @@ export class VentasComponent {
     const venta = this.app.store.data.ventas.find(item => item.id === id);
     if (!venta) return this.app.toasts.show('No se encontró la venta', 'error');
 
-    const rows = venta.items.map(item => `<tr><td data-label="Producto"><strong>${item.productName}</strong></td><td data-label="Cantidad">${this.formatQty(item.qty)}</td><td class="price-value" data-label="Precio">${this.formatMoney(item.price)}</td><td class="price-value" data-label="Subtotal">${this.formatMoney(item.subtotal ?? item.qty * item.price)}</td></tr>`).join('');
+    const rows = venta.items.map(item => `<tr><td data-label="Producto"><strong>${escapeHtml(item.productName)}</strong></td><td data-label="Cantidad">${this.formatQty(item.qty)}</td><td class="price-value" data-label="Precio">${this.formatMoney(item.price)}</td><td class="price-value" data-label="Subtotal">${this.formatMoney(item.subtotal ?? item.qty * item.price)}</td></tr>`).join('');
     const method = venta.metodoPago || {};
-    const paymentDetail = method.nombre ? `<div><span>Método de pago</span><strong>${method.nombre}</strong></div><div><span>Descuento</span><strong>${this.formatPercent(method.descuento)}</strong></div><div><span>Recargo</span><strong>${this.formatPercent(method.recargo ?? method.bonificacion)}</strong></div>` : '<div><span>Método de pago</span><strong>Sin método</strong></div>';
-    this.app.showDetail('Detalle de venta', `<div class="sale-detail-grid"><div><span>Fecha y hora</span><strong>${this.formatDate(venta.createdAt)}</strong></div><div><span>Cliente</span><strong>${venta.cliente || 'Cliente mostrador'}</strong></div>${paymentDetail}<div><span>Total calculado</span><strong>${this.formatMoney(venta.calculatedTotal)}</strong></div><div><span>Total final</span><strong class="price-value">${this.formatMoney(venta.finalTotal)}</strong></div></div><div class="table-wrap sale-cart-wrap"><table><thead><tr><th>Producto</th><th>Cantidad</th><th>Precio</th><th>Subtotal</th></tr></thead><tbody>${rows}</tbody></table></div>`);
+    const paymentDetail = method.nombre ? `<div><span>Método de pago</span><strong>${escapeHtml(method.nombre)}</strong></div><div><span>Descuento</span><strong>${this.formatPercent(method.descuento)}</strong></div><div><span>Recargo</span><strong>${this.formatPercent(method.recargo ?? method.bonificacion)}</strong></div>` : '<div><span>Método de pago</span><strong>Sin método</strong></div>';
+    this.app.showDetail('Detalle de venta', `<div class="sale-detail-grid"><div><span>Fecha y hora</span><strong>${this.formatDate(venta.createdAt)}</strong></div><div><span>Cliente</span><strong>${escapeHtml(venta.cliente || 'Cliente mostrador')}</strong></div>${paymentDetail}<div><span>Total calculado</span><strong>${this.formatMoney(venta.calculatedTotal)}</strong></div><div><span>Total final</span><strong class="price-value">${this.formatMoney(venta.finalTotal)}</strong></div></div><div class="table-wrap sale-cart-wrap"><table><thead><tr><th>Producto</th><th>Cantidad</th><th>Precio</th><th>Subtotal</th></tr></thead><tbody>${rows}</tbody></table></div>`);
   }
 }

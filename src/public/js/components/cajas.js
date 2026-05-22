@@ -1,3 +1,5 @@
+import { escapeHtml } from '../ui.js';
+
 export class CajasComponent {
   constructor(app) {
     this.app = app;
@@ -127,7 +129,7 @@ export class CajasComponent {
       return;
     }
 
-    const inputs = methods.map(method => `<div class="form-group"><label>${method.nombre}</label><input type="number" min="0" step="0.01" value="0" data-caja-initial="${method.id}"></div>`).join('');
+    const inputs = methods.map(method => `<div class="form-group"><label>${escapeHtml(method.nombre)}</label><input type="number" min="0" step="0.01" value="0" data-caja-initial="${escapeHtml(method.id)}"></div>`).join('');
     container.innerHTML = `<h3 style="margin:18px 0 12px">Abrir caja</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px">${inputs}</div><div class="modal-actions" style="position:static;margin:16px 0 0;padding:0;background:transparent;border:0"><button class="btn btn-primary" data-action="open-caja">Abrir caja</button></div>`;
   }
 
@@ -194,15 +196,15 @@ export class CajasComponent {
     const rows = this.getPaymentRows(caja);
     const ventas = this.getCajaVentas(caja);
     const peluqueriaTurnos = this.getCajaPeluqueriaTurnos(caja);
-    const paymentRows = rows.map(row => `<tr><td data-label="Método"><strong>${row.nombre}</strong></td><td class="price-value" data-label="Inicio">${this.formatMoney(row.inicial)}</td><td class="price-value" data-label="Ingresos">${this.formatMoney(row.ingresos)}</td><td class="price-value" data-label="Debería haber">${this.formatMoney(row.esperado)}</td></tr>`).join('');
-    const salesRows = ventas.map(venta => `<tr><td data-label="Fecha">${this.formatDate(venta.createdAt)}</td><td data-label="Cliente">${venta.cliente || 'Cliente mostrador'}</td><td data-label="Método">${venta.metodoPago?.nombre || 'Sin método'}</td><td class="price-value" data-label="Total">${this.formatMoney(venta.finalTotal)}</td></tr>`).join('') || '<tr><td colspan="4">No hubo ventas durante esta caja.</td></tr>';
+    const paymentRows = rows.map(row => `<tr><td data-label="Método"><strong>${escapeHtml(row.nombre)}</strong></td><td class="price-value" data-label="Inicio">${this.formatMoney(row.inicial)}</td><td class="price-value" data-label="Ingresos">${this.formatMoney(row.ingresos)}</td><td class="price-value" data-label="Debería haber">${this.formatMoney(row.esperado)}</td></tr>`).join('');
+    const salesRows = ventas.map(venta => `<tr><td data-label="Fecha">${this.formatDate(venta.createdAt)}</td><td data-label="Cliente">${escapeHtml(venta.cliente || 'Cliente mostrador')}</td><td data-label="Método">${escapeHtml(venta.metodoPago?.nombre || 'Sin método')}</td><td class="price-value" data-label="Total">${this.formatMoney(venta.finalTotal)}</td></tr>`).join('') || '<tr><td colspan="4">No hubo ventas durante esta caja.</td></tr>';
     const peluqueriaRows = peluqueriaTurnos.map(turno => {
       const method = turno.paidMethod || {};
       const precioBase = Number(turno.precio || 0);
       const descuento = Number(method.descuento || 0);
       const recargo = Number(method.recargo || 0);
       const finalTotal = precioBase - (precioBase * descuento) / 100 + (precioBase * recargo) / 100;
-      return `<tr><td data-label="Fecha turno">${this.formatDate(turno.fecha)}</td><td data-label="Cliente">${turno.cliente}</td><td data-label="Servicio">${turno.servicioNombre}</td><td data-label="Método">${method.nombre || 'Sin método'}</td><td class="price-value" data-label="Total">${this.formatMoney(finalTotal)}</td></tr>`;
+      return `<tr><td data-label="Fecha turno">${this.formatDate(turno.fecha)}</td><td data-label="Cliente">${escapeHtml(turno.cliente)}</td><td data-label="Servicio">${escapeHtml(turno.servicioNombre)}</td><td data-label="Método">${escapeHtml(method.nombre || 'Sin método')}</td><td class="price-value" data-label="Total">${this.formatMoney(finalTotal)}</td></tr>`;
     }).join('') || '<tr><td colspan="5">No hubo turnos de peluquería pagados durante esta caja.</td></tr>';
     const totalIngresos = rows.reduce((sum, row) => sum + row.ingresos, 0);
     const totalEsperado = rows.reduce((sum, row) => sum + row.esperado, 0);

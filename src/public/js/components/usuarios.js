@@ -1,16 +1,9 @@
-import { form } from '../ui.js';
+import { escapeHtml, form } from '../ui.js';
 
 const labels = {
   auth: 'AUTH',
   supervisor: 'SUPERVISOR'
 };
-
-const escapeHtml = value => String(value || '').replace(/[&<>"]/g, char => ({
-  '&': '&amp;',
-  '<': '&lt;',
-  '>': '&gt;',
-  '"': '&quot;'
-}[char]));
 
 export class UsuariosComponent {
   constructor(app) {
@@ -56,20 +49,20 @@ export class UsuariosComponent {
       <div class="user-settings-header">
         <div class="user-settings-icon">🔐</div>
         <div>
-          <span class="user-settings-kicker">${label}</span>
+          <span class="user-settings-kicker">${escapeHtml(label)}</span>
           <h2>Configurá tu usuario</h2>
           <p>Estos datos se usan para iniciar sesión en la plataforma.</p>
         </div>
       </div>
       <div class="form-group">
         <label>Nombre de usuario</label>
-        <input type="text" id="usuario-${user.id}-username" value="${escapeHtml(user.username)}" autocomplete="username" placeholder="Tu usuario">
+        <input type="text" id="usuario-${escapeHtml(user.id)}-username" value="${escapeHtml(user.username)}" autocomplete="username" placeholder="Tu usuario">
       </div>
       <div class="form-group">
         <label>Nueva contraseña</label>
-        <input type="password" id="usuario-${user.id}-password" placeholder="Dejar vacía para conservar la actual" autocomplete="new-password">
+        <input type="password" id="usuario-${escapeHtml(user.id)}-password" placeholder="Dejar vacía para conservar la actual" autocomplete="new-password">
       </div>
-      <button class="btn btn-primary user-settings-save" data-action="save-user" data-id="${user.id}">Guardar cambios</button>
+      <button class="btn btn-primary user-settings-save" data-action="save-user" data-id="${escapeHtml(user.id)}">Guardar cambios</button>
     </div>`;
   }
 

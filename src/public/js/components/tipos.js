@@ -1,4 +1,4 @@
-import { form } from '../ui.js';
+import { escapeHtml, form } from '../ui.js';
 import { DEFAULT_PAGE_SIZE, getResponsivePageItems, loadingTemplate, paginationTemplate } from '../pagination.js?v=20260521-1';
 
 const normalizeUniqueName = value => value.trim().toLocaleLowerCase('es');
@@ -71,7 +71,7 @@ export class TiposComponent {
     empty.style.display = 'none';
     tbody.innerHTML = pageItems.map(tipo => {
       const count = data.productos.filter(producto => producto.tipoId === tipo.id).length;
-      return `<tr><td data-label="Nombre"><strong>${tipo.nombre}</strong></td><td data-label="Descripción">${tipo.desc || '—'}</td><td data-label="Productos"><span class="chip chip-ok">${count} prod.</span></td><td data-label="Acciones"><div class="td-actions"><button class="btn btn-ghost btn-sm btn-icon" data-action="view-tipo" data-id="${tipo.id}" aria-label="Visualizar tipo" title="Visualizar">👁️</button><button class="btn btn-ghost btn-sm btn-icon" data-action="edit-tipo" data-id="${tipo.id}" aria-label="Editar tipo" title="Editar">✏️</button><button class="btn btn-danger btn-sm btn-icon" data-action="delete" data-entity="tipo" data-id="${tipo.id}" data-name="${tipo.nombre}" aria-label="Eliminar tipo" title="Eliminar">🗑️</button></div></td></tr>`;
+      return `<tr><td data-label="Nombre"><strong>${escapeHtml(tipo.nombre)}</strong></td><td data-label="Descripción">${escapeHtml(tipo.desc || '—')}</td><td data-label="Productos"><span class="chip chip-ok">${count} prod.</span></td><td data-label="Acciones"><div class="td-actions"><button class="btn btn-ghost btn-sm btn-icon" data-action="view-tipo" data-id="${escapeHtml(tipo.id)}" aria-label="Visualizar tipo" title="Visualizar">👁️</button><button class="btn btn-ghost btn-sm btn-icon" data-action="edit-tipo" data-id="${escapeHtml(tipo.id)}" aria-label="Editar tipo" title="Editar">✏️</button><button class="btn btn-danger btn-sm btn-icon" data-action="delete" data-entity="tipo" data-id="${escapeHtml(tipo.id)}" data-name="${escapeHtml(tipo.nombre)}" aria-label="Eliminar tipo" title="Eliminar">🗑️</button></div></td></tr>`;
     }).join('');
     document.getElementById('pager-tipos').innerHTML = paginationTemplate('tipos', pageState);
   }
@@ -81,7 +81,7 @@ export class TiposComponent {
     if (!tipo) return this.app.toasts.show('No se encontró el tipo', 'error');
 
     const count = this.app.store.data.productos.filter(producto => producto.tipoId === tipo.id).length;
-    this.app.showDetail('Tipo de producto', `<div class="detail-list"><div><span>Nombre</span><strong>${tipo.nombre}</strong></div><div><span>Descripción</span><strong>${tipo.desc || '—'}</strong></div><div><span>Productos asociados</span><strong>${count}</strong></div></div>`);
+    this.app.showDetail('Tipo de producto', `<div class="detail-list"><div><span>Nombre</span><strong>${escapeHtml(tipo.nombre)}</strong></div><div><span>Descripción</span><strong>${escapeHtml(tipo.desc || '—')}</strong></div><div><span>Productos asociados</span><strong>${count}</strong></div></div>`);
   }
 
   openNew() {

@@ -1,4 +1,4 @@
-import { form } from '../ui.js';
+import { escapeHtml, form } from '../ui.js';
 import { DEFAULT_PAGE_SIZE, getResponsivePageItems, loadingTemplate, paginationTemplate } from '../pagination.js?v=20260521-1';
 
 const normalizeUniqueName = value => value.trim().toLocaleLowerCase('es');
@@ -81,7 +81,7 @@ export class ProveedoresComponent {
     nextEmpty.style.display = 'none';
     nextTbody.innerHTML = pageItems.map(prov => {
       const count = productCounts.get(prov.id) || 0;
-      return `<tr><td data-label="Nombre"><strong>${prov.nombre}</strong></td><td data-label="Contacto">${prov.contacto || '—'}</td><td data-label="Teléfono">${prov.telefono || '—'}</td><td data-label="Email">${prov.email || '—'}</td><td data-label="Productos"><span class="chip chip-ok">${count} prod.</span></td><td data-label="Acciones"><div class="td-actions"><button class="btn btn-ghost btn-sm btn-icon" data-action="view-proveedor" data-id="${prov.id}" aria-label="Visualizar proveedor" title="Visualizar">👁️</button><button class="btn btn-ghost btn-sm btn-icon" data-action="edit-proveedor" data-id="${prov.id}" aria-label="Editar proveedor" title="Editar">✏️</button><button class="btn btn-danger btn-sm btn-icon" data-action="delete" data-entity="prov" data-id="${prov.id}" data-name="${prov.nombre}" aria-label="Eliminar proveedor" title="Eliminar">🗑️</button></div></td></tr>`;
+      return `<tr><td data-label="Nombre"><strong>${escapeHtml(prov.nombre)}</strong></td><td data-label="Contacto">${escapeHtml(prov.contacto || '—')}</td><td data-label="Teléfono">${escapeHtml(prov.telefono || '—')}</td><td data-label="Email">${escapeHtml(prov.email || '—')}</td><td data-label="Productos"><span class="chip chip-ok">${count} prod.</span></td><td data-label="Acciones"><div class="td-actions"><button class="btn btn-ghost btn-sm btn-icon" data-action="view-proveedor" data-id="${escapeHtml(prov.id)}" aria-label="Visualizar proveedor" title="Visualizar">👁️</button><button class="btn btn-ghost btn-sm btn-icon" data-action="edit-proveedor" data-id="${escapeHtml(prov.id)}" aria-label="Editar proveedor" title="Editar">✏️</button><button class="btn btn-danger btn-sm btn-icon" data-action="delete" data-entity="prov" data-id="${escapeHtml(prov.id)}" data-name="${escapeHtml(prov.nombre)}" aria-label="Eliminar proveedor" title="Eliminar">🗑️</button></div></td></tr>`;
     }).join('');
     document.getElementById('pager-proveedores').innerHTML = paginationTemplate('proveedores', pageState);
   }
@@ -91,7 +91,7 @@ export class ProveedoresComponent {
     if (!prov) return this.app.toasts.show('No se encontró el proveedor', 'error');
 
     const count = this.app.store.data.productos.filter(producto => producto.proveedorId === prov.id).length;
-    this.app.showDetail('Proveedor', `<div class="detail-list"><div><span>Nombre</span><strong>${prov.nombre}</strong></div><div><span>Contacto</span><strong>${prov.contacto || '—'}</strong></div><div><span>Teléfono</span><strong>${prov.telefono || '—'}</strong></div><div><span>Email</span><strong>${prov.email || '—'}</strong></div><div><span>Productos asociados</span><strong>${count}</strong></div><div><span>Notas</span><strong>${prov.notas || '—'}</strong></div></div>`);
+    this.app.showDetail('Proveedor', `<div class="detail-list"><div><span>Nombre</span><strong>${escapeHtml(prov.nombre)}</strong></div><div><span>Contacto</span><strong>${escapeHtml(prov.contacto || '—')}</strong></div><div><span>Teléfono</span><strong>${escapeHtml(prov.telefono || '—')}</strong></div><div><span>Email</span><strong>${escapeHtml(prov.email || '—')}</strong></div><div><span>Productos asociados</span><strong>${count}</strong></div><div><span>Notas</span><strong>${escapeHtml(prov.notas || '—')}</strong></div></div>`);
   }
 
   openNew() {

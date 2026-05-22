@@ -1,3 +1,5 @@
+import { escapeHtml } from '../ui.js';
+
 export class DashboardComponent {
   constructor(app) {
     this.app = app;
@@ -73,7 +75,7 @@ export class DashboardComponent {
     const alertsEl = document.getElementById('dash-alerts');
     alertsEl.innerHTML = stockAlerts.length
       ? stockAlerts.map(product => {
-        return `<div class="alert-item"><span class="alert-icon">⚠️</span><span>${product.nombre} — <strong>${product.qty}</strong> unidades · mín. ${product.minStock ?? 0}</span><span class="chip ${product.qty === 0 ? 'chip-out' : 'chip-low'}" style="margin-left:auto">${product.status}</span></div>`;
+        return `<div class="alert-item"><span class="alert-icon">⚠️</span><span>${escapeHtml(product.nombre)} — <strong>${product.qty}</strong> unidades · mín. ${product.minStock ?? 0}</span><span class="chip ${product.qty === 0 ? 'chip-out' : 'chip-low'}" style="margin-left:auto">${escapeHtml(product.status)}</span></div>`;
       }).join('')
       : '<div class="empty-state" style="padding:24px"><p style="font-size:.85rem">Sin alertas 🎉</p></div>';
 
@@ -82,7 +84,7 @@ export class DashboardComponent {
       ? recentProducts.map(product => {
         const finalPrice = product.precioFinal ?? product.precio;
         const price = finalPrice || finalPrice === 0 ? '$' + Number(finalPrice).toLocaleString('es-AR') : '—';
-        return `<div class="recent-item"><div><div class="recent-name">${product.nombre}</div><div class="recent-sub">${product.tipoNombre || '—'}</div></div><span class="tag tag-green">${price}</span></div>`;
+        return `<div class="recent-item"><div><div class="recent-name">${escapeHtml(product.nombre)}</div><div class="recent-sub">${escapeHtml(product.tipoNombre || '—')}</div></div><span class="tag tag-green">${price}</span></div>`;
       }).join('')
       : '<div class="empty-state" style="padding:24px"><p style="font-size:.85rem">Sin productos aún</p></div>';
 
@@ -96,7 +98,7 @@ export class DashboardComponent {
     const records = this.data?.auditActivity || [];
 
     auditEl.innerHTML = records.length
-      ? `<div class="audit-list">${records.map(record => `<div class="audit-item"><div class="audit-main"><span class="audit-action ${this.actionClass(record.action)}">${record.action}</span><strong>${record.entity}</strong><span>${record.detail}</span></div><time>${this.formatDate(record.createdAt)}</time></div>`).join('')}</div>`
+      ? `<div class="audit-list">${records.map(record => `<div class="audit-item"><div class="audit-main"><span class="audit-action ${this.actionClass(record.action)}">${escapeHtml(record.action)}</span><strong>${escapeHtml(record.entity)}</strong><span>${escapeHtml(record.detail)}</span></div><time>${this.formatDate(record.createdAt)}</time></div>`).join('')}</div>`
       : '<div class="empty-state" style="padding:24px"><p style="font-size:.85rem">Sin actividad registrada</p></div>';
   }
 }

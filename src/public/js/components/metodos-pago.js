@@ -1,4 +1,4 @@
-import { form } from '../ui.js';
+import { escapeHtml, form } from '../ui.js';
 import { DEFAULT_PAGE_SIZE, getResponsivePageItems, loadingTemplate, paginationTemplate } from '../pagination.js?v=20260521-1';
 
 const normalizeUniqueName = value => value.trim().toLocaleLowerCase('es');
@@ -70,7 +70,7 @@ export class MetodosPagoComponent {
     }
 
     empty.style.display = 'none';
-    tbody.innerHTML = pageState.items.map(metodo => `<tr><td data-label="Nombre"><strong>${metodo.nombre}</strong></td><td data-label="Descuento"><span class="chip chip-ok">${formatPercent(metodo.descuento)}</span></td><td data-label="Recargo"><span class="chip chip-ok">${formatPercent(metodo.recargo ?? metodo.bonificacion)}</span></td><td data-label="Acciones"><div class="td-actions"><button class="btn btn-ghost btn-sm btn-icon" data-action="view-metodo-pago" data-id="${metodo.id}" aria-label="Visualizar método de pago" title="Visualizar">👁️</button><button class="btn btn-ghost btn-sm btn-icon" data-action="edit-metodo-pago" data-id="${metodo.id}" aria-label="Editar método de pago" title="Editar">✏️</button><button class="btn btn-danger btn-sm btn-icon" data-action="delete" data-entity="metodo-pago" data-id="${metodo.id}" data-name="${metodo.nombre}" aria-label="Eliminar método de pago" title="Eliminar">🗑️</button></div></td></tr>`).join('');
+    tbody.innerHTML = pageState.items.map(metodo => `<tr><td data-label="Nombre"><strong>${escapeHtml(metodo.nombre)}</strong></td><td data-label="Descuento"><span class="chip chip-ok">${formatPercent(metodo.descuento)}</span></td><td data-label="Recargo"><span class="chip chip-ok">${formatPercent(metodo.recargo ?? metodo.bonificacion)}</span></td><td data-label="Acciones"><div class="td-actions"><button class="btn btn-ghost btn-sm btn-icon" data-action="view-metodo-pago" data-id="${escapeHtml(metodo.id)}" aria-label="Visualizar método de pago" title="Visualizar">👁️</button><button class="btn btn-ghost btn-sm btn-icon" data-action="edit-metodo-pago" data-id="${escapeHtml(metodo.id)}" aria-label="Editar método de pago" title="Editar">✏️</button><button class="btn btn-danger btn-sm btn-icon" data-action="delete" data-entity="metodo-pago" data-id="${escapeHtml(metodo.id)}" data-name="${escapeHtml(metodo.nombre)}" aria-label="Eliminar método de pago" title="Eliminar">🗑️</button></div></td></tr>`).join('');
     document.getElementById('pager-metodosPago').innerHTML = paginationTemplate('metodosPago', pageState);
   }
 
@@ -78,7 +78,7 @@ export class MetodosPagoComponent {
     const metodo = this.app.store.data.metodosPago.find(item => item.id === id);
     if (!metodo) return this.app.toasts.show('No se encontró el método de pago', 'error');
 
-    this.app.showDetail('Método de pago', `<div class="detail-list"><div><span>Nombre</span><strong>${metodo.nombre}</strong></div><div><span>Descuento</span><strong>${formatPercent(metodo.descuento)}</strong></div><div><span>Recargo</span><strong>${formatPercent(metodo.recargo ?? metodo.bonificacion)}</strong></div></div>`);
+    this.app.showDetail('Método de pago', `<div class="detail-list"><div><span>Nombre</span><strong>${escapeHtml(metodo.nombre)}</strong></div><div><span>Descuento</span><strong>${formatPercent(metodo.descuento)}</strong></div><div><span>Recargo</span><strong>${formatPercent(metodo.recargo ?? metodo.bonificacion)}</strong></div></div>`);
   }
 
   openNew() {

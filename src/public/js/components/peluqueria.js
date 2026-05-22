@@ -1,4 +1,4 @@
-import { form } from '../ui.js';
+import { escapeHtml, form } from '../ui.js';
 import { DEFAULT_PAGE_SIZE, getResponsivePageItems, loadingTemplate, paginationTemplate } from '../pagination.js?v=20260521-1';
 
 const ESTADOS = ['pendiente', 'en curso', 'completado', 'cancelado'];
@@ -17,7 +17,7 @@ const DIAS = [
   { diaSemana: 7, nombreDia: 'Domingo' }
 ];
 
-const esc = value => String(value ?? '').replace(/[&<>"]/g, match => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[match]));
+const esc = escapeHtml;
 const normalizeUniqueName = value => value.trim().toLocaleLowerCase('es');
 const pad = value => String(value).padStart(2, '0');
 const dateKey = date => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;

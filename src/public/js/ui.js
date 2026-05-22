@@ -1,3 +1,11 @@
+export const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;'
+}[char]));
+
 export class ModalManager {
   open(name) {
     document.getElementById('modal-' + name).classList.add('open');
@@ -17,7 +25,7 @@ export class ToastManager {
     if (type === 'error' && document.body?.dataset.connection === 'offline' && this.isOfflineNetworkMessage(message)) return;
     const el = document.createElement('div');
     el.className = 'toast ' + type;
-    el.innerHTML = (type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️') + ' ' + message;
+    el.textContent = (type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️') + ' ' + String(message ?? '');
     document.getElementById('toastContainer').appendChild(el);
     setTimeout(() => el.remove(), 3000);
   }
