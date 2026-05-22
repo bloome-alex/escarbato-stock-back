@@ -55,6 +55,10 @@ export class ServerApplication {
 
   listen() {
     const server = http.createServer(this.app);
+    server.keepAliveTimeout = 10000;
+    server.headersTimeout = 15000;
+    server.requestTimeout = 120000;
+    server.timeout = 120000;
     this.realtimeService.attach(server);
     server.listen(this.config.port, () => {
       console.log(`Backend escuchando en http://localhost:${this.config.port}`);

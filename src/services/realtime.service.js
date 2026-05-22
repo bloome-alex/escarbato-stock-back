@@ -2,22 +2,49 @@ import jwt from 'jsonwebtoken';
 import { WebSocketServer } from 'ws';
 
 const HEARTBEAT_INTERVAL_MS = 3000;
+const WS_HEARTBEAT_INTERVAL_MS = 30000;
 
 export class RealtimeService {
   constructor(config, authMiddleware) {
     this.config = config;
     this.authMiddleware = authMiddleware;
     this.wss = null;
+    this.wsHeartbeatTimer = null;
     this.cartReservations = new Map();
   }
 
   attach(server) {
     this.wss = new WebSocketServer({ server, path: '/ws' });
+    this.wsHeartbeatTimer = setInterval(() => {
+      for (const socket of this.wss.clients) {
+        if (socket.readyState !== 1) {
+          socket.terminate();
+          continue;
+        }
+
+        if (!socket.isAlive) {
+          socket.terminate();
+          continue;
+        }
+
+        socket.isAlive = false;
+        socket.ping();
+      }
+    }, WS_HEARTBEAT_INTERVAL_MS);
+    this.wss.on('close', () => {
+      clearInterval(this.wsHeartbeatTimer);
+      this.wsHeartbeatTimer = null;
+    });
     this.wss.on('connection', async (socket, req) => {
       if (!await this.authenticate(req)) {
         socket.close(1008, 'Token invalido');
         return;
       }
+
+      socket.isAlive = true;
+      socket.on('pong', () => {
+        socket.isAlive = true;
+      });
 
       const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
       socket.clientId = url.searchParams.get('clientId') || '';
