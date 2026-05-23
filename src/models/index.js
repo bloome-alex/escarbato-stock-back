@@ -11,3 +11,4 @@ export { PeluqueriaTipoPerro } from './peluqueria-tipo-perro.js';
 export { PeluqueriaServicio } from './peluqueria-servicio.js';
 export { PeluqueriaTurno } from './peluqueria-turno.js';
 export { PeluqueriaHorario } from './peluqueria-horario.js';
+export { TicketConfig } from './ticket-config.js';

@@ -1,6 +1,6 @@
-import { appConfig } from './config.js';
+import { appConfig } from './config.js?v=20260523-1';
 
-const emptyData = () => ({ proveedores: [], tipos: [], productos: [], metodosPago: [], stock: {}, reservedStock: {}, ventas: [], cajas: [], peluqueriaTiposPerro: [], peluqueriaServicios: [], peluqueriaTurnos: [], peluqueriaHorarios: [], auditoria: [], usuarios: [] });
+const emptyData = () => ({ proveedores: [], tipos: [], productos: [], metodosPago: [], stock: {}, reservedStock: {}, ventas: [], cajas: [], peluqueriaTiposPerro: [], peluqueriaServicios: [], peluqueriaTurnos: [], peluqueriaHorarios: [], ticketConfig: [], auditoria: [], usuarios: [] });
 const DB_NAME = 'petshopOfflineStore';
 const DB_VERSION = 1;
 const DB_STORE = 'state';

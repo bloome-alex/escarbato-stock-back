@@ -1,4 +1,4 @@
-const CACHE_NAME = 'escarbato-pwa-v17';
+const CACHE_NAME = 'escarbato-pwa-v18';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -8,13 +8,13 @@ const APP_SHELL = [
   '/assets/icon-512.png',
   '/assets/apple-touch-icon.png',
   '/js/app.js',
-  '/js/config.js',
-  '/js/data-store.js',
+  '/js/config.js?v=20260523-1',
+  '/js/data-store.js?v=20260523-1',
   '/js/pagination.js',
   '/js/pagination.js?v=20260521-1',
   '/js/sort.js',
   '/js/ui.js',
-  '/js/ui.js?v=20260517-1',
+  '/js/ui.js?v=20260523-1',
   '/js/components/dashboard.js',
   '/js/components/productos.js',
   '/js/components/metodos-pago.js',
@@ -26,7 +26,9 @@ const APP_SHELL = [
   '/js/components/mostrador.js',
   '/js/components/mostrador.js?v=20260519-2',
   '/js/components/peluqueria.js',
-  '/js/components/usuarios.js'
+  '/js/components/usuarios.js',
+  '/js/components/ticket-config.js',
+  '/js/ticket.js'
 ];
 
 self.addEventListener('install', event => {

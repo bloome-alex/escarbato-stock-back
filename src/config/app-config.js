@@ -45,6 +45,7 @@ export class AppConfig {
       mostrador: this.envFlag(env, 'APP_SECTION_MOSTRADOR_ENABLED'),
       peluqueria: this.envFlag(env, 'APP_SECTION_PELUQUERIA_ENABLED'),
       stock: this.envFlag(env, 'APP_SECTION_STOCK_ENABLED'),
+      ticketConfig: this.envFlag(env, 'APP_SECTION_TICKET_CONFIG_ENABLED'),
       usuarios: this.envFlag(env, 'APP_SECTION_USUARIOS_ENABLED')
     };
   }

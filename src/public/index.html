@@ -2660,6 +2660,50 @@
     padding: 8px;
   }
 
+  .ticket-config-shell { padding-bottom: 18px; }
+  .ticket-config-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(320px, .8fr);
+    gap: 18px;
+    align-items: start;
+  }
+  .ticket-config-panel,
+  .ticket-config-preview {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    box-shadow: var(--shadow);
+    padding: 18px;
+  }
+  .ticket-config-head,
+  .ticket-config-preview-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+    margin-bottom: 16px;
+  }
+  .ticket-config-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .ticket-config-section-title {
+    margin: 18px 0 10px;
+    font-size: .74rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--text-soft);
+  }
+  .ticket-toggle-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+  .ticket-toggle {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--warm-white);
+  }
+  .ticket-toggle input { margin: 0; }
+  .ticket-config-preview { position: sticky; top: 20px; overflow: auto; }
+
   @media (max-width: 760px) {
     #sec-peluqueria.section.active {
       height: auto;
@@ -2692,6 +2736,11 @@
     .schedule-range { grid-template-columns: 1fr 1fr; }
     .schedule-range label:nth-child(3) { grid-column: 1 / -1; }
     .schedule-range .btn-icon { width: 100%; grid-column: 1 / -1; }
+    .ticket-config-grid { grid-template-columns: 1fr; }
+    .ticket-config-head,
+    .ticket-config-preview-head { flex-direction: column; }
+    .ticket-toggle-grid { grid-template-columns: 1fr; }
+    .ticket-config-preview { position: static; }
   }
 
   /* scrollbar */
@@ -2747,9 +2796,11 @@
     backendUrl: '',
     username: '',
     password: '',
+    appName: "__PETSHOP_APP_NAME__",
+    businessType: "__PETSHOP_BUSINESS_TYPE__",
     sections: "__PETSHOP_SECTIONS_CONFIG__"
   };
 </script>
-<script type="module" src="js/app.js?v=20260519-1"></script>
+<script type="module" src="js/app.js?v=20260523-1"></script>
 </body>
 </html>

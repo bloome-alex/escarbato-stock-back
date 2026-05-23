@@ -49,6 +49,7 @@ export class NavigationManager {
       cajas: 'Cajas',
       stock: 'Stock',
       ventas: 'Ventas',
+      ticketConfig: 'Ticket de compra',
       mostrador: 'Mostrador',
       peluqueria: 'Peluquería'
     };

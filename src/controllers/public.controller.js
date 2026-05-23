@@ -49,6 +49,8 @@ export class PublicController {
       .replaceAll('Petshop', configuredBusinessType)
       .replaceAll('/assets', tenantConfig.appAssetsPath)
       .replace(/(["'])assets\//g, `$1${tenantConfig.appAssetsPath}/`)
+      .replace('"__PETSHOP_APP_NAME__"', JSON.stringify(tenantConfig.appName))
+      .replace('"__PETSHOP_BUSINESS_TYPE__"', JSON.stringify(tenantConfig.businessType))
       .replace('"__PETSHOP_SECTIONS_CONFIG__"', JSON.stringify(this.config.sections));
   }
 

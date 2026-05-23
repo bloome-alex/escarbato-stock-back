@@ -172,6 +172,7 @@ export class DataStoreService {
 
   getSort(store) {
     if (store === 'ventas' || store === 'auditoria' || store === 'cajas') return { createdAt: -1 };
+    if (store === 'ticketConfig') return { updatedAt: -1 };
     if (store === 'peluqueriaTurnos') return { fecha: 1, hora: 1 };
     if (store === 'peluqueriaHorarios') return { diaSemana: 1 };
     if (store === 'stock') return { id: 1 };
@@ -224,6 +225,11 @@ export class DataStoreService {
   buildUpdatePayload(store, payload) {
     const serverPayload = { ...payload };
     if (store === 'productos') {
+      serverPayload.updatedAt = new Date();
+      return serverPayload;
+    }
+
+    if (store === 'ticketConfig') {
       serverPayload.updatedAt = new Date();
       return serverPayload;
     }

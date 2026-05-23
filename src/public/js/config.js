@@ -9,6 +9,7 @@ const defaultSections = {
   mostrador: true,
   peluqueria: true,
   stock: true,
+  ticketConfig: true,
   usuarios: true
 };
 
@@ -19,6 +20,8 @@ export const appConfig = {
   backendUrl: window.PETSHOP_CONFIG?.backendUrl || '',
   username: window.PETSHOP_CONFIG?.username || '',
   password: window.PETSHOP_CONFIG?.password || '',
+  appName: window.PETSHOP_CONFIG?.appName || '',
+  businessType: window.PETSHOP_CONFIG?.businessType || '',
   sections: {
     ...defaultSections,
     ...(configuredSections && typeof configuredSections === 'object' ? configuredSections : {})

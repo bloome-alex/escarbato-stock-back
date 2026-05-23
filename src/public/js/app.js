@@ -1,6 +1,6 @@
-import { DataStore } from './data-store.js';
-import { appConfig } from './config.js';
-import { ModalManager, NavigationManager, ThemeManager, ToastManager } from './ui.js?v=20260517-1';
+import { DataStore } from './data-store.js?v=20260523-1';
+import { appConfig } from './config.js?v=20260523-1';
+import { ModalManager, NavigationManager, ThemeManager, ToastManager } from './ui.js?v=20260523-1';
 import { DashboardComponent } from './components/dashboard.js';
 import { ProveedoresComponent } from './components/proveedores.js';
 import { TiposComponent } from './components/tipos.js';
@@ -12,6 +12,7 @@ import { MetodosPagoComponent } from './components/metodos-pago.js';
 import { CajasComponent } from './components/cajas.js';
 import { PeluqueriaComponent } from './components/peluqueria.js';
 import { UsuariosComponent } from './components/usuarios.js';
+import { TicketConfigComponent } from './components/ticket-config.js';
 import { isMobileListView } from './pagination.js?v=20260521-1';
 
 class PetshopApp {
@@ -29,7 +30,7 @@ class PetshopApp {
     this.isOffline = false;
     this.connectionStatusTimer = null;
     this.onWindowScroll = () => this.handleMobileListScroll();
-    this.sectionOrder = ['dashboard', 'proveedores', 'tipos', 'productos', 'stock', 'metodosPago', 'cajas', 'ventas', 'mostrador', 'peluqueria', 'usuarios'];
+    this.sectionOrder = ['dashboard', 'proveedores', 'tipos', 'productos', 'stock', 'metodosPago', 'cajas', 'ventas', 'mostrador', 'peluqueria', 'ticketConfig', 'usuarios'];
     this.sectionMenu = {
       dashboard: { group: 'Principal', icon: '🏠', label: 'Panel' },
       proveedores: { group: 'Gestión', icon: '🚚', label: 'Proveedores' },
@@ -41,6 +42,7 @@ class PetshopApp {
       mostrador: { group: 'Gestión', icon: '🛒', label: 'Mostrador' },
       peluqueria: { group: 'Gestión', icon: '✂️', label: 'Peluquería' },
       stock: { group: 'Gestión', icon: '📊', label: 'Stock' },
+      ticketConfig: { group: 'Configuración', icon: '🖨️', label: 'Ticket de compra' },
       usuarios: { group: 'Configuración', icon: '🔐', label: 'Usuario' }
     };
     this.sections = appConfig.sections || {};
@@ -56,6 +58,7 @@ class PetshopApp {
       ventas: new VentasComponent(this),
       mostrador: new MostradorComponent(this),
       peluqueria: new PeluqueriaComponent(this),
+      ticketConfig: new TicketConfigComponent(this),
       usuarios: new UsuariosComponent(this)
     };
   }
@@ -292,6 +295,9 @@ class PetshopApp {
       if (action === 'finish-counter-sale') return this.runButtonAction(actionButton, () => this.components.mostrador.finishSale(), 'Guardando');
       if (action === 'refresh-users') return this.runButtonAction(actionButton, () => this.components.usuarios.render(), 'Actualizando');
       if (action === 'save-user') return this.runButtonAction(actionButton, () => this.components.usuarios.save(id), 'Guardando');
+      if (action === 'save-ticket-config') return this.runButtonAction(actionButton, () => this.components.ticketConfig.save(), 'Guardando');
+      if (action === 'reset-ticket-config') return this.runButtonAction(actionButton, () => this.components.ticketConfig.reset(), 'Restaurando');
+      if (action === 'print-sale-ticket') return this.runButtonAction(actionButton, () => this.components.ventas.printTicket(id), 'Preparando');
       if (action === 'new-peluqueria-tipo') return this.components.peluqueria.openNewTipo();
       if (action === 'edit-peluqueria-tipo') return this.components.peluqueria.editTipo(id);
       if (action === 'view-peluqueria-tipo') return this.components.peluqueria.viewTipo(id);
@@ -666,6 +672,10 @@ class PetshopApp {
     }
 
     if (section === 'ventas') component.refreshPaymentMethodFilter?.();
+    if (section === 'ticketConfig') {
+      component.render();
+      return;
+    }
     if (section === 'peluqueria') {
       component.renderActiveTab();
       return;
@@ -683,6 +693,7 @@ class PetshopApp {
       metodosPago: ['metodosPago'],
       cajas: ['cajas', 'ventas', 'metodosPago'],
       ventas: ['ventas', 'metodosPago'],
+      ticketConfig: ['ticketConfig', 'productos', 'metodosPago', 'ventas'],
       mostrador: ['productos', 'stock', 'tipos', 'proveedores', 'metodosPago', 'cajas', 'ventas'],
       peluqueria: ['peluqueriaTiposPerro', 'peluqueriaServicios', 'peluqueriaTurnos', 'peluqueriaHorarios'],
       stock: ['stock', 'productos', 'tipos', 'proveedores', 'ventas']
