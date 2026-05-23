@@ -40,6 +40,7 @@ export class NavigationManager {
     this.app = app;
     this.touchStart = null;
     this.lockedScrollY = 0;
+    this.scrollLockCount = 0;
     this.sectionTitles = {
       dashboard: 'Panel',
       proveedores: 'Proveedores',
@@ -175,14 +176,19 @@ export class NavigationManager {
   }
 
   lockBodyScroll() {
-    if (document.body.classList.contains('sidebar-open')) return;
-    this.lockedScrollY = window.scrollY || document.documentElement.scrollTop || 0;
-    document.body.style.top = `-${this.lockedScrollY}px`;
-    document.body.classList.add('sidebar-open');
+    if (this.scrollLockCount === 0) {
+      this.lockedScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+      document.body.style.top = `-${this.lockedScrollY}px`;
+      document.body.classList.add('sidebar-open');
+    }
+    this.scrollLockCount += 1;
   }
 
   unlockBodyScroll() {
-    if (!document.body.classList.contains('sidebar-open')) return;
+    if (this.scrollLockCount === 0) return;
+    this.scrollLockCount -= 1;
+    if (this.scrollLockCount > 0) return;
+
     document.body.classList.remove('sidebar-open');
     document.body.style.top = '';
     window.scrollTo(0, this.lockedScrollY);

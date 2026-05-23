@@ -470,11 +470,13 @@ export class MostradorComponent {
   openCart() {
     document.getElementById('counter-cart-drawer').classList.add('open');
     document.getElementById('counter-drawer-backdrop').classList.add('open');
+    this.app.navigation.lockBodyScroll();
   }
 
   closeCart() {
     document.getElementById('counter-cart-drawer').classList.remove('open');
     document.getElementById('counter-drawer-backdrop').classList.remove('open');
+    this.app.navigation.unlockBodyScroll();
   }
 
   getCliente() {
