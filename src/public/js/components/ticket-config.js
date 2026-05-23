@@ -52,7 +52,7 @@ export class TicketConfigComponent {
     return `<div class="ticket-config-grid">
       <div class="ticket-config-panel">
         <div class="ticket-config-head">
-          <div><p class="muted">Configuración de impresión</p><h2>Ticket de compra</h2><p>Definí cómo se verá el comprobante en cada venta.</p></div>
+          <div><h2>Ticket de compra</h2><p>Personaliza tu ticket de compra.</p></div>
           <div class="ticket-config-actions"><button class="btn btn-primary" data-action="save-ticket-config">Guardar ticket</button><button class="btn btn-ghost" data-action="reset-ticket-config">Restaurar</button></div>
         </div>
         <div class="form-row">

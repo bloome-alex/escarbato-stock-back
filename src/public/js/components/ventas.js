@@ -119,14 +119,7 @@ export class VentasComponent {
     const method = venta.metodoPago || {};
     const paymentDetail = method.nombre ? `<div><span>Método de pago</span><strong>${escapeHtml(method.nombre)}</strong></div><div><span>Descuento</span><strong>${this.formatPercent(method.descuento)}</strong></div><div><span>Recargo</span><strong>${this.formatPercent(method.recargo ?? method.bonificacion)}</strong></div>` : '<div><span>Método de pago</span><strong>Sin método</strong></div>';
     const ticketConfig = normalizeTicketConfig(this.app.store.data.ticketConfig?.[0]);
-    const ticket = renderTicketHtml(venta, ticketConfig, {
-      escapeHtml,
-      formatMoney: value => this.formatMoney(value),
-      formatDate: value => this.formatDate(value),
-      formatPercent: value => this.formatPercent(value),
-      fallbackBrandName: window.PETSHOP_CONFIG?.appName || ''
-    });
-    this.app.showDetail('Detalle de venta', `<div class="sale-detail-grid"><div><span>Fecha y hora</span><strong>${this.formatDate(venta.createdAt)}</strong></div><div><span>Cliente</span><strong>${escapeHtml(venta.cliente || 'Cliente mostrador')}</strong></div>${paymentDetail}<div><span>Total calculado</span><strong>${this.formatMoney(venta.calculatedTotal)}</strong></div><div><span>Total final</span><strong class="price-value">${this.formatMoney(venta.finalTotal)}</strong></div></div><div class="modal-actions" style="position:static;padding:0;margin:16px 0 0;background:transparent;border:0"><button class="btn btn-primary" data-action="print-sale-ticket" data-id="${escapeHtml(venta.id)}">Imprimir ticket</button></div><div class="ticket-preview-sale" style="margin-top:16px;overflow:auto">${ticket}</div><div class="table-wrap sale-cart-wrap" style="margin-top:16px"><table><thead><tr><th>Producto</th><th>Cantidad</th><th>Precio</th><th>Subtotal</th></tr></thead><tbody>${rows}</tbody></table></div>`);
+    this.app.showDetail('Detalle de venta', `<div class="sale-detail-grid"><div><span>Fecha y hora</span><strong>${this.formatDate(venta.createdAt)}</strong></div><div><span>Cliente</span><strong>${escapeHtml(venta.cliente || 'Cliente mostrador')}</strong></div>${paymentDetail}<div><span>Total calculado</span><strong>${this.formatMoney(venta.calculatedTotal)}</strong></div><div><span>Total final</span><strong class="price-value">${this.formatMoney(venta.finalTotal)}</strong></div></div><div class="modal-actions" style="position:static;padding:0;margin:16px 0 0;background:transparent;border:0"><button class="btn btn-primary" data-action="print-sale-ticket" data-id="${escapeHtml(venta.id)}">Imprimir ticket</button></div><div class="table-wrap sale-cart-wrap" style="margin-top:16px"><table><thead><tr><th>Producto</th><th>Cantidad</th><th>Precio</th><th>Subtotal</th></tr></thead><tbody>${rows}</tbody></table></div>`);
   }
 
   printTicket(id) {

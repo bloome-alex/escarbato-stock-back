@@ -85,6 +85,8 @@ export function renderTicketHtml(venta, config, formatters = {}) {
   const formatDate = formatters.formatDate || (value => new Date(value).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' }));
   const formatPercent = formatters.formatPercent || (value => `${Number(value || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })}%`);
   const brandName = ticket.brandName || formatters.fallbackBrandName || '';
+  const isCompactTemplate = ticket.template === 'compact';
+  const isCompactItems = ticket.itemLayout === 'compact';
   const width = ticketWidthValue(ticket);
   const lines = fmtLines(ticket.headerLine1, ticket.headerLine2, ticket.headerLine3);
   const footerLines = fmtLines(ticket.footerLine1, ticket.footerLine2, ticket.footerLine3);
@@ -103,9 +105,10 @@ export function renderTicketHtml(venta, config, formatters = {}) {
     if (ticket.showUnitPrice) extra.push(`${formatMoney(item.price)} c/u`);
     if (ticket.showSubtotal) extra.push(`Subtotal ${formatMoney(itemSubtotal)}`);
     const description = ticket.showItemDescription && item.description ? `<div class="ticket-item-note">${escapeHtml(item.description)}</div>` : '';
-    return ticket.itemLayout === 'compact'
-      ? `<div class="ticket-item"><div><strong>${compactLine}</strong>${description}</div><div class="ticket-item-meta">${extra.map(entry => `<span>${escapeHtml(entry)}</span>`).join('')}</div></div>`
-      : `<div class="ticket-item"><div class="ticket-item-title"><strong>${compactLine}</strong></div>${description}<div class="ticket-item-meta">${extra.map(entry => `<span>${escapeHtml(entry)}</span>`).join('')}</div></div>`;
+    if (isCompactItems) {
+      return `<div class="ticket-item ticket-item--compact"><div class="ticket-item-row"><strong>${compactLine}</strong><span>${extra.join(' · ')}</span></div>${description}</div>`;
+    }
+    return `<div class="ticket-item"><div class="ticket-item-title"><strong>${compactLine}</strong></div>${description}<div class="ticket-item-meta">${extra.map(entry => `<span>${escapeHtml(entry)}</span>`).join('')}</div></div>`;
   }).join('');
   const breakdown = [];
   if (ticket.showCalculatedTotal) breakdown.push(`<div><span>Total calculado</span><strong>${formatMoney(subtotal)}</strong></div>`);
@@ -119,9 +122,24 @@ export function renderTicketHtml(venta, config, formatters = {}) {
   }
   const totalsHtml = ticket.showTotalsBreakdown ? breakdown.join('') : compactBreakdown.join('');
 
-  return `<article class="ticket-card" style="width:${width};max-width:100%;font-family:Inter,system-ui,sans-serif;color:#2D2017;background:#fff;border:1px solid #E8DDD0;border-radius:14px;padding:14px;box-shadow:0 12px 30px rgba(92,61,46,.08)">
+  return `<article class="ticket-card ${isCompactTemplate ? 'ticket-card--compact' : 'ticket-card--detailed'}" style="width:${width};max-width:100%;font-family:Inter,system-ui,sans-serif;color:#2D2017;background:#fff;border:1px solid #E8DDD0;border-radius:14px;padding:14px;box-shadow:0 12px 30px rgba(92,61,46,.08)">
     <style>
       .ticket-card * { box-sizing: border-box; }
+      .ticket-card--compact { padding: 10px; }
+      .ticket-card--compact .ticket-head { padding-bottom: 8px; margin-bottom: 8px; }
+      .ticket-card--compact .ticket-head h3 { font-size: .98rem; }
+      .ticket-card--compact .ticket-head p { font-size: .72rem; }
+      .ticket-card--compact .ticket-meta { gap: 4px; margin-bottom: 8px; }
+      .ticket-card--compact .ticket-meta div { font-size: .74rem; }
+      .ticket-card--compact .ticket-section-title { margin: 8px 0 4px; }
+      .ticket-card--compact .ticket-item { padding: 6px 0; }
+      .ticket-card--compact .ticket-item--compact .ticket-item-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; font-size: .8rem; }
+      .ticket-card--compact .ticket-item--compact .ticket-item-row strong { display: inline; font-size: .85rem; }
+      .ticket-card--compact .ticket-item--compact .ticket-item-row span { text-align: right; color: #5C3D2E; font-size: .74rem; }
+      .ticket-card--compact .ticket-item-note { font-size: .72rem; }
+      .ticket-card--compact .ticket-breakdown { gap: 4px; }
+      .ticket-card--compact .ticket-breakdown div { font-size: .76rem; }
+      .ticket-card--compact .ticket-total { font-size: .9rem; }
       .ticket-head { text-align: center; border-bottom: 1px dashed #D8CABD; padding-bottom: 10px; margin-bottom: 10px; }
       .ticket-head h3 { margin: 0; font-size: 1.08rem; }
       .ticket-head p, .ticket-foot p { margin: 2px 0 0; font-size: .82rem; color: #7A6355; }
@@ -157,6 +175,15 @@ export function renderTicketHtml(venta, config, formatters = {}) {
 }
 
 export function buildTicketDocumentHtml(venta, config, formatters = {}) {
-  const ticketHtml = renderTicketHtml(venta, config, formatters);
-  return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Ticket</title><style>body{margin:0;padding:18px;background:#f6f2ea;display:grid;place-items:start center;min-height:100vh}button{margin:16px auto 0;display:block;border:0;border-radius:10px;padding:10px 14px;background:#4e8055;color:#fff;font:inherit;font-weight:700;cursor:pointer}@media print{body{background:#fff;padding:0}button{display:none}}</style></head><body>${ticketHtml}<button onclick="window.print()">Imprimir</button></body></html>`;
+  const printableConfig = { ...normalizeTicketConfig(config), showFooter: false };
+  const ticketHtml = renderTicketHtml(venta, printableConfig, formatters);
+  const width = ticketWidthValue(printableConfig);
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Ticket</title><style>
+    @page { margin: 0; }
+    html, body { margin: 0; padding: 0; width: 100%; background: #fff; }
+    body { display: block; min-height: 0; }
+    .print-shell { width: ${width}; max-width: 100%; margin: 0; padding: 0; }
+    .print-shell .ticket-card { width: 100%; margin: 0; border: 0; border-radius: 0; box-shadow: none; padding: 0; }
+    .print-shell .ticket-card, .print-shell .ticket-card * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  </style></head><body><div class="print-shell">${ticketHtml}</div></body></html>`;
 }

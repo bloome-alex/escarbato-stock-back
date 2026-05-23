@@ -530,6 +530,7 @@ export class MostradorComponent {
     this.app.components.stock.renderList();
     this.app.components.cajas.render();
     this.app.updateBadge();
+    this.app.components.ventas.view(currentVenta.id);
     this.app.toasts.show('Venta guardada ✅');
   }
 }
