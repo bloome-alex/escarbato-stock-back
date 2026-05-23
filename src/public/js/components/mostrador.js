@@ -66,22 +66,19 @@ export class MostradorComponent {
     document.getElementById('counter-payment-method').addEventListener('change', () => this.renderCart());
     document.getElementById('mostrador-products').addEventListener('input', event => {
       if (event.target.matches('[data-counter-value]')) {
-        this.clampNumberInput(event.target);
         this.updateAddButton(event.target);
       }
     });
     document.getElementById('mostrador-products').addEventListener('change', event => {
       if (event.target.matches('[data-counter-value]')) {
-        this.clampNumberInput(event.target);
         this.updateAddButton(event.target);
       }
     });
     document.getElementById('counter-cart-list').addEventListener('input', event => {
-      if (event.target.matches('[data-cart-value]')) this.clampNumberInput(event.target);
+      if (event.target.matches('[data-cart-value]')) this.updateCartInputState(event.target);
     });
     document.getElementById('counter-cart-list').addEventListener('change', event => {
       if (event.target.matches('[data-cart-value]')) {
-        this.clampNumberInput(event.target);
         this.setItemValue(event.target.dataset.cartValue, event.target.value);
       }
     });
@@ -205,24 +202,17 @@ export class MostradorComponent {
     return `${this.formatQty(qty)} u.`;
   }
 
-  getInputMax(qty, price, mode = this.getMeasureMode()) {
-    return mode === 'amount' ? Number((qty * price).toFixed(2)) : this.roundQty(qty);
-  }
-
-  clampNumberInput(input) {
-    if (!input || input.value === '') return;
-    const value = Number(input.value);
-    const max = Number(input.max);
-    if (Number.isFinite(max) && value > max) input.value = max;
-  }
-
   updateAddButton(input) {
     const button = document.querySelector(`[data-action="add-counter-item"][data-id="${input.dataset.counterValue}"]`);
     if (!button) return;
 
     const value = Number(input.value);
-    const max = Number(input.max);
-    button.disabled = !input.value || !value || value <= 0 || (Number.isFinite(max) && value > max);
+    button.disabled = !input.value || !value || value <= 0;
+  }
+
+  updateCartInputState(input) {
+    const value = Number(input.value);
+    input.setAttribute('aria-invalid', String(!input.value || !value || value <= 0));
   }
 
   getOpenCaja() {
@@ -364,9 +354,8 @@ export class MostradorComponent {
       const tipo = tipos.find(item => item.id === producto.tipoId);
       const proveedor = proveedores.find(item => item.id === producto.proveedorId);
       const available = this.getAvailableStock(producto.id);
-      const maxValue = this.getInputMax(available, this.getProductPrice(producto), measureMode);
       const inputDisabled = available <= 0 ? 'disabled' : '';
-      return `<article class="counter-product-card"><div class="counter-product-main"><strong>${escapeHtml(producto.nombre)}</strong><div>${tipo ? escapeHtml(tipo.nombre) : 'Sin tipo'} · ${proveedor ? escapeHtml(proveedor.nombre) : 'Sin proveedor'}</div><span class="price-value">${this.formatMoney(this.getProductPrice(producto))}</span></div><div class="counter-stock"><span>Stock</span><strong>${this.formatStockValue(producto, available)}</strong></div><div class="counter-add"><input type="number" min="0" step="1" max="${maxValue}" placeholder="${escapeHtml(valuePlaceholder)}" data-counter-value="${escapeHtml(producto.id)}" ${inputDisabled}><button class="btn btn-amber btn-sm counter-add-btn" data-action="add-counter-item" data-id="${escapeHtml(producto.id)}" disabled>Agregar</button></div></article>`;
+      return `<article class="counter-product-card"><div class="counter-product-main"><strong>${escapeHtml(producto.nombre)}</strong><div>${tipo ? escapeHtml(tipo.nombre) : 'Sin tipo'} · ${proveedor ? escapeHtml(proveedor.nombre) : 'Sin proveedor'}</div><span class="price-value">${this.formatMoney(this.getProductPrice(producto))}</span></div><div class="counter-stock"><span>Stock</span><strong>${this.formatStockValue(producto, available)}</strong></div><div class="counter-add"><input type="number" min="0" step="1" placeholder="${escapeHtml(valuePlaceholder)}" data-counter-value="${escapeHtml(producto.id)}" ${inputDisabled}><button class="btn btn-amber btn-sm counter-add-btn" data-action="add-counter-item" data-id="${escapeHtml(producto.id)}" disabled>Agregar</button></div></article>`;
     }).join('');
     if (loadMore) loadMore.style.display = this.visibleCount < list.length ? '' : 'none';
   }
@@ -465,8 +454,7 @@ export class MostradorComponent {
       const producto = (this.app.store.data.productos || []).find(product => product.id === item.productId);
       const subtotal = item.subtotal ?? item.qty * item.price;
       const inputValue = mode === 'amount' ? Number(subtotal).toFixed(2) : item.qty;
-      const maxValue = this.getInputMax(stock, item.price, mode);
-      return `<div class="cart-line"><div class="cart-line-header"><div><strong>${escapeHtml(item.productName)}</strong><span>${this.formatMoney(item.price)} c/u · Subtotal ${this.formatMoney(subtotal)}</span></div><button class="btn btn-danger btn-icon btn-sm" data-action="remove-counter-item" data-id="${escapeHtml(item.productId)}" aria-label="Eliminar producto" title="Eliminar">🗑️</button></div><div class="cart-line-meta"><div><span>Stock</span><strong>${this.formatStockValue(producto || { precioFinal: item.price }, stock)}</strong></div><div><span>En carrito</span><strong>${this.formatQty(item.qty)} u.</strong></div></div><label class="cart-line-input"><span>${escapeHtml(inputLabel)}</span><input type="number" min="0" step="1" max="${maxValue}" value="${inputValue}" data-cart-value="${escapeHtml(item.productId)}" aria-label="${escapeHtml(inputLabel)} de ${escapeHtml(item.productName)}"></label></div>`;
+      return `<div class="cart-line"><div class="cart-line-header"><div><strong>${escapeHtml(item.productName)}</strong><span>${this.formatMoney(item.price)} c/u · Subtotal ${this.formatMoney(subtotal)}</span></div><button class="btn btn-danger btn-icon btn-sm" data-action="remove-counter-item" data-id="${escapeHtml(item.productId)}" aria-label="Eliminar producto" title="Eliminar">🗑️</button></div><div class="cart-line-meta"><div><span>Stock</span><strong>${this.formatStockValue(producto || { precioFinal: item.price }, stock)}</strong></div><div><span>En carrito</span><strong>${this.formatQty(item.qty)} u.</strong></div></div><label class="cart-line-input"><span>${escapeHtml(inputLabel)}</span><input type="number" min="0" step="1" value="${inputValue}" data-cart-value="${escapeHtml(item.productId)}" aria-label="${escapeHtml(inputLabel)} de ${escapeHtml(item.productName)}"></label></div>`;
     }).join('');
   }
 
