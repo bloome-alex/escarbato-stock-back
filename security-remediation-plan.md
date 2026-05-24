@@ -4,21 +4,6 @@
 
 Corregir los riesgos detectados en la revision del refactor multi-empresa, priorizando vulnerabilidades explotables, aislamiento tenant, integridad de datos y endurecimiento operativo.
 
-## Prioridad Alta
-
-### 4. Password hashing debil con SHA-256 sin salt
-
-**Problema:** SHA-256 rapido y sin salt facilita ataques offline si se filtra la base de datos.
-
-**Solucion tecnica:**
-
-- Migrar contraseñas a un algoritmo lento con salt, preferentemente Argon2id o bcrypt.
-- Guardar hashes en formato autocontenido que incluya algoritmo, parametros y salt.
-- Mantener una estrategia de migracion: al login, si el hash viejo SHA-256 valida, rehashear con el algoritmo nuevo.
-- Aplicar lo mismo a usuarios tenant y credenciales almacenadas en `admin.empresas`.
-- Definir parametros de costo adecuados al entorno de produccion.
-- Agregar pruebas para login con hash nuevo y migracion desde hash legacy.
-
 ### 5. Credenciales admin por defecto
 
 **Problema:** si no se configuran envs, el admin queda con `admin/admin123`.

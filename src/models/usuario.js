@@ -1,6 +1,6 @@
-import crypto from 'node:crypto';
 import mongoose from 'mongoose';
 import { baseFields } from './base.js';
+import { PasswordHash } from '../utils/password-hash.js';
 
 const usuarioSchema = new mongoose.Schema({
   ...baseFields,
@@ -15,7 +15,11 @@ usuarioSchema.index({ username: 1 }, { unique: true, collation: { locale: 'es', 
 usuarioSchema.index({ role: 1 }, { unique: true });
 
 usuarioSchema.statics.hashPassword = function hashPassword(password) {
-  return crypto.createHash('sha256').update(String(password || '')).digest('hex');
+  return PasswordHash.hash(password);
+};
+
+usuarioSchema.statics.verifyPassword = function verifyPassword(password, storedHash) {
+  return PasswordHash.verify(password, storedHash);
 };
 
 export const Usuario = mongoose.model('Usuario', usuarioSchema);

@@ -1,5 +1,5 @@
-import crypto from 'node:crypto';
 import mongoose from 'mongoose';
+import { PasswordHash } from '../utils/password-hash.js';
 
 const empresaSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
@@ -26,7 +26,11 @@ empresaSchema.pre('save', function setUpdatedAt() {
 });
 
 empresaSchema.statics.hashPassword = function hashPassword(password) {
-  return crypto.createHash('sha256').update(String(password || '')).digest('hex');
+  return PasswordHash.hash(password);
+};
+
+empresaSchema.statics.verifyPassword = function verifyPassword(password, storedHash) {
+  return PasswordHash.verify(password, storedHash);
 };
 
 empresaSchema.statics.slugify = function slugify(value) {

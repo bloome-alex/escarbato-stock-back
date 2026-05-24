@@ -1,3 +1,4 @@
+import { Empresa } from '../models/empresa.js';
 import { Usuario } from '../models/index.js';
 import { HttpError } from '../utils/http-error.js';
 import { Sanitizer } from '../utils/sanitize.js';
@@ -30,8 +31,21 @@ export class AuthService {
   async authenticate(username, password) {
     const UsuarioModel = await this.getUsuarioModel();
     const user = await UsuarioModel.findOne({ username: String(username || '').trim() }).collation({ locale: 'es', strength: 2 }).lean();
-    if (!user || user.passwordHash !== UsuarioModel.hashPassword(password)) return null;
+    const verification = user ? UsuarioModel.verifyPassword(password, user.passwordHash) : null;
+    if (!user || !verification.valid) return null;
+    if (verification.needsRehash) await this.migrateAuthenticatedPassword(UsuarioModel, user, password);
     return user;
+  }
+
+  async migrateAuthenticatedPassword(UsuarioModel, user, password) {
+    const passwordHash = UsuarioModel.hashPassword(password);
+    await UsuarioModel.updateOne({ id: user.id, passwordHash: user.passwordHash }, { $set: { passwordHash } });
+
+    const tenant = this.modelRegistry?.connectionManager?.getActiveTenant?.();
+    const field = user.role === 'supervisor' ? 'supervisorPasswordHash' : 'authPasswordHash';
+    if (tenant?.id && ['auth', 'supervisor'].includes(user.role)) {
+      await Empresa.updateOne({ _id: tenant.id, [field]: user.passwordHash }, { $set: { [field]: passwordHash, updatedAt: new Date() } });
+    }
   }
 
   async getValidUser(id, tokenVersion) {

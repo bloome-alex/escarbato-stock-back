@@ -7,7 +7,7 @@
     "start": "node ./src/server.js",
     "dev": "node --watch ./src/server.js",
     "check": "node --check ./src/server.js",
-    "test:security": "node ./test/security-proxy-spoof.test.js && node ./test/xss-render.test.js",
+    "test:security": "node ./test/security-proxy-spoof.test.js && node ./test/xss-render.test.js && node ./test/password-hash.test.js",
     "smoke:multi-tenant": "node ./src/scripts/smoke-multitenant.js",
     "stock:min-zero": "node ./src/scripts/set-min-stock-zero.js",
     "seed:demo": "node ./src/scripts/seed-demo-data.js"
