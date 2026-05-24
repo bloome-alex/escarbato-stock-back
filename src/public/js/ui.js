@@ -35,6 +35,249 @@ export class ToastManager {
   }
 }
 
+const SEARCHABLE_SELECT_ROOT = '[data-searchable-select]';
+const SEARCHABLE_SELECT_INPUT = '[data-searchable-select-input]';
+const SEARCHABLE_SELECT_VALUE = '[data-searchable-select-value]';
+
+const normalizeSearch = value => String(value ?? '')
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toLocaleLowerCase('es');
+
+const escapeJsonAttr = value => escapeHtml(JSON.stringify(value));
+
+const parseSearchableOptions = wrapper => {
+  try {
+    return JSON.parse(wrapper?.dataset?.options || '[]');
+  } catch {
+    return [];
+  }
+};
+
+const getSearchableLabel = (wrapper, value) => {
+  const options = parseSearchableOptions(wrapper);
+  if (!value) return wrapper?.dataset?.emptyLabel || wrapper?.dataset?.placeholder || '';
+  return options.find(option => String(option.value) === String(value))?.label || String(value);
+};
+
+const estimateSearchableWidth = (placeholder, options = [], value = '') => {
+  const lengths = [placeholder, value, ...options.map(option => option.label)]
+    .filter(Boolean)
+    .map(label => String(label).length);
+  const chars = Math.max(12, ...lengths, 0) + 2;
+  return `${Math.min(chars, 28)}ch`;
+};
+
+export const searchableSelect = {
+  template({ id, placeholder, options = [], value = '', allowEmpty = true, className = '' }) {
+    const emptyLabel = placeholder || 'Seleccionar';
+    const normalizedOptions = Array.isArray(options) ? options : [];
+    const selectedLabel = value ? (normalizedOptions.find(option => String(option.value) === String(value))?.label || String(value)) : emptyLabel;
+    const menuOptions = allowEmpty
+      ? [{ value: '', label: emptyLabel, empty: true }, ...normalizedOptions]
+      : normalizedOptions;
+
+    const width = estimateSearchableWidth(emptyLabel, normalizedOptions, selectedLabel);
+
+    return `<div class="searchable-select ${className}" data-searchable-select data-placeholder="${escapeHtml(emptyLabel)}" data-empty-label="${escapeHtml(emptyLabel)}" data-options="${escapeJsonAttr(normalizedOptions)}" style="--searchable-select-width:${width}">
+      <input type="text" id="${escapeHtml(id)}-display" class="filter-control searchable-select-input" autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="${escapeHtml(id)}-menu" value="${escapeHtml(selectedLabel)}" data-searchable-select-input>
+      <span class="searchable-select-arrow" aria-hidden="true"><span class="searchable-select-arrow-icon"></span></span>
+      <input type="hidden" id="${escapeHtml(id)}" value="${escapeHtml(value)}" data-searchable-select-value>
+      <div class="searchable-select-menu" id="${escapeHtml(id)}-menu" hidden>
+        ${menuOptions.map(option => `<button type="button" class="searchable-select-option${option.empty ? ' is-empty' : ''}" data-searchable-select-option data-value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</button>`).join('')}
+        <div class="searchable-select-empty" hidden>Sin coincidencias</div>
+      </div>
+    </div>`;
+  },
+
+  bind() {
+    if (this.bound) return;
+    this.bound = true;
+
+    document.addEventListener('focusin', event => {
+      const input = event.target.closest(SEARCHABLE_SELECT_INPUT);
+      if (!input) return;
+      const wrapper = input.closest(SEARCHABLE_SELECT_ROOT);
+      if (!wrapper) return;
+      this.beginSearch(wrapper);
+    });
+
+    document.addEventListener('input', event => {
+      const input = event.target.closest(SEARCHABLE_SELECT_INPUT);
+      if (!input) return;
+      const wrapper = input.closest(SEARCHABLE_SELECT_ROOT);
+      if (!wrapper) return;
+      this.open(wrapper);
+      this.filter(wrapper, input.value);
+    });
+
+    document.addEventListener('keydown', event => {
+      const input = event.target.closest(SEARCHABLE_SELECT_INPUT);
+      if (!input) return;
+      const wrapper = input.closest(SEARCHABLE_SELECT_ROOT);
+      if (!wrapper) return;
+
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        this.sync(wrapper);
+        this.close(wrapper);
+        input.blur();
+        return;
+      }
+
+      if (event.key === 'Enter') {
+        const option = [...wrapper.querySelectorAll('[data-searchable-select-option]')].find(item => !item.hidden);
+        if (!option) return;
+        event.preventDefault();
+        this.select(wrapper, option);
+      }
+    });
+
+    document.addEventListener('pointerdown', event => {
+      const option = event.target.closest('[data-searchable-select-option]');
+      if (option) {
+        const wrapper = option.closest(SEARCHABLE_SELECT_ROOT);
+        if (!wrapper) return;
+        event.preventDefault();
+        this.select(wrapper, option);
+        return;
+      }
+
+      if (!event.target.closest(SEARCHABLE_SELECT_ROOT)) this.closeAll();
+    });
+
+    document.addEventListener('focusout', event => {
+      const input = event.target.closest(SEARCHABLE_SELECT_INPUT);
+      if (!input) return;
+      const wrapper = input.closest(SEARCHABLE_SELECT_ROOT);
+      if (!wrapper) return;
+      setTimeout(() => {
+        if (wrapper.contains(document.activeElement)) return;
+        this.sync(wrapper);
+        this.close(wrapper);
+      }, 80);
+    }, true);
+  },
+
+  open(wrapper) {
+    const input = wrapper?.querySelector(SEARCHABLE_SELECT_INPUT);
+    const menu = wrapper?.querySelector('.searchable-select-menu');
+    const arrow = wrapper?.querySelector('.searchable-select-arrow');
+    const arrowIcon = wrapper?.querySelector('.searchable-select-arrow-icon');
+    if (!input || !menu) return;
+    menu.hidden = false;
+    wrapper.classList.add('is-open');
+    arrow?.classList.add('is-open');
+    arrowIcon?.classList.add('is-open');
+    input.setAttribute('aria-expanded', 'true');
+    this.filter(wrapper, '');
+  },
+
+  beginSearch(wrapper) {
+    const input = wrapper?.querySelector(SEARCHABLE_SELECT_INPUT);
+    if (!input) return;
+    input.value = '';
+    input.dataset.searching = 'true';
+    this.open(wrapper);
+  },
+
+  close(wrapper) {
+    const input = wrapper?.querySelector(SEARCHABLE_SELECT_INPUT);
+    const menu = wrapper?.querySelector('.searchable-select-menu');
+    const arrow = wrapper?.querySelector('.searchable-select-arrow');
+    const arrowIcon = wrapper?.querySelector('.searchable-select-arrow-icon');
+    if (!input || !menu) return;
+    menu.hidden = true;
+    wrapper.classList.remove('is-open');
+    arrow?.classList.remove('is-open');
+    arrowIcon?.classList.remove('is-open');
+    input.setAttribute('aria-expanded', 'false');
+    this.filter(wrapper, input.value);
+  },
+
+  closeAll() {
+    document.querySelectorAll(SEARCHABLE_SELECT_ROOT).forEach(wrapper => this.close(wrapper));
+  },
+
+  filter(wrapper, query = '') {
+    const normalizedQuery = normalizeSearch(query);
+    wrapper?.querySelectorAll('[data-searchable-select-option]').forEach(option => {
+      if (option.classList.contains('is-empty')) {
+        option.hidden = false;
+        return;
+      }
+      option.hidden = !!normalizedQuery && !normalizeSearch(option.textContent).includes(normalizedQuery);
+    });
+
+    const emptyState = wrapper?.querySelector('.searchable-select-empty');
+    if (emptyState) emptyState.hidden = wrapper.querySelectorAll('[data-searchable-select-option]:not([hidden]):not(.is-empty)').length > 0;
+  },
+
+  select(wrapper, option) {
+    const hidden = wrapper?.querySelector(SEARCHABLE_SELECT_VALUE);
+    const input = wrapper?.querySelector(SEARCHABLE_SELECT_INPUT);
+    if (!hidden || !input) return;
+    hidden.value = option?.dataset?.value || '';
+    this.sync(wrapper);
+    this.close(wrapper);
+    hidden.dispatchEvent(new Event('input', { bubbles: true }));
+    hidden.dispatchEvent(new Event('change', { bubbles: true }));
+  },
+
+  sync(target) {
+    const hidden = target?.matches?.(SEARCHABLE_SELECT_VALUE) ? target : target?.querySelector?.(SEARCHABLE_SELECT_VALUE);
+    if (!hidden) return;
+    const wrapper = hidden.closest(SEARCHABLE_SELECT_ROOT);
+    const input = wrapper?.querySelector(SEARCHABLE_SELECT_INPUT);
+    if (!wrapper || !input) return;
+
+    const value = hidden.value || '';
+    const options = parseSearchableOptions(wrapper);
+    const label = value ? (options.find(option => String(option.value) === String(value))?.label || String(value)) : (wrapper.dataset.emptyLabel || wrapper.dataset.placeholder || '');
+    input.value = label;
+    input.classList.toggle('is-placeholder', !value);
+    input.dataset.selectedValue = value;
+    wrapper.style.setProperty('--searchable-select-width', estimateSearchableWidth(wrapper.dataset.placeholder || wrapper.dataset.emptyLabel || 'Seleccionar', options, label));
+    this.filter(wrapper, '');
+  },
+
+  refresh(id, options = [], placeholder) {
+    const hidden = document.getElementById(id);
+    if (!hidden) return;
+    const wrapper = hidden.closest(SEARCHABLE_SELECT_ROOT);
+    if (!wrapper) return;
+
+    const normalizedOptions = Array.isArray(options) ? options : [];
+    wrapper.dataset.options = JSON.stringify(normalizedOptions);
+    if (placeholder) {
+      wrapper.dataset.placeholder = placeholder;
+      wrapper.dataset.emptyLabel = placeholder;
+    }
+
+    const menu = wrapper.querySelector('.searchable-select-menu');
+    const emptyLabel = wrapper.dataset.emptyLabel || wrapper.dataset.placeholder || 'Seleccionar';
+    const currentValue = hidden.value || '';
+    const currentLabel = currentValue ? (normalizedOptions.find(option => String(option.value) === String(currentValue))?.label || '') : '';
+    wrapper.style.setProperty('--searchable-select-width', estimateSearchableWidth(wrapper.dataset.placeholder || wrapper.dataset.emptyLabel || 'Seleccionar', normalizedOptions, currentLabel || currentValue));
+
+    menu.innerHTML = [
+      `<button type="button" class="searchable-select-option is-empty" data-searchable-select-option data-value="">${escapeHtml(emptyLabel)}</button>`,
+      ...normalizedOptions.map(option => `<button type="button" class="searchable-select-option" data-searchable-select-option data-value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</button>`)
+    ].join('') + '<div class="searchable-select-empty" hidden>Sin coincidencias</div>';
+
+    if (currentValue && !currentLabel) hidden.value = '';
+    menu.hidden = true;
+    wrapper.classList.remove('is-open');
+    const input = wrapper.querySelector(SEARCHABLE_SELECT_INPUT);
+    if (input) input.setAttribute('aria-expanded', 'false');
+    this.sync(hidden);
+  },
+
+  isEmptySelection(wrapper) {
+    return !wrapper?.querySelector(SEARCHABLE_SELECT_VALUE)?.value;
+  }
+};
+
 export class NavigationManager {
   constructor(app) {
     this.app = app;
@@ -242,7 +485,10 @@ export const form = {
   },
 
   set(id, value = '') {
-    document.getElementById(id).value = value;
+    const element = document.getElementById(id);
+    if (!element) return;
+    element.value = value;
+    if (element.matches(SEARCHABLE_SELECT_VALUE)) searchableSelect.sync(element);
   },
 
   clear(ids) {

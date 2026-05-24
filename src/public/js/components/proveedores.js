@@ -1,4 +1,4 @@
-import { escapeHtml, form } from '../ui.js';
+import { escapeHtml, form, searchableSelect } from '../ui.js';
 import { DEFAULT_PAGE_SIZE, getResponsivePageItems, loadingTemplate, paginationTemplate } from '../pagination.js?v=20260521-1';
 
 const normalizeUniqueName = value => value.trim().toLocaleLowerCase('es');
@@ -19,7 +19,12 @@ export class ProveedoresComponent {
 
   template() {
     return `<section class="section" id="sec-proveedores">
-      <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar proveedor…" id="searchProv"></div><select id="filterProvInfo" class="filter-control"><option value="">Todos</option><option value="contacto">Con contacto</option><option value="sin-contacto">Sin contacto</option><option value="email">Con email</option><option value="sin-email">Sin email</option></select></div>
+      <div class="toolbar toolbar--inline-filter"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar proveedor…" id="searchProv"></div>${searchableSelect.template({ id: 'filterProvInfo', placeholder: 'Todos', options: [
+        { value: 'contacto', label: 'Con contacto' },
+        { value: 'sin-contacto', label: 'Sin contacto' },
+        { value: 'email', label: 'Con email' },
+        { value: 'sin-email', label: 'Sin email' }
+      ] })}</div>
       <div class="table-wrap" id="wrap-proveedores"><table class="data-table"><thead><tr><th>Nombre</th><th>Contacto</th><th>Teléfono</th><th>Email</th><th>Productos</th><th>Acciones</th></tr></thead><tbody id="tbl-proveedores"></tbody></table><div id="empty-proveedores" class="empty-state" style="display:none"><div class="empty-icon">🚚</div><p>Aún no hay proveedores registrados</p></div></div><div id="pager-proveedores"></div>
     </section>`;
   }

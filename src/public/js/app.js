@@ -1,6 +1,6 @@
 import { DataStore } from './data-store.js?v=20260523-1';
 import { appConfig } from './config.js?v=20260523-1';
-import { ModalManager, NavigationManager, ThemeManager, ToastManager } from './ui.js?v=20260523-1';
+import { ModalManager, NavigationManager, ThemeManager, ToastManager, searchableSelect } from './ui.js?v=20260523-1';
 import { DashboardComponent } from './components/dashboard.js';
 import { ProveedoresComponent } from './components/proveedores.js';
 import { TiposComponent } from './components/tipos.js';
@@ -254,6 +254,7 @@ class PetshopApp {
   bindEvents() {
     this.navigation.bind();
     this.theme.bind();
+    searchableSelect.bind();
     this.modals.bindOverlayClose();
     window.addEventListener('scroll', this.onWindowScroll, { passive: true });
 
@@ -407,6 +408,8 @@ class PetshopApp {
 
       control.value = control.tagName === 'SELECT' ? (control.querySelector('option')?.value || '') : '';
     });
+
+    target.querySelectorAll('[data-searchable-select-value]').forEach(valueInput => searchableSelect.sync(valueInput));
 
     const component = this.components[section];
     if (component?.resetFilters) {

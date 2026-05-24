@@ -1,4 +1,4 @@
-import { escapeHtml, form } from '../ui.js';
+import { escapeHtml, form, searchableSelect } from '../ui.js';
 import { DEFAULT_PAGE_SIZE, getResponsivePageItems, loadingTemplate, paginationTemplate } from '../pagination.js?v=20260521-1';
 
 const ESTADOS = ['pendiente', 'en curso', 'completado', 'cancelado'];
@@ -88,7 +88,7 @@ export class PeluqueriaComponent {
   }
 
   pagoModalTemplate() {
-    return `<div class="modal-overlay" id="modal-peluqueria-pago"><div class="modal"><div class="modal-title"><span id="peluqueria-pago-title">Abonar turno</span><button class="modal-close" data-close-modal="peluqueria-pago">✕</button></div><input type="hidden" id="peluqueria-pago-turno-id"><div class="peluqueria-pago-info"></div><div class="form-group"><label>Método de pago *</label><select id="peluqueria-pago-metodo"></select></div><div id="peluqueria-pago-resumen" class="peluqueria-pago-resumen"></div><div class="modal-actions"><button class="btn btn-ghost" data-close-modal="peluqueria-pago">Cancelar</button><button class="btn btn-primary" data-action="do-peluqueria-pago">💰 Abonar</button></div></div></div>`;
+    return `<div class="modal-overlay" id="modal-peluqueria-pago"><div class="modal"><div class="modal-title"><span id="peluqueria-pago-title">Abonar turno</span><button class="modal-close" data-close-modal="peluqueria-pago">✕</button></div><input type="hidden" id="peluqueria-pago-turno-id"><div class="peluqueria-pago-info"></div><div class="form-group"><label>Método de pago *</label>${searchableSelect.template({ id: 'peluqueria-pago-metodo', placeholder: 'Seleccionar método de pago', options: [] })}</div><div id="peluqueria-pago-resumen" class="peluqueria-pago-resumen"></div><div class="modal-actions"><button class="btn btn-ghost" data-close-modal="peluqueria-pago">Cancelar</button><button class="btn btn-primary" data-action="do-peluqueria-pago">💰 Abonar</button></div></div></div>`;
   }
 
   tipoModalTemplate() {
@@ -100,7 +100,7 @@ export class PeluqueriaComponent {
   }
 
   turnoModalTemplate() {
-    return `<div class="modal-overlay" id="modal-peluqueria-turno"><div class="modal"><div class="modal-title"><span id="peluqueria-turno-title">Nuevo turno</span><button class="modal-close" data-close-modal="peluqueria-turno">✕</button></div><input type="hidden" id="peluqueria-turno-id"><div class="form-row"><div class="form-group"><label>Fecha *</label><input type="date" id="peluqueria-turno-fecha"></div><div class="form-group"><label>Hora *</label><input type="time" id="peluqueria-turno-hora" step="1800"></div></div><div class="form-row"><div class="form-group"><label>Servicio *</label><select id="peluqueria-turno-servicio"></select></div><div class="form-group"><label>Tipo de perro *</label><select id="peluqueria-turno-tipo"></select></div></div><div class="form-row"><div class="form-group"><label>Cliente *</label><input type="text" id="peluqueria-turno-cliente" placeholder="Nombre del cliente"></div><div class="form-group"><label>Estado</label><select id="peluqueria-turno-estado">${ESTADOS.map(estado => `<option value="${estado}">${estado}</option>`).join('')}</select></div></div><div class="form-group"><label>Observaciones</label><textarea id="peluqueria-turno-observaciones" placeholder="Notas internas..."></textarea></div><div id="peluqueria-turno-resumen" class="appointment-summary"></div><div class="modal-actions"><button class="btn btn-ghost" data-close-modal="peluqueria-turno">Cancelar</button><button class="btn btn-primary" data-action="save-peluqueria-turno">💾 Guardar</button></div></div></div>`;
+    return `<div class="modal-overlay" id="modal-peluqueria-turno"><div class="modal"><div class="modal-title"><span id="peluqueria-turno-title">Nuevo turno</span><button class="modal-close" data-close-modal="peluqueria-turno">✕</button></div><input type="hidden" id="peluqueria-turno-id"><div class="form-row"><div class="form-group"><label>Fecha *</label><input type="date" id="peluqueria-turno-fecha"></div><div class="form-group"><label>Hora *</label><input type="time" id="peluqueria-turno-hora" step="1800"></div></div><div class="form-row"><div class="form-group"><label>Servicio *</label>${searchableSelect.template({ id: 'peluqueria-turno-servicio', placeholder: 'Seleccionar', options: [] })}</div><div class="form-group"><label>Tipo de perro *</label>${searchableSelect.template({ id: 'peluqueria-turno-tipo', placeholder: 'Seleccionar', options: [] })}</div></div><div class="form-row"><div class="form-group"><label>Cliente *</label><input type="text" id="peluqueria-turno-cliente" placeholder="Nombre del cliente"></div><div class="form-group"><label>Estado</label>${searchableSelect.template({ id: 'peluqueria-turno-estado', placeholder: 'Estado', value: 'pendiente', options: ESTADOS.map(estado => ({ value: estado, label: estado })) })}</div></div><div class="form-group"><label>Observaciones</label><textarea id="peluqueria-turno-observaciones" placeholder="Notas internas..."></textarea></div><div id="peluqueria-turno-resumen" class="appointment-summary"></div><div class="modal-actions"><button class="btn btn-ghost" data-close-modal="peluqueria-turno">Cancelar</button><button class="btn btn-primary" data-action="save-peluqueria-turno">💾 Guardar</button></div></div></div>`;
   }
 
   bind() {
@@ -250,10 +250,9 @@ export class PeluqueriaComponent {
 
   renderTurnos() {
     const filtros = this.turnosFilters;
-    const today = dateKey(new Date());
 
-    const servicioOptions = this.app.store.data.peluqueriaServicios.map(s => `<option value="${s.id}" ${s.id === filtros.servicioId ? 'selected' : ''}>${esc(s.nombre)}</option>`).join('');
-    const tipoOptions = this.app.store.data.peluqueriaTiposPerro.map(t => `<option value="${t.id}" ${t.id === filtros.tipoPerroId ? 'selected' : ''}>${esc(t.nombre)}</option>`).join('');
+    const servicioOptions = this.app.store.data.peluqueriaServicios.map(s => ({ value: s.id, label: s.nombre }));
+    const tipoOptions = this.app.store.data.peluqueriaTiposPerro.map(t => ({ value: t.id, label: t.nombre }));
 
     let list = [...this.app.store.data.peluqueriaTurnos].filter(turno => {
       if (turno.fecha < filtros.fechaDesde) return false;
@@ -274,10 +273,10 @@ export class PeluqueriaComponent {
     <div class="toolbar">
       <label class="filter-field"><span>Fecha desde</span><input type="date" id="turnos-filter-fecha" class="filter-control" value="${filtros.fechaDesde}"></label>
       <div class="search-box"><span class="search-icon">🔍</span><input type="text" id="turnos-filter-cliente" placeholder="Buscar por cliente…" value="${esc(filtros.cliente)}"></div>
-      <select id="turnos-filter-servicio" class="filter-control"><option value="">Todos los servicios</option>${servicioOptions}</select>
-      <select id="turnos-filter-tipo" class="filter-control"><option value="">Todos los tipos</option>${tipoOptions}</select>
-      <select id="turnos-filter-estado" class="filter-control"><option value="">Todos los estados</option>${ESTADOS.map(e => `<option value="${e}" ${filtros.estado === e ? 'selected' : ''}>${e}</option>`).join('')}</select>
-      <select id="turnos-filter-pagado" class="filter-control"><option value="">Todos</option><option value="true" ${filtros.isPaid === 'true' ? 'selected' : ''}>Sí</option><option value="false" ${filtros.isPaid === 'false' ? 'selected' : ''}>No</option></select>
+      ${searchableSelect.template({ id: 'turnos-filter-servicio', placeholder: 'Todos los servicios', options: servicioOptions, value: filtros.servicioId })}
+      ${searchableSelect.template({ id: 'turnos-filter-tipo', placeholder: 'Todos los tipos', options: tipoOptions, value: filtros.tipoPerroId })}
+      ${searchableSelect.template({ id: 'turnos-filter-estado', placeholder: 'Todos los estados', value: filtros.estado, options: ESTADOS.map(e => ({ value: e, label: e })) })}
+      ${searchableSelect.template({ id: 'turnos-filter-pagado', placeholder: 'Todos', value: filtros.isPaid, options: [{ value: 'true', label: 'Sí' }, { value: 'false', label: 'No' }] })}
       <button class="btn btn-ghost" data-action="turnos-clear-filters">Limpiar</button>
     </div>
     <div class="table-wrap"><table class="data-table"><thead><tr><th>Fecha</th><th>Hora</th><th>Cliente</th><th>Servicio</th><th>Tipo</th><th>Estado</th><th>Pagado</th><th>Acciones</th></tr></thead><tbody>${pageState.items.map(turno => this.turnoRow(turno)).join('') || '<tr><td colspan="8">No hay turnos que coincidan con los filtros.</td></tr>'}</tbody></table></div>
@@ -324,9 +323,9 @@ export class PeluqueriaComponent {
     const bounds = this.getCalendarBounds(days);
     this.calendarStart = bounds.start;
     this.calendarEnd = bounds.end;
-    const serviceOptions = this.app.store.data.peluqueriaServicios.map(item => `<option value="${item.id}" ${item.id === this.calendarServicioId ? 'selected' : ''}>${esc(item.nombre)}</option>`).join('');
-    const typeOptions = this.app.store.data.peluqueriaTiposPerro.map(item => `<option value="${item.id}" ${item.id === this.calendarTipoPerroId ? 'selected' : ''}>${esc(item.nombre)}</option>`).join('');
-    document.getElementById('peluqueria-mobile-content').innerHTML = `<div class="mobile-agenda-panel"><div class="mobile-week-head"><button class="calendar-arrow" data-action="peluqueria-prev-week" aria-label="Semana anterior">‹</button><div><span>Semana</span><strong>${formatDate(dateKey(this.weekStart))} - ${formatDate(dateKey(days[6]))}</strong></div><button class="calendar-arrow" data-action="peluqueria-next-week" aria-label="Semana siguiente">›</button></div><div class="mobile-filter-card"><select id="peluqueria-mobile-calendar-servicio" class="filter-control"><option value="">Todos los servicios</option>${serviceOptions}</select><select id="peluqueria-mobile-calendar-tipo" class="filter-control"><option value="">Todos los tipos</option>${typeOptions}</select><div class="mobile-filter-row"><input type="date" class="filter-control" id="peluqueria-mobile-week-picker" value="${dateKey(this.weekStart)}"><button class="btn btn-ghost" data-action="peluqueria-current-week">Hoy</button></div></div><div class="mobile-agenda-days">${days.map(day => this.renderMobileAgendaDay(day)).join('')}</div></div>`;
+    const serviceOptions = this.app.store.data.peluqueriaServicios.map(item => ({ value: item.id, label: item.nombre }));
+    const typeOptions = this.app.store.data.peluqueriaTiposPerro.map(item => ({ value: item.id, label: item.nombre }));
+    document.getElementById('peluqueria-mobile-content').innerHTML = `<div class="mobile-agenda-panel"><div class="mobile-week-head"><button class="calendar-arrow" data-action="peluqueria-prev-week" aria-label="Semana anterior">‹</button><div><span>Semana</span><strong>${formatDate(dateKey(this.weekStart))} - ${formatDate(dateKey(days[6]))}</strong></div><button class="calendar-arrow" data-action="peluqueria-next-week" aria-label="Semana siguiente">›</button></div><div class="mobile-filter-card">${searchableSelect.template({ id: 'peluqueria-mobile-calendar-servicio', placeholder: 'Todos los servicios', options: serviceOptions, value: this.calendarServicioId })}${searchableSelect.template({ id: 'peluqueria-mobile-calendar-tipo', placeholder: 'Todos los tipos', options: typeOptions, value: this.calendarTipoPerroId })}<div class="mobile-filter-row"><input type="date" class="filter-control" id="peluqueria-mobile-week-picker" value="${dateKey(this.weekStart)}"><button class="btn btn-ghost" data-action="peluqueria-current-week">Hoy</button></div></div><div class="mobile-agenda-days">${days.map(day => this.renderMobileAgendaDay(day)).join('')}</div></div>`;
     this.bindMobileCalendarControls();
   }
 
@@ -383,8 +382,8 @@ export class PeluqueriaComponent {
 
   renderMobileTurnos() {
     const filtros = this.turnosFilters;
-    const servicioOptions = this.app.store.data.peluqueriaServicios.map(s => `<option value="${s.id}" ${s.id === filtros.servicioId ? 'selected' : ''}>${esc(s.nombre)}</option>`).join('');
-    const tipoOptions = this.app.store.data.peluqueriaTiposPerro.map(t => `<option value="${t.id}" ${t.id === filtros.tipoPerroId ? 'selected' : ''}>${esc(t.nombre)}</option>`).join('');
+    const servicioOptions = this.app.store.data.peluqueriaServicios.map(s => ({ value: s.id, label: s.nombre }));
+    const tipoOptions = this.app.store.data.peluqueriaTiposPerro.map(t => ({ value: t.id, label: t.nombre }));
     const list = [...this.app.store.data.peluqueriaTurnos].filter(turno => {
       if (turno.fecha < filtros.fechaDesde) return false;
       if (filtros.cliente && !turno.cliente.toLowerCase().includes(filtros.cliente.toLowerCase())) return false;
@@ -398,7 +397,7 @@ export class PeluqueriaComponent {
     const pageState = getResponsivePageItems(list, this.pages.turnos, DEFAULT_PAGE_SIZE);
     this.pages.turnos = pageState.page;
     this.totalPages = pageState.totalPages;
-    document.getElementById('peluqueria-mobile-content').innerHTML = `<div class="mobile-filter-card"><label>Desde<input type="date" id="turnos-filter-fecha" class="filter-control" value="${filtros.fechaDesde}"></label><input type="text" id="turnos-filter-cliente" class="filter-control" placeholder="Buscar cliente" value="${esc(filtros.cliente)}"><select id="turnos-filter-servicio" class="filter-control"><option value="">Todos los servicios</option>${servicioOptions}</select><select id="turnos-filter-tipo" class="filter-control"><option value="">Todos los tipos</option>${tipoOptions}</select><select id="turnos-filter-estado" class="filter-control"><option value="">Todos los estados</option>${ESTADOS.map(e => `<option value="${e}" ${filtros.estado === e ? 'selected' : ''}>${e}</option>`).join('')}</select><select id="turnos-filter-pagado" class="filter-control"><option value="">Todos</option><option value="true" ${filtros.isPaid === 'true' ? 'selected' : ''}>Pagados</option><option value="false" ${filtros.isPaid === 'false' ? 'selected' : ''}>Pendientes</option></select><button class="btn btn-ghost" data-action="turnos-clear-filters">Limpiar filtros</button></div><div class="mobile-card-list">${pageState.items.map(turno => this.mobileTurnoCard(turno)).join('') || '<p class="empty-note">No hay turnos que coincidan con los filtros.</p>'}</div><div id="pager-peluqueria"></div>`;
+    document.getElementById('peluqueria-mobile-content').innerHTML = `<div class="mobile-filter-card"><label>Desde<input type="date" id="turnos-filter-fecha" class="filter-control" value="${filtros.fechaDesde}"></label><input type="text" id="turnos-filter-cliente" class="filter-control" placeholder="Buscar cliente" value="${esc(filtros.cliente)}">${searchableSelect.template({ id: 'turnos-filter-servicio', placeholder: 'Todos los servicios', options: servicioOptions, value: filtros.servicioId })}${searchableSelect.template({ id: 'turnos-filter-tipo', placeholder: 'Todos los tipos', options: tipoOptions, value: filtros.tipoPerroId })}${searchableSelect.template({ id: 'turnos-filter-estado', placeholder: 'Todos los estados', value: filtros.estado, options: ESTADOS.map(e => ({ value: e, label: e })) })}${searchableSelect.template({ id: 'turnos-filter-pagado', placeholder: 'Todos', value: filtros.isPaid, options: [{ value: 'true', label: 'Pagados' }, { value: 'false', label: 'Pendientes' }] })}<button class="btn btn-ghost" data-action="turnos-clear-filters">Limpiar filtros</button></div><div class="mobile-card-list">${pageState.items.map(turno => this.mobileTurnoCard(turno)).join('') || '<p class="empty-note">No hay turnos que coincidan con los filtros.</p>'}</div><div id="pager-peluqueria"></div>`;
     document.getElementById('pager-peluqueria').innerHTML = paginationTemplate('peluqueria', pageState);
     this.bindTurnosFilters();
   }
@@ -448,9 +447,9 @@ export class PeluqueriaComponent {
     this.calendarStart = bounds.start;
     this.calendarEnd = bounds.end;
     const hourHeight = (60 / (this.calendarEnd - this.calendarStart)) * 100;
-    const serviceOptions = this.app.store.data.peluqueriaServicios.map(item => `<option value="${item.id}" ${item.id === this.calendarServicioId ? 'selected' : ''}>${esc(item.nombre)}</option>`).join('');
-    const typeOptions = this.app.store.data.peluqueriaTiposPerro.map(item => `<option value="${item.id}" ${item.id === this.calendarTipoPerroId ? 'selected' : ''}>${esc(item.nombre)}</option>`).join('');
-    document.getElementById('peluqueria-content').innerHTML = `<div class="calendar-panel calendar-panel-compact"><div class="calendar-compact-head"><button class="calendar-arrow" data-action="peluqueria-prev-week" aria-label="Semana anterior">‹</button><div><h3>${formatDate(dateKey(this.weekStart))} - ${formatDate(dateKey(days[6]))}</h3><p>Arrastrá turnos en bloques de 15 minutos. Pasá el mouse por un hueco para crear uno nuevo.</p></div><button class="calendar-arrow" data-action="peluqueria-next-week" aria-label="Semana siguiente">›</button></div><div class="calendar-filters calendar-filters-compact"><label><select id="peluqueria-calendar-servicio" class="filter-control"><option value="">Todos los servicios</option>${serviceOptions}</select></label><label><select id="peluqueria-calendar-tipo" class="filter-control"><option value="">Todos los tipos</option>${typeOptions}</select></label><input type="date" class="filter-control" id="peluqueria-week-picker" value="${dateKey(this.weekStart)}"><button class="btn btn-ghost" data-action="peluqueria-current-week">Esta semana</button></div><div class="week-calendar grooming-calendar" style="--calendar-hour-height:${hourHeight}%"><div class="time-rail">${this.renderTimeRail()}</div>${days.map(day => this.renderDayColumn(day)).join('')}</div><div class="calendar-legend"><span><i class="legend-dot available"></i>Hueco disponible</span><span><i class="legend-dot busy"></i>Turno</span><span><i class="legend-dot cancelled"></i>Cancelado/liberado</span><span><i class="legend-dot closed"></i>No disponible</span></div></div>`;
+    const serviceOptions = this.app.store.data.peluqueriaServicios.map(item => ({ value: item.id, label: item.nombre }));
+    const typeOptions = this.app.store.data.peluqueriaTiposPerro.map(item => ({ value: item.id, label: item.nombre }));
+    document.getElementById('peluqueria-content').innerHTML = `<div class="calendar-panel calendar-panel-compact"><div class="calendar-compact-head"><button class="calendar-arrow" data-action="peluqueria-prev-week" aria-label="Semana anterior">‹</button><div><h3>${formatDate(dateKey(this.weekStart))} - ${formatDate(dateKey(days[6]))}</h3><p>Arrastrá turnos en bloques de 15 minutos. Pasá el mouse por un hueco para crear uno nuevo.</p></div><button class="calendar-arrow" data-action="peluqueria-next-week" aria-label="Semana siguiente">›</button></div><div class="calendar-filters calendar-filters-compact"><label>${searchableSelect.template({ id: 'peluqueria-calendar-servicio', placeholder: 'Todos los servicios', options: serviceOptions, value: this.calendarServicioId })}</label><label>${searchableSelect.template({ id: 'peluqueria-calendar-tipo', placeholder: 'Todos los tipos', options: typeOptions, value: this.calendarTipoPerroId })}</label><input type="date" class="filter-control" id="peluqueria-week-picker" value="${dateKey(this.weekStart)}"><button class="btn btn-ghost" data-action="peluqueria-current-week">Esta semana</button></div><div class="week-calendar grooming-calendar" style="--calendar-hour-height:${hourHeight}%"><div class="time-rail">${this.renderTimeRail()}</div>${days.map(day => this.renderDayColumn(day)).join('')}</div><div class="calendar-legend"><span><i class="legend-dot available"></i>Hueco disponible</span><span><i class="legend-dot busy"></i>Turno</span><span><i class="legend-dot cancelled"></i>Cancelado/liberado</span><span><i class="legend-dot closed"></i>No disponible</span></div></div>`;
     this.bindCalendarControls();
   }
 
@@ -850,8 +849,8 @@ export class PeluqueriaComponent {
   }
 
   refreshTurnoSelects(servicioId = '', tipoPerroId = '') {
-    document.getElementById('peluqueria-turno-servicio').innerHTML = '<option value="">Seleccionar</option>' + this.app.store.data.peluqueriaServicios.map(item => `<option value="${item.id}">${esc(item.nombre)}</option>`).join('');
-    document.getElementById('peluqueria-turno-tipo').innerHTML = '<option value="">Seleccionar</option>' + this.app.store.data.peluqueriaTiposPerro.map(item => `<option value="${item.id}">${esc(item.nombre)}</option>`).join('');
+    searchableSelect.refresh('peluqueria-turno-servicio', this.app.store.data.peluqueriaServicios.map(item => ({ value: item.id, label: item.nombre })), 'Seleccionar');
+    searchableSelect.refresh('peluqueria-turno-tipo', this.app.store.data.peluqueriaTiposPerro.map(item => ({ value: item.id, label: item.nombre })), 'Seleccionar');
     form.set('peluqueria-turno-servicio', servicioId);
     form.set('peluqueria-turno-tipo', tipoPerroId);
   }
@@ -922,7 +921,7 @@ export class PeluqueriaComponent {
     if (!turno) return;
     if (turno.isPaid) return this.app.toasts.show('Este turno ya está abonado', 'error');
     form.set('peluqueria-pago-turno-id', id);
-    document.getElementById('peluqueria-pago-metodo').innerHTML = '<option value="">Seleccionar método de pago</option>' + this.app.store.data.metodosPago.map(item => `<option value="${item.id}" data-descuento="${item.descuento}" data-recargo="${item.recargo}">${esc(item.nombre)}</option>`).join('');
+    searchableSelect.refresh('peluqueria-pago-metodo', this.app.store.data.metodosPago.map(item => ({ value: item.id, label: item.nombre })), 'Seleccionar método de pago');
     const info = document.querySelector('#modal-peluqueria-pago .peluqueria-pago-info');
     info.innerHTML = `<div class="detail-list"><div><span>Cliente</span><strong>${esc(turno.cliente)}</strong></div><div><span>Servicio</span><strong>${esc(turno.servicioNombre)}</strong></div><div><span>Fecha y hora</span><strong>${formatDate(turno.fecha)} ${esc(turno.hora)}</strong></div><div><span>Precio original</span><strong>${formatMoney(turno.precio)}</strong></div></div>`;
     this.updatePagoResumen();
@@ -934,14 +933,14 @@ export class PeluqueriaComponent {
     const turnoId = form.value('peluqueria-pago-turno-id');
     const turno = this.app.store.data.peluqueriaTurnos.find(item => item.id === turnoId);
     if (!turno) return;
-    const methodSelect = document.getElementById('peluqueria-pago-metodo');
-    const selected = methodSelect.options[methodSelect.selectedIndex];
-    if (!selected?.value) {
+    const metodoId = form.value('peluqueria-pago-metodo');
+    const metodo = this.app.store.data.metodosPago.find(item => item.id === metodoId);
+    if (!metodo) {
       document.getElementById('peluqueria-pago-resumen').innerHTML = '';
       return;
     }
-    const descuento = Number(selected.dataset.descuento || 0);
-    const recargo = Number(selected.dataset.recargo || 0);
+    const descuento = Number(metodo.descuento || 0);
+    const recargo = Number(metodo.recargo || metodo.bonificacion || 0);
     const precioBase = Number(turno.precio || 0);
     const montoDescuento = (precioBase * descuento) / 100;
     const montoRecargo = (precioBase * recargo) / 100;

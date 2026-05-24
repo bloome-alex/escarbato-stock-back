@@ -1,4 +1,4 @@
-import { escapeHtml, form } from '../ui.js';
+import { escapeHtml, form, searchableSelect } from '../ui.js';
 import { DEFAULT_PAGE_SIZE, getResponsivePageItems, loadingTemplate, paginationTemplate } from '../pagination.js?v=20260521-1';
 import { compareByName } from '../sort.js';
 
@@ -15,7 +15,7 @@ export class StockComponent {
 
   template() {
     return `<section class="section" id="sec-stock">
-      <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar producto en stock…" id="searchStock"></div><select id="filterStockTipo" class="filter-control"><option value="">Todos los tipos</option></select><select id="filterStockProveedor" class="filter-control"><option value="">Todos los proveedores</option></select><select id="filterStockStatus" class="filter-control"><option value="">Todos</option><option value="ok">Disponible</option><option value="low">Stock bajo</option><option value="out">Sin stock</option></select></div>
+      <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar producto en stock…" id="searchStock"></div>${searchableSelect.template({ id: 'filterStockTipo', placeholder: 'Todos los tipos', options: [] })}${searchableSelect.template({ id: 'filterStockProveedor', placeholder: 'Todos los proveedores', options: [] })}${searchableSelect.template({ id: 'filterStockStatus', placeholder: 'Todos', options: [{ value: 'ok', label: 'Disponible' }, { value: 'low', label: 'Stock bajo' }, { value: 'out', label: 'Sin stock' }] })}</div>
       <div class="table-wrap" id="stock-list"><table class="data-table"><thead><tr><th>Producto</th><th>Tipo de producto</th><th>Proveedor</th><th>Mínimo</th><th>Stock</th><th>Estado</th></tr></thead><tbody id="tbl-stock"></tbody></table></div><div id="empty-stock" class="empty-state" style="display:none"><div class="empty-icon">📊</div><p>Agregá productos para gestionar el stock</p></div><div id="pager-stock"></div>
     </section>`;
   }
@@ -60,25 +60,13 @@ export class StockComponent {
   }
 
   refreshTipoSelects() {
-    const filter = document.getElementById('filterStockTipo');
-    const selectedFilter = filter ? filter.value : '';
-    const opts = [...this.app.store.data.tipos]
-      .sort(compareByName)
-      .map(tipo => `<option value="${escapeHtml(tipo.id)}">${escapeHtml(tipo.nombre)}</option>`)
-      .join('');
-    document.getElementById('filterStockTipo').innerHTML = '<option value="">Todos los tipos</option>' + opts;
-    if (selectedFilter) filter.value = selectedFilter;
+    const tipos = [...this.app.store.data.tipos].sort(compareByName).map(tipo => ({ value: tipo.id, label: tipo.nombre }));
+    searchableSelect.refresh('filterStockTipo', tipos, 'Todos los tipos');
   }
 
   refreshProveedorSelects() {
-    const filter = document.getElementById('filterStockProveedor');
-    const selectedFilter = filter ? filter.value : '';
-    const opts = [...this.app.store.data.proveedores]
-      .sort(compareByName)
-      .map(prov => `<option value="${escapeHtml(prov.id)}">${escapeHtml(prov.nombre)}</option>`)
-      .join('');
-    document.getElementById('filterStockProveedor').innerHTML = '<option value="">Todos los proveedores</option><option value="sin-proveedor">Sin proveedor</option>' + opts;
-    if (selectedFilter) filter.value = selectedFilter;
+    const proveedores = [...this.app.store.data.proveedores].sort(compareByName).map(prov => ({ value: prov.id, label: prov.nombre }));
+    searchableSelect.refresh('filterStockProveedor', [{ value: 'sin-proveedor', label: 'Sin proveedor' }, ...proveedores], 'Todos los proveedores');
   }
 
   render() {

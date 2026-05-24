@@ -1,4 +1,4 @@
-import { escapeHtml, form } from '../ui.js';
+import { escapeHtml, form, searchableSelect } from '../ui.js';
 import { appConfig } from '../config.js?v=20260523-1';
 import { defaultTicketConfig, normalizeTicketConfig, renderTicketHtml } from '../ticket.js';
 
@@ -56,12 +56,23 @@ export class TicketConfigComponent {
           <div class="ticket-config-actions"><button class="btn btn-primary" data-action="save-ticket-config">Guardar ticket</button><button class="btn btn-ghost" data-action="reset-ticket-config">Restaurar</button></div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label>Tamaño de ticket</label><select id="ticket-paper-size"><option value="58mm" ${config.paperSize === '58mm' ? 'selected' : ''}>58 mm</option><option value="80mm" ${config.paperSize === '80mm' ? 'selected' : ''}>80 mm</option><option value="a4" ${config.paperSize === 'a4' ? 'selected' : ''}>A4</option><option value="custom" ${config.paperSize === 'custom' ? 'selected' : ''}>Personalizado</option></select></div>
+          <div class="form-group"><label>Tamaño de ticket</label>${searchableSelect.template({ id: 'ticket-paper-size', placeholder: 'Tamaño de ticket', value: config.paperSize, options: [
+            { value: '58mm', label: '58 mm' },
+            { value: '80mm', label: '80 mm' },
+            { value: 'a4', label: 'A4' },
+            { value: 'custom', label: 'Personalizado' }
+          ] })}</div>
           <div class="form-group"><label>Ancho personalizado (mm)</label><input type="number" min="40" step="1" id="ticket-custom-width" value="${Number(config.customWidthMm || 80)}"></div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label>Formato</label><select id="ticket-template"><option value="compact" ${config.template === 'compact' ? 'selected' : ''}>Compacto</option><option value="detailed" ${config.template === 'detailed' ? 'selected' : ''}>Detallado</option></select></div>
-          <div class="form-group"><label>Diseño de ítems</label><select id="ticket-item-layout"><option value="compact" ${config.itemLayout === 'compact' ? 'selected' : ''}>Compacto</option><option value="detailed" ${config.itemLayout === 'detailed' ? 'selected' : ''}>Detalle completo</option></select></div>
+          <div class="form-group"><label>Formato</label>${searchableSelect.template({ id: 'ticket-template', placeholder: 'Formato', value: config.template, options: [
+            { value: 'compact', label: 'Compacto' },
+            { value: 'detailed', label: 'Detallado' }
+          ] })}</div>
+          <div class="form-group"><label>Diseño de ítems</label>${searchableSelect.template({ id: 'ticket-item-layout', placeholder: 'Diseño de ítems', value: config.itemLayout, options: [
+            { value: 'compact', label: 'Compacto' },
+            { value: 'detailed', label: 'Detalle completo' }
+          ] })}</div>
         </div>
         <div class="ticket-config-section-title">Encabezado</div>
         <div class="form-row">

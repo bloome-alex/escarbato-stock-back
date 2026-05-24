@@ -1,4 +1,4 @@
-import { escapeHtml, form } from '../ui.js';
+import { escapeHtml, form, searchableSelect } from '../ui.js';
 import { DEFAULT_PAGE_SIZE, getResponsivePageItems, loadingTemplate, paginationTemplate } from '../pagination.js?v=20260521-1';
 import { compareByName } from '../sort.js';
 
@@ -33,13 +33,13 @@ export class ProductosComponent {
 
   template() {
     return `<section class="section" id="sec-productos">
-      <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar producto…" id="searchProd"></div><select id="filterTipo" class="filter-control"><option value="">Todos los tipos</option></select><select id="filterProveedor" class="filter-control"><option value="">Todos los proveedores</option></select><select id="filterStockProd" class="filter-control"><option value="">Todo stock</option><option value="disponible">Disponible</option><option value="bajo">Stock bajo</option><option value="sin-stock">Sin stock</option></select></div>
+      <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar producto…" id="searchProd"></div>${searchableSelect.template({ id: 'filterTipo', placeholder: 'Todos los tipos', options: [], className: 'searchable-select--quarter' })}${searchableSelect.template({ id: 'filterProveedor', placeholder: 'Todos los proveedores', options: [] })}${searchableSelect.template({ id: 'filterStockProd', placeholder: 'Todo stock', options: [{ value: 'disponible', label: 'Disponible' }, { value: 'bajo', label: 'Stock bajo' }, { value: 'sin-stock', label: 'Sin stock' }] })}</div>
       <div class="table-wrap" id="wrap-productos"><table class="data-table"><thead><tr><th>Producto</th><th>Tipo</th><th>Proveedor</th><th>Costo</th><th>Porcentaje</th><th>Precio</th><th>Precio final</th><th>Última actualización</th><th>Acciones</th></tr></thead><tbody id="tbl-productos"></tbody></table><div id="empty-productos" class="empty-state" style="display:none"><div class="empty-icon">📦</div><p>Aún no hay productos registrados</p></div></div><div id="pager-productos"></div>
     </section>`;
   }
 
   modalTemplate() {
-    return `<div class="modal-overlay" id="modal-prod"><div class="modal"><div class="modal-title"><span id="modal-prod-title">Nuevo Producto</span><button class="modal-close" data-close-modal="prod">✕</button></div><input type="hidden" id="prod-id"><div class="form-group"><label>Nombre del producto *</label><input type="text" id="prod-nombre" placeholder="Ej: Croquetas Premium Perro Adulto 10kg"></div><div class="form-row"><div class="form-group"><label>Tipo *</label><select id="prod-tipo"><option value="">Seleccionar tipo…</option></select></div><div class="form-group"><label>Proveedor *</label><select id="prod-proveedor"><option value="">Seleccionar proveedor…</option></select></div></div><div class="form-row"><div class="form-group"><label>Costo ($) *</label><input type="number" id="prod-costo" placeholder="0.00" min="0" step="0.01"></div><div class="form-group"><label>Porcentaje de ganancia (%) *</label><input type="number" id="prod-porcentaje" placeholder="0" min="0" step="0.01"></div></div><div class="form-row"><div class="form-group"><label>Precio calculado ($)</label><input type="number" id="prod-precio" placeholder="0.00" min="0" step="0.01" readonly></div><div class="form-group"><label>Precio final ($) *</label><input type="number" id="prod-precio-final" placeholder="Redondeado a mano" min="0" step="0.01"></div></div><div class="form-row"><div class="form-group"><label>Stock mínimo</label><input type="number" id="prod-min-stock" placeholder="0" min="0"></div></div><div class="form-group"><label>Descripción</label><textarea id="prod-desc" placeholder="Detalle del producto…"></textarea></div><div class="modal-actions"><button class="btn btn-ghost" data-close-modal="prod">Cancelar</button><button class="btn btn-primary" data-action="save-producto">💾 Guardar</button></div></div></div>`;
+    return `<div class="modal-overlay" id="modal-prod"><div class="modal"><div class="modal-title"><span id="modal-prod-title">Nuevo Producto</span><button class="modal-close" data-close-modal="prod">✕</button></div><input type="hidden" id="prod-id"><div class="form-group"><label>Nombre del producto *</label><input type="text" id="prod-nombre" placeholder="Ej: Croquetas Premium Perro Adulto 10kg"></div><div class="form-row"><div class="form-group"><label>Tipo *</label>${searchableSelect.template({ id: 'prod-tipo', placeholder: 'Seleccionar tipo…', options: [], className: 'searchable-select--quarter' })}</div><div class="form-group"><label>Proveedor *</label>${searchableSelect.template({ id: 'prod-proveedor', placeholder: 'Seleccionar proveedor…', options: [] })}</div></div><div class="form-row"><div class="form-group"><label>Costo ($) *</label><input type="number" id="prod-costo" placeholder="0.00" min="0" step="0.01"></div><div class="form-group"><label>Porcentaje de ganancia (%) *</label><input type="number" id="prod-porcentaje" placeholder="0" min="0" step="0.01"></div></div><div class="form-row"><div class="form-group"><label>Precio calculado ($)</label><input type="number" id="prod-precio" placeholder="0.00" min="0" step="0.01" readonly></div><div class="form-group"><label>Precio final ($) *</label><input type="number" id="prod-precio-final" placeholder="Redondeado a mano" min="0" step="0.01"></div></div><div class="form-row"><div class="form-group"><label>Stock mínimo</label><input type="number" id="prod-min-stock" placeholder="0" min="0"></div></div><div class="form-group"><label>Descripción</label><textarea id="prod-desc" placeholder="Detalle del producto…"></textarea></div><div class="modal-actions"><button class="btn btn-ghost" data-close-modal="prod">Cancelar</button><button class="btn btn-primary" data-action="save-producto">💾 Guardar</button></div></div></div>`;
   }
 
   bind() {
@@ -69,27 +69,15 @@ export class ProductosComponent {
   }
 
   refreshTipoSelects() {
-    const filter = document.getElementById('filterTipo');
-    const selectedFilter = filter ? filter.value : '';
-    const opts = [...this.app.store.data.tipos]
-      .sort(compareByName)
-      .map(tipo => `<option value="${escapeHtml(tipo.id)}">${escapeHtml(tipo.nombre)}</option>`)
-      .join('');
-    document.getElementById('prod-tipo').innerHTML = '<option value="">Seleccionar tipo…</option>' + opts;
-    document.getElementById('filterTipo').innerHTML = '<option value="">Todos los tipos</option>' + opts;
-    if (selectedFilter) filter.value = selectedFilter;
+    const tipos = [...this.app.store.data.tipos].sort(compareByName).map(tipo => ({ value: tipo.id, label: tipo.nombre }));
+    searchableSelect.refresh('prod-tipo', tipos, 'Seleccionar tipo…');
+    searchableSelect.refresh('filterTipo', tipos, 'Todos los tipos');
   }
 
   refreshProveedorSelects() {
-    const filter = document.getElementById('filterProveedor');
-    const selectedFilter = filter ? filter.value : '';
-    const opts = [...this.app.store.data.proveedores]
-      .sort(compareByName)
-      .map(prov => `<option value="${escapeHtml(prov.id)}">${escapeHtml(prov.nombre)}</option>`)
-      .join('');
-    document.getElementById('prod-proveedor').innerHTML = '<option value="">Seleccionar proveedor…</option>' + opts;
-    document.getElementById('filterProveedor').innerHTML = '<option value="">Todos los proveedores</option><option value="sin-proveedor">Sin proveedor</option>' + opts;
-    if (selectedFilter) filter.value = selectedFilter;
+    const proveedores = [...this.app.store.data.proveedores].sort(compareByName);
+    searchableSelect.refresh('prod-proveedor', proveedores.map(prov => ({ value: prov.id, label: prov.nombre })), 'Seleccionar proveedor…');
+    searchableSelect.refresh('filterProveedor', [{ value: 'sin-proveedor', label: 'Sin proveedor' }, ...proveedores.map(prov => ({ value: prov.id, label: prov.nombre }))], 'Todos los proveedores');
   }
 
   render() {

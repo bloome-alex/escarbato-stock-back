@@ -18,6 +18,16 @@
   button { cursor: pointer; border: 0; background: #4e8055; color: #fff; font-weight: 700; }
   button.secondary { background: #efe7dc; color: #2d2017; }
   .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .searchable-select { position: relative; width: 100%; min-width: 0; }
+  .searchable-select-input { width: 100%; padding-right: 38px; }
+  .searchable-select-arrow { position: absolute; top: 0; right: 12px; bottom: 0; width: 18px; display: grid; align-items: center; justify-content: center; color: #7a6355; pointer-events: none; }
+  .searchable-select-arrow-icon { display: block; width: 8px; height: 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); transform-origin: center; transition: transform .16s ease; }
+  .searchable-select-arrow-icon.is-open { transform: rotate(225deg); }
+  .searchable-select-menu { position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 10; display: grid; gap: 4px; max-height: 240px; overflow: auto; padding: 6px; border: 1px solid #e8ddd0; border-radius: 10px; background: #fff; box-shadow: 0 10px 30px rgba(92,61,46,.14); }
+  .searchable-select-menu[hidden] { display: none; }
+  .searchable-select-option { width: 100%; padding: 10px 12px; border-radius: 8px; background: transparent; color: #2d2017; text-align: left; }
+  .searchable-select-option:hover, .searchable-select-option:focus { background: #f6f2ea; outline: none; }
+  .searchable-select-empty { padding: 10px 12px; color: #7a6355; }
   .actions { display: flex; gap: 10px; flex-wrap: wrap; }
   .danger { background: #b3261e; }
   .hidden { display: none; }

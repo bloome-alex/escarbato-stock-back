@@ -1,4 +1,4 @@
-import { escapeHtml, form } from '../ui.js';
+import { escapeHtml, form, searchableSelect } from '../ui.js';
 import { DEFAULT_PAGE_SIZE, getResponsivePageItems, loadingTemplate, paginationTemplate } from '../pagination.js?v=20260521-1';
 
 const normalizeUniqueName = value => value.trim().toLocaleLowerCase('es');
@@ -13,7 +13,7 @@ export class TiposComponent {
 
   template() {
     return `<section class="section" id="sec-tipos">
-      <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar tipo…" id="searchTipo"></div><select id="filterTipoUso" class="filter-control"><option value="">Todos</option><option value="con-productos">Con productos</option><option value="sin-productos">Sin productos</option></select></div>
+      <div class="toolbar toolbar--inline-filter"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar tipo…" id="searchTipo"></div>${searchableSelect.template({ id: 'filterTipoUso', placeholder: 'Todos', options: [{ value: 'con-productos', label: 'Con productos' }, { value: 'sin-productos', label: 'Sin productos' }] })}</div>
       <div class="table-wrap" id="wrap-tipos"><table class="data-table"><thead><tr><th>Nombre</th><th>Descripción</th><th>Productos</th><th>Acciones</th></tr></thead><tbody id="tbl-tipos"></tbody></table><div id="empty-tipos" class="empty-state" style="display:none"><div class="empty-icon">🏷️</div><p>Aún no hay tipos de producto</p></div></div><div id="pager-tipos"></div>
     </section>`;
   }

@@ -1,4 +1,4 @@
-import { escapeHtml, form } from '../ui.js';
+import { escapeHtml, form, searchableSelect } from '../ui.js';
 import { compareByName } from '../sort.js';
 
 const DEFAULT_CLIENT = 'mostrador';
@@ -26,8 +26,8 @@ export class MostradorComponent {
     return `<section class="section" id="sec-mostrador">
       <div id="counter-caja-status"></div>
       <div class="counter-shell">
-        <div class="counter-header-row"><div class="counter-client form-group"><label>Cliente</label><input type="text" id="mostrador-cliente" value="${DEFAULT_CLIENT}" autocomplete="off"></div><div class="counter-measure form-group"><label>Unidad de medición</label><select id="counter-measure-mode" class="filter-control"><option value="qty" ${measureMode === 'qty' ? 'selected' : ''}>Unidad</option><option value="amount" ${measureMode === 'amount' ? 'selected' : ''}>Pesos</option></select></div><div class="counter-stock-view form-group"><label>Visualizar stock</label><select id="counter-stock-view-mode" class="filter-control"><option value="qty" ${stockViewMode === 'qty' ? 'selected' : ''}>Unidades</option><option value="amount" ${stockViewMode === 'amount' ? 'selected' : ''}>Pesos</option></select></div><div class="counter-view-toggle form-group" aria-label="Modo de vista"><label>Vista</label><div class="counter-view-switch" role="group"><button type="button" class="counter-view-btn ${isGridView ? 'active' : ''}" data-counter-view="grid" aria-label="Vista en cuadricula" aria-pressed="${String(isGridView)}"><span class="counter-view-icon counter-view-icon-grid" aria-hidden="true"></span></button><button type="button" class="counter-view-btn ${!isGridView ? 'active' : ''}" data-counter-view="list" aria-label="Vista en listado" aria-pressed="${String(!isGridView)}"><span class="counter-view-icon counter-view-icon-list" aria-hidden="true"></span></button></div></div></div>
-        <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar producto…" id="searchMostrador"></div><select id="filterMostradorTipo" class="filter-control"><option value="">Todos los tipos</option></select><select id="filterMostradorProveedor" class="filter-control"><option value="">Todos los proveedores</option></select><select id="filterMostradorStock" class="filter-control"><option value="">Todos</option><option value="disponible">Disponible</option><option value="sin-stock">Sin stock</option></select></div>
+        <div class="counter-header-row"><div class="counter-client form-group"><label>Cliente</label><input type="text" id="mostrador-cliente" value="${DEFAULT_CLIENT}" autocomplete="off"></div><div class="counter-measure form-group"><label>Unidad de medición</label>${searchableSelect.template({ id: 'counter-measure-mode', placeholder: 'Unidad', value: measureMode, options: [{ value: 'qty', label: 'Unidad' }, { value: 'amount', label: 'Pesos' }] })}</div><div class="counter-stock-view form-group"><label>Visualizar stock</label>${searchableSelect.template({ id: 'counter-stock-view-mode', placeholder: 'Unidades', value: stockViewMode, options: [{ value: 'qty', label: 'Unidades' }, { value: 'amount', label: 'Pesos' }] })}</div><div class="counter-view-toggle form-group" aria-label="Modo de vista"><label>Vista</label><div class="counter-view-switch" role="group"><button type="button" class="counter-view-btn ${isGridView ? 'active' : ''}" data-counter-view="grid" aria-label="Vista en cuadricula" aria-pressed="${String(isGridView)}"><span class="counter-view-icon counter-view-icon-grid" aria-hidden="true"></span></button><button type="button" class="counter-view-btn ${!isGridView ? 'active' : ''}" data-counter-view="list" aria-label="Vista en listado" aria-pressed="${String(!isGridView)}"><span class="counter-view-icon counter-view-icon-list" aria-hidden="true"></span></button></div></div></div>
+        <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar producto…" id="searchMostrador"></div>${searchableSelect.template({ id: 'filterMostradorTipo', placeholder: 'Todos los tipos', options: [] })}${searchableSelect.template({ id: 'filterMostradorProveedor', placeholder: 'Todos los proveedores', options: [] })}${searchableSelect.template({ id: 'filterMostradorStock', placeholder: 'Todos', value: '', options: [{ value: 'disponible', label: 'Disponible' }, { value: 'sin-stock', label: 'Sin stock' }] })}</div>
         <div class="counter-products" id="mostrador-products"></div>
         <div class="counter-load-more" id="mostrador-load-more" style="display:none"><span class="loading-spinner" aria-hidden="true"></span><span>Cargando más productos...</span></div>
         <div id="empty-mostrador" class="empty-state" style="display:none"><div class="empty-icon">🛒</div><p>No hay productos para mostrar</p></div>
@@ -38,7 +38,7 @@ export class MostradorComponent {
         <div class="cart-drawer-header"><div><span>Carrito</span><strong>Nueva venta</strong></div><button class="modal-close" data-action="close-counter-cart" aria-label="Cerrar carrito">✕</button></div>
         <div class="cart-drawer-list" id="counter-cart-list"></div>
         <div class="empty-state sale-empty" id="empty-counter-cart"><p>Agregá productos al carrito</p></div>
-        <div class="cart-drawer-footer"><div class="form-group"><label>Método de pago *</label><select id="counter-payment-method" class="filter-control"><option value="">Seleccionar método</option></select></div><div id="counter-payment-summary"></div><div class="cart-total"><span>Total final</span><strong id="counter-cart-total">$0</strong></div><button class="btn btn-primary" data-action="finish-counter-sale">Finalizar compra</button></div>
+        <div class="cart-drawer-footer"><div class="form-group"><label>Método de pago *</label>${searchableSelect.template({ id: 'counter-payment-method', placeholder: 'Seleccionar método', options: [] })}</div><div id="counter-payment-summary"></div><div class="cart-total"><span>Total final</span><strong id="counter-cart-total">$0</strong></div><button class="btn btn-primary" data-action="finish-counter-sale">Finalizar compra</button></div>
       </aside>
     </section>`;
   }
@@ -230,32 +230,16 @@ export class MostradorComponent {
   }
 
   refreshPaymentMethods() {
-    const select = document.getElementById('counter-payment-method');
-    if (!select) return;
-    const selected = select.value;
-    const options = [...(this.app.store.data.metodosPago || [])]
-      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
-      .map(method => `<option value="${escapeHtml(method.id)}">${escapeHtml(method.nombre)}</option>`)
-      .join('');
-    select.innerHTML = '<option value="">Seleccionar método</option>' + options;
-    if (selected && (this.app.store.data.metodosPago || []).some(method => method.id === selected)) select.value = selected;
+    const methods = [...(this.app.store.data.metodosPago || [])].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
+    searchableSelect.refresh('counter-payment-method', methods.map(method => ({ value: method.id, label: method.nombre })), 'Seleccionar método');
   }
 
   refreshFilters() {
     const data = this.app.store.data;
-    const tipoFilter = document.getElementById('filterMostradorTipo');
-    const proveedorFilter = document.getElementById('filterMostradorProveedor');
-    if (!tipoFilter || !proveedorFilter) return;
-
-    const selectedTipo = tipoFilter.value;
-    const selectedProveedor = proveedorFilter.value;
-    const tipos = [...(data.tipos || [])].sort(compareByName).map(tipo => `<option value="${escapeHtml(tipo.id)}">${escapeHtml(tipo.nombre)}</option>`).join('');
-    const proveedores = [...(data.proveedores || [])].sort(compareByName).map(proveedor => `<option value="${escapeHtml(proveedor.id)}">${escapeHtml(proveedor.nombre)}</option>`).join('');
-
-    tipoFilter.innerHTML = '<option value="">Todos los tipos</option>' + tipos;
-    proveedorFilter.innerHTML = '<option value="">Todos los proveedores</option><option value="sin-proveedor">Sin proveedor</option>' + proveedores;
-    if (selectedTipo) tipoFilter.value = selectedTipo;
-    if (selectedProveedor) proveedorFilter.value = selectedProveedor;
+    const tipos = [...(data.tipos || [])].sort(compareByName).map(tipo => ({ value: tipo.id, label: tipo.nombre }));
+    const proveedores = [...(data.proveedores || [])].sort(compareByName).map(proveedor => ({ value: proveedor.id, label: proveedor.nombre }));
+    searchableSelect.refresh('filterMostradorTipo', tipos, 'Todos los tipos');
+    searchableSelect.refresh('filterMostradorProveedor', [{ value: 'sin-proveedor', label: 'Sin proveedor' }, ...proveedores], 'Todos los proveedores');
   }
 
   render() {

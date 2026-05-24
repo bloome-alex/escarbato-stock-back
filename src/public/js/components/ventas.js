@@ -1,4 +1,4 @@
-import { escapeHtml, form } from '../ui.js';
+import { escapeHtml, form, searchableSelect } from '../ui.js';
 import { DEFAULT_PAGE_SIZE, getResponsivePageItems, loadingTemplate, paginationTemplate } from '../pagination.js?v=20260521-1';
 import { buildTicketDocumentHtml, normalizeTicketConfig, renderTicketHtml } from '../ticket.js';
 
@@ -31,18 +31,13 @@ export class VentasComponent {
   }
 
   refreshPaymentMethodFilter() {
-    const select = document.getElementById('filterVentaMetodoPago');
-    if (!select) return;
-
-    const selected = select.value;
     const methods = [...(this.app.store.data.metodosPago || [])].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
-    select.innerHTML = `<option value="">Todos los métodos</option>${methods.map(method => `<option value="${escapeHtml(method.id)}">${escapeHtml(method.nombre)}</option>`).join('')}`;
-    select.value = methods.some(method => method.id === selected) ? selected : '';
+    searchableSelect.refresh('filterVentaMetodoPago', methods.map(method => ({ value: method.id, label: method.nombre })), 'Todos los métodos');
   }
 
   template() {
     return `<section class="section" id="sec-ventas">
-      <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar venta por cliente, producto o método…" id="searchVenta"></div><select id="filterVentaMetodoPago" class="filter-control"><option value="">Todos los métodos</option></select><label class="filter-field"><span>Desde</span><input type="date" id="filterVentaDesde" class="filter-control"></label><label class="filter-field"><span>Hasta</span><input type="date" id="filterVentaHasta" class="filter-control"></label></div>
+      <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar venta por cliente, producto o método…" id="searchVenta"></div>${searchableSelect.template({ id: 'filterVentaMetodoPago', placeholder: 'Todos los métodos', options: [] })}<label class="filter-field"><span>Desde</span><input type="date" id="filterVentaDesde" class="filter-control"></label><label class="filter-field"><span>Hasta</span><input type="date" id="filterVentaHasta" class="filter-control"></label></div>
       <div class="table-wrap" id="wrap-ventas"><table class="data-table"><thead><tr><th>Fecha y hora</th><th>Cliente</th><th>Método de pago</th><th>Productos</th><th>Total calculado</th><th>Total final</th><th>Acciones</th></tr></thead><tbody id="tbl-ventas"></tbody></table><div id="empty-ventas" class="empty-state" style="display:none"><div class="empty-icon">🧾</div><p>Aún no hay ventas cargadas</p></div></div><div id="pager-ventas"></div>
     </section>`;
   }

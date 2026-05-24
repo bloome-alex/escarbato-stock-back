@@ -1,3 +1,5 @@
+import { searchableSelect } from '../ui.js';
+
 export class AdminPanelComponent {
   constructor(root) {
     this.root = root;
@@ -8,6 +10,7 @@ export class AdminPanelComponent {
   }
 
   async init() {
+    searchableSelect.bind();
     this.render();
     if (this.token) await this.loadEmpresas();
   }
@@ -31,7 +34,7 @@ export class AdminPanelComponent {
     <section class="card"><h2>${editing ? 'Editar empresa' : 'Nueva empresa'}</h2><div class="grid">
       ${this.input('name', 'Nombre', editing?.name)}${this.input('nameSlug', 'Subdominio slug', editing?.nameSlug)}${this.input('businessType', 'Tipo de negocio', editing?.businessType)}${this.input('assetsPath', 'assets/empresa', editing?.assetsPath)}${this.input('dbName', 'db_empresa', editing?.dbName, Boolean(editing))}${this.input('jwtSecret', editing ? 'JWT secret (nuevo o actual)' : 'JWT secret')}${this.input('authUsername', 'Usuario auth', editing?.authUsername)}${this.input('supervisorUsername', 'Usuario supervisor', editing?.supervisorUsername)}${editing ? '' : `${this.input('authPassword', 'Password auth', '', false, 'password')}${this.input('supervisorPassword', 'Password supervisor', '', false, 'password')}`}
     </div><p class="error" id="admin-error"></p><div class="actions"><button data-action="${editing ? 'update' : 'create'}">${editing ? 'Guardar cambios' : 'Crear empresa'}</button>${editing ? '<button class="secondary" data-action="cancel-edit">Cancelar</button>' : ''}</div></section>
-    <section class="card ${this.passwordEmpresaId ? '' : 'hidden'}"><h2>Cambiar contraseña</h2><div class="grid"><select id="password-role"><option value="auth">Auth</option><option value="supervisor">Supervisor</option></select><input id="password-value" type="password" placeholder="Nueva contraseña"></div><p class="muted">${this.escape(this.passwordEmpresaName())}</p><div class="actions"><button data-action="save-password">Actualizar contraseña</button><button class="secondary" data-action="cancel-password">Cancelar</button></div></section>`;
+    <section class="card ${this.passwordEmpresaId ? '' : 'hidden'}"><h2>Cambiar contraseña</h2><div class="grid">${searchableSelect.template({ id: 'password-role', placeholder: 'Rol', value: 'auth', options: [{ value: 'auth', label: 'Auth' }, { value: 'supervisor', label: 'Supervisor' }] })}<input id="password-value" type="password" placeholder="Nueva contraseña"></div><p class="muted">${this.escape(this.passwordEmpresaName())}</p><div class="actions"><button data-action="save-password">Actualizar contraseña</button><button class="secondary" data-action="cancel-password">Cancelar</button></div></section>`;
   }
 
   input(id, placeholder, value = '', disabled = false, type = 'text') {

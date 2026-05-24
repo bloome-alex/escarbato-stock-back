@@ -673,11 +673,21 @@
 
   /* ── SEARCH/FILTER BAR ── */
   .toolbar {
-    display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
   }
+  .toolbar > *:not(.search-box) { order: 1; }
   .search-box {
-    flex: 1; min-width: 180px;
+    order: 0;
+    flex: 999 1 420px;
+    min-width: min(100%, 280px);
     position: relative;
+  }
+  .toolbar--inline-filter .search-box {
+    flex: 999 1 360px;
   }
   .search-box input {
     width: 100%;
@@ -696,6 +706,120 @@
     position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
     font-size: 1rem; color: var(--text-soft); pointer-events: none;
   }
+  .searchable-select {
+    position: relative;
+    flex: 1 1 var(--searchable-select-width, 18ch);
+    width: min(100%, var(--searchable-select-width, 18ch));
+    min-width: min(100%, 160px);
+    max-width: 100%;
+  }
+  .searchable-select--quarter {
+    flex-basis: min(100%, var(--searchable-select-width, 18ch));
+  }
+  .form-group .searchable-select,
+  .filter-field .searchable-select,
+  .calendar-filters label .searchable-select,
+  .mobile-filter-card .searchable-select {
+    width: 100%;
+    min-width: 0;
+  }
+  .filter-field .searchable-select { min-width: 145px; }
+  .toolbar > .searchable-select {
+    flex: 0 1 clamp(170px, 18vw, 240px);
+    width: auto;
+  }
+  .toolbar > .searchable-select--quarter {
+    flex-basis: clamp(150px, 14vw, 200px);
+  }
+  .toolbar--inline-filter > .searchable-select {
+    order: 0;
+    flex: 0 0 fit-content;
+    width: var(--searchable-select-width, auto);
+    min-width: 145px;
+    max-width: min(260px, 42vw);
+  }
+  .searchable-select-input {
+    width: 100%;
+    padding: 10px 36px 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: 'Inter', sans-serif;
+    font-size: .9rem;
+    background: var(--card);
+    color: var(--text);
+    outline: none;
+  }
+  .searchable-select-input:focus {
+    border-color: var(--sage-dark);
+    box-shadow: 0 0 0 3px var(--focus-ring);
+  }
+  .searchable-select-input.is-placeholder { color: var(--text-soft); }
+  .searchable-select.is-open { z-index: 70; }
+  .searchable-select-arrow {
+    position: absolute;
+    right: 12px;
+    top: 0;
+    bottom: 0;
+    width: 18px;
+    display: grid;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-soft);
+    pointer-events: none;
+  }
+  .searchable-select-arrow-icon {
+    display: block;
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg);
+    transform-origin: center;
+    transition: transform .16s ease;
+  }
+  .searchable-select-arrow-icon.is-open { transform: rotate(225deg); }
+  .searchable-select-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    max-height: 280px;
+    overflow: auto;
+    padding: 6px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--card);
+    box-shadow: var(--shadow-lg);
+    display: grid;
+    gap: 4px;
+    z-index: 90;
+  }
+  .searchable-select-menu[hidden] { display: none; }
+  .searchable-select-option {
+    width: 100%;
+    padding: 10px 12px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: .88rem;
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+  }
+  .searchable-select-option:hover,
+  .searchable-select-option:focus {
+    outline: none;
+    background: var(--cream);
+  }
+  .searchable-select-option.is-empty { color: var(--text-soft); }
+  .searchable-select-empty {
+    padding: 10px 12px;
+    color: var(--text-soft);
+    font-size: .86rem;
+    font-weight: 700;
+  }
   .filter-control {
     min-width: 160px;
     padding: 10px 14px;
@@ -707,6 +831,10 @@
     color: var(--text);
     outline: none;
   }
+  .searchable-select .filter-control {
+    min-width: 0;
+  }
+  .filter-control.searchable-select-input { padding-right: 36px; }
   .filter-control:focus {
     border-color: var(--sage-dark);
     box-shadow: 0 0 0 3px var(--focus-ring);
@@ -720,6 +848,18 @@
     font-weight: 800;
     letter-spacing: .04em;
     text-transform: uppercase;
+  }
+  .toolbar > .filter-field {
+    flex: 0 1 clamp(155px, 16vw, 205px);
+  }
+  .toolbar > .filter-field .filter-control {
+    width: 100%;
+    min-width: 0;
+  }
+  .toolbar > .btn {
+    order: 1;
+    flex: 0 0 auto;
+    align-self: flex-end;
   }
   .filter-field .filter-control { min-width: 145px; }
 
@@ -1644,11 +1784,27 @@
     .search-box { min-width: 0; }
     .search-box input,
     .filter-control,
+    .searchable-select-input,
     .filter-field .filter-control {
       min-width: 0;
       width: 100%;
       min-height: 46px;
       font-size: 16px;
+    }
+    .searchable-select { min-width: 0; width: 100%; }
+    .searchable-select--quarter { max-width: none; flex: 1 1 100%; width: 100%; }
+    .toolbar--inline-filter .search-box {
+      flex: none;
+    }
+    .toolbar > .searchable-select,
+    .toolbar > .filter-field,
+    .toolbar > .btn {
+      width: 100%;
+      max-width: none;
+    }
+    .toolbar > .btn {
+      justify-content: center;
+      align-self: stretch;
     }
     .filter-field {
       display: grid;
@@ -2053,6 +2209,8 @@
   .calendar-filters label {
     display: grid;
     gap: 5px;
+    flex: 1 1 180px;
+    min-width: 0;
     color: var(--text-soft);
     font-size: .78rem;
     font-weight: 800;
