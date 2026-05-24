@@ -6,18 +6,6 @@ Corregir los riesgos detectados en la revision del refactor multi-empresa, prior
 
 ## Prioridad Media
 
-### 7. Falta de rate limiting en login
-
-**Problema:** login admin y login tenant no tienen proteccion contra brute force.
-
-**Solucion tecnica:**
-
-- Agregar rate limiting por IP y por usuario/subdominio.
-- Definir limites separados para `/api/admin/login` y `/api/auth/login`.
-- Usar ventanas cortas con bloqueo temporal progresivo.
-- Registrar intentos fallidos admin en auditoria admin.
-- Asegurar que errores de login no permitan enumerar usuarios.
-- Si hay proxy, usar la IP canonica definida por la configuracion segura de `trust proxy`.
 
 ### 8. Auditoria tenant mutable por API generica
 

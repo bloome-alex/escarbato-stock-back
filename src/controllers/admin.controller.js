@@ -1,7 +1,8 @@
 export class AdminController {
-  constructor(adminAuthService, empresaService) {
+  constructor(adminAuthService, empresaService, auditoriaService) {
     this.adminAuthService = adminAuthService;
     this.empresaService = empresaService;
+    this.auditoriaService = auditoriaService;
     this.login = this.login.bind(this);
     this.listEmpresas = this.listEmpresas.bind(this);
     this.getEmpresa = this.getEmpresa.bind(this);
@@ -11,10 +12,33 @@ export class AdminController {
     this.updateEmpresaPassword = this.updateEmpresaPassword.bind(this);
   }
 
-  login(req, res) {
-    const result = this.adminAuthService.login(req.body?.username, req.body?.password);
-    if (!result) return res.status(401).json({ error: 'Usuario o contraseña inválidos' });
-    res.json(result);
+  async login(req, res, next) {
+    try {
+      const result = this.adminAuthService.login(req.body?.username, req.body?.password);
+      if (!result) {
+        req.loginRateLimit?.failure();
+        await this.recordFailedAdminLogin(req);
+        return res.status(401).json({ error: 'Usuario o contraseña inválidos' });
+      }
+      req.loginRateLimit?.success();
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async recordFailedAdminLogin(req) {
+    const username = String(req.body?.username || '').trim() || 'usuario vacío';
+    try {
+      await this.auditoriaService.admin('Autenticación fallida', 'Admin', `Login fallido desde ${this.getClientIp(req)} para ${username}`, username);
+    } catch {
+      // La auditoría no debe cambiar la semántica de autenticación.
+    }
+  }
+
+  getClientIp(req) {
+    const ip = String(req.ip || req.socket?.remoteAddress || '').replace(/^::ffff:/, '');
+    return ip === '::1' ? '127.0.0.1' : ip;
   }
 
   async listEmpresas(req, res, next) {

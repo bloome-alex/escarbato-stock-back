@@ -2,6 +2,7 @@ export class ApiRoutes {
   constructor(app, dependencies) {
     this.app = app;
     this.authMiddleware = dependencies.authMiddleware;
+    this.loginRateLimitMiddleware = dependencies.loginRateLimitMiddleware;
     this.authController = dependencies.authController;
     this.systemController = dependencies.systemController;
     this.dashboardController = dependencies.dashboardController;
@@ -13,7 +14,7 @@ export class ApiRoutes {
   register() {
     this.app.get('/api/health', this.systemController.health);
     this.app.get('/api/config', this.systemController.configResponse);
-    this.app.post('/api/auth/login', this.authController.login);
+    this.app.post('/api/auth/login', this.loginRateLimitMiddleware.checkTenant, this.authController.login);
 
     this.app.use('/api', this.authMiddleware.requireAuth);
     this.app.get('/api/auth/users', this.authController.listUsers);

@@ -2,11 +2,12 @@ export class AdminRoutes {
   constructor(app, dependencies) {
     this.app = app;
     this.adminMiddleware = dependencies.adminMiddleware;
+    this.loginRateLimitMiddleware = dependencies.loginRateLimitMiddleware;
     this.adminController = dependencies.adminController;
   }
 
   register() {
-    this.app.post('/api/admin/login', this.adminMiddleware.requireAdminIp, this.adminController.login);
+    this.app.post('/api/admin/login', this.adminMiddleware.requireAdminIp, this.loginRateLimitMiddleware.checkAdmin, this.adminController.login);
     this.app.use('/api/admin', this.adminMiddleware.requireAdmin);
     this.app.get('/api/admin/empresas', this.adminController.listEmpresas);
     this.app.get('/api/admin/empresas/:id', this.adminController.getEmpresa);

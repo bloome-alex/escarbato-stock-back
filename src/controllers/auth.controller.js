@@ -12,13 +12,15 @@ export class AuthController {
 
   async login(req, res, next) {
     try {
-      if (!req.empresa) return res.status(404).json({ error: 'Empresa no encontrada' });
+      if (!req.empresa) return res.status(401).json({ error: 'Usuario o contraseña inválidos' });
       const { username, password } = req.body || {};
       const user = await this.authService.authenticate(username, password);
       if (!user) {
+        req.loginRateLimit?.failure();
         return res.status(401).json({ error: 'Usuario o contraseña inválidos' });
       }
 
+      req.loginRateLimit?.success();
       const token = jwt.sign(
         { id: user.id, username: user.username, role: user.role, empresaId: req.empresa?.id, tokenVersion: user.tokenVersion ?? 0 },
         req.empresa.jwtSecret,

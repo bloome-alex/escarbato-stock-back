@@ -13,6 +13,7 @@ import { ErrorHandler } from '../middleware/error-handler.js';
 import { AdminMiddleware } from '../middleware/admin-middleware.js';
 import { AuthMiddleware } from '../middleware/auth-middleware.js';
 import { ProxyHeaderMiddleware } from '../middleware/proxy-header-middleware.js';
+import { LoginRateLimitMiddleware } from '../middleware/login-rate-limit-middleware.js';
 import { SubdomainMiddleware } from '../middleware/subdomain-middleware.js';
 import { AdminRoutes } from '../routes/admin.routes.js';
 import { ApiRoutes } from '../routes/api.routes.js';
@@ -44,6 +45,7 @@ export class ServerApplication {
     const adminConfig = new AdminConfig(this.config);
     const adminMiddleware = new AdminMiddleware(adminConfig);
     const proxyHeaderMiddleware = new ProxyHeaderMiddleware(this.config);
+    const loginRateLimitMiddleware = new LoginRateLimitMiddleware(this.config.loginRateLimits);
     const auditoriaService = new AuditoriaService();
     const dataStoreService = new DataStoreService(modelRegistry);
     this.realtimeService = new RealtimeService(this.config, authMiddleware, this.connectionManager);
@@ -59,11 +61,13 @@ export class ServerApplication {
 
     new AdminRoutes(this.app, {
       adminMiddleware,
-      adminController: new AdminController(new AdminAuthService(adminConfig), new EmpresaService(this.connectionManager, auditoriaService))
+      loginRateLimitMiddleware,
+      adminController: new AdminController(new AdminAuthService(adminConfig), new EmpresaService(this.connectionManager, auditoriaService), auditoriaService)
     }).register();
 
     new ApiRoutes(this.app, {
       authMiddleware,
+      loginRateLimitMiddleware,
       authController: new AuthController(this.config, authMiddleware, authService),
       systemController: new SystemController(this.config),
       dashboardController: new DashboardController(new DashboardService(modelRegistry)),

@@ -29,9 +29,7 @@ export class AdminMiddleware {
   }
 
   getClientIp(req) {
-    const forwarded = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
-    const realIp = String(req.headers['x-real-ip'] || '').trim();
-    const ip = (forwarded || realIp || req.ip || req.socket.remoteAddress || '').replace(/^::ffff:/, '');
+    const ip = String(req.ip || req.socket.remoteAddress || '').replace(/^::ffff:/, '');
     return ip === '::1' ? '127.0.0.1' : ip;
   }
 }

@@ -17,11 +17,15 @@ export class SubdomainMiddleware {
         }
         if (!slug) {
           if (req.path === '/health') return next();
+          if (req.path === '/auth/login') return res.status(401).json({ error: 'Usuario o contraseña inválidos' });
           return res.status(404).json({ error: 'Empresa no encontrada' });
         }
 
         const empresa = await Empresa.findOne({ nameSlug: slug, isActive: true }).lean();
-        if (!empresa) return res.status(404).json({ error: 'Empresa no encontrada' });
+        if (!empresa) {
+          if (req.path === '/auth/login') return res.status(401).json({ error: 'Usuario o contraseña inválidos' });
+          return res.status(404).json({ error: 'Empresa no encontrada' });
+        }
 
         const tenant = this.fromEmpresa(empresa);
         req.empresa = tenant;
