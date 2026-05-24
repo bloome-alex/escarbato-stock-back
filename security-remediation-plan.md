@@ -6,18 +6,6 @@ Corregir los riesgos detectados en la revision del refactor multi-empresa, prior
 
 ## Prioridad Media
 
-### 6. Token cross-tenant si se comparte `jwtSecret`
-
-**Problema:** el middleware valida firma con `req.empresa.jwtSecret`, pero no verifica que `payload.empresaId` coincida con la empresa resuelta por subdominio. Si dos tenants comparten secreto y credenciales equivalentes, podria haber uso cruzado de token.
-
-**Solucion tecnica:**
-
-- Validar obligatoriamente `payload.empresaId === req.empresa.id`.
-- Validar tambien `payload.role` contra roles permitidos.
-- Rechazar tokens sin `empresaId`.
-- Impedir desde admin que dos empresas tengan el mismo `jwtSecret`, o generar secretos automaticamente para evitar reutilizacion.
-- Agregar prueba con dos tenants y secretos iguales/distintos para confirmar aislamiento.
-
 ### 7. Falta de rate limiting en login
 
 **Problema:** login admin y login tenant no tienen proteccion contra brute force.

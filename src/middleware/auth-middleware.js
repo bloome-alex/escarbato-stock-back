@@ -1,5 +1,7 @@
 import jwt from 'jsonwebtoken';
 
+const ALLOWED_ROLES = ['auth', 'supervisor'];
+
 export class AuthMiddleware {
   constructor(config, authService) {
     this.config = config;
@@ -14,8 +16,12 @@ export class AuthMiddleware {
 
     try {
       const payload = jwt.verify(token, req.empresa.jwtSecret);
+      if (!payload.empresaId || String(payload.empresaId) !== String(req.empresa.id) || !ALLOWED_ROLES.includes(payload.role)) {
+        return res.status(401).json({ error: 'Token inválido' });
+      }
+
       const user = await this.authService.getValidUser(payload.id, payload.tokenVersion);
-      if (!user) {
+      if (!user || user.role !== payload.role) {
         return res.status(401).json({ error: 'Token inválido' });
       }
       req.user = { id: user.id, username: user.username, role: user.role, empresaId: req.empresa?.id, tokenVersion: user.tokenVersion ?? 0 };

@@ -91,10 +91,10 @@ export class EmpresaService {
   }
 
   async assertUniqueEmpresa(payload, excludeId = null) {
-    const query = { $or: [{ dbName: payload.dbName }, { nameSlug: payload.nameSlug }] };
+    const query = { $or: [{ dbName: payload.dbName }, { nameSlug: payload.nameSlug }, { jwtSecret: payload.jwtSecret }] };
     if (excludeId) query._id = { $ne: excludeId };
     const duplicate = await Empresa.findOne(query).lean();
-    if (duplicate) throw new HttpError('Ya existe una empresa con ese nombre o base de datos');
+    if (duplicate) throw new HttpError('Ya existe una empresa con ese nombre, base de datos o secreto JWT');
   }
 
   async initializeTenantUsers(empresa) {

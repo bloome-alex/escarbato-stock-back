@@ -4,6 +4,7 @@ import { Empresa } from '../models/empresa.js';
 
 const HEARTBEAT_INTERVAL_MS = 3000;
 const WS_HEARTBEAT_INTERVAL_MS = 30000;
+const ALLOWED_ROLES = ['auth', 'supervisor'];
 
 export class RealtimeService {
   constructor(config, authMiddleware, connectionManager) {
@@ -76,9 +77,11 @@ export class RealtimeService {
       const tenant = await this.getTenant(req);
       if (!tenant) return false;
       const payload = jwt.verify(token, tenant.jwtSecret);
+      if (!payload.empresaId || String(payload.empresaId) !== String(tenant.id) || !ALLOWED_ROLES.includes(payload.role)) return false;
+
       return this.connectionManager.runWithTenant(tenant, async () => {
         const user = await this.authMiddleware.authService.getValidUser(payload.id, payload.tokenVersion);
-        return user ? tenant : false;
+        return user?.role === payload.role ? tenant : false;
       });
     } catch {
       return false;
