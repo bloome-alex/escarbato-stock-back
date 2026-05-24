@@ -7,12 +7,55 @@ export class AppConfig {
     this.mongoDbAdminName = env.MONGODB_DB_ADMIN_NAME || 'admin';
     this.jwtExpiresIn = '12h';
     this.corsOrigin = '*';
-    this.adminUsername = env.ADMIN_USERNAME || 'admin';
-    this.adminPassword = env.ADMIN_PASSWORD || 'admin123';
+    this.adminUsername = this.requiredEnv(env, 'ADMIN_USERNAME');
+    this.adminPassword = this.optionalEnv(env, 'ADMIN_PASSWORD');
+    this.adminPasswordHash = this.optionalEnv(env, 'ADMIN_PASSWORD_HASH');
+    this.validateAdminCredentials();
     this.adminDomain = env.ADMIN_DOMAIN || '127.0.0.1';
     this.trustedProxyIps = this.envList(env.TRUSTED_PROXY_IPS);
     this.publicDir = path.join(process.cwd(), 'src/public');
     this.sections = this.getSectionConfig(env);
+  }
+
+  optionalEnv(env, name) {
+    const value = env[name];
+    if (value === undefined || String(value).trim() === '') return '';
+    return String(value);
+  }
+
+  requiredEnv(env, name) {
+    const value = this.optionalEnv(env, name);
+    if (!value) throw new Error(`${name} es obligatorio`);
+    return value;
+  }
+
+  validateAdminCredentials() {
+    if (!this.adminPassword && !this.adminPasswordHash) {
+      throw new Error('ADMIN_PASSWORD o ADMIN_PASSWORD_HASH es obligatorio');
+    }
+
+    if (this.adminPassword && this.adminPasswordHash) {
+      throw new Error('Configurar solo ADMIN_PASSWORD o ADMIN_PASSWORD_HASH, no ambos');
+    }
+
+    if (this.adminPasswordHash) {
+      if (/^[a-f0-9]{64}$/i.test(this.adminPasswordHash)) throw new Error('ADMIN_PASSWORD_HASH no puede usar hash SHA-256 legado');
+      if (!/^\$scrypt\$v=1\$/.test(this.adminPasswordHash)) throw new Error('ADMIN_PASSWORD_HASH debe usar formato scrypt soportado');
+      return;
+    }
+
+    const username = this.adminUsername.trim().toLowerCase();
+    const password = this.adminPassword;
+    const normalizedPassword = password.trim().toLowerCase();
+    const unsafePasswords = new Set(['admin', 'admin123', 'password', 'password123', '123456', '12345678', 'changeme', 'changeit']);
+
+    if (username === 'admin' && normalizedPassword === 'admin123') throw new Error('Credenciales admin por defecto no permitidas');
+    if (unsafePasswords.has(normalizedPassword)) throw new Error('ADMIN_PASSWORD usa un valor inseguro conocido');
+    if (password.length < 12) throw new Error('ADMIN_PASSWORD debe tener al menos 12 caracteres');
+
+    const classes = [/[a-z]/.test(password), /[A-Z]/.test(password), /\d/.test(password), /[^A-Za-z0-9]/.test(password)].filter(Boolean).length;
+    if (classes < 3) throw new Error('ADMIN_PASSWORD debe combinar al menos 3 tipos de caracteres');
+    if (password.toLowerCase().includes(username) || username.includes(normalizedPassword)) throw new Error('ADMIN_PASSWORD no debe contener ADMIN_USERNAME');
   }
 
   normalizeAssetsPath(value) {

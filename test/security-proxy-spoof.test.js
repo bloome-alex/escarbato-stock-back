@@ -4,6 +4,8 @@ import { ServerApplication } from '../src/app/server-application.js';
 import { AppConfig } from '../src/config/app-config.js';
 
 const config = new AppConfig({
+  ADMIN_USERNAME: 'admin-operator',
+  ADMIN_PASSWORD: 'Str0ng-passphrase!',
   ADMIN_DOMAIN: '203.0.113.10',
   TRUSTED_PROXY_IPS: ''
 });

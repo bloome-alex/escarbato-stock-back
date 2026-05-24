@@ -4,18 +4,6 @@
 
 Corregir los riesgos detectados en la revision del refactor multi-empresa, priorizando vulnerabilidades explotables, aislamiento tenant, integridad de datos y endurecimiento operativo.
 
-### 5. Credenciales admin por defecto
-
-**Problema:** si no se configuran envs, el admin queda con `admin/admin123`.
-
-**Solucion tecnica:**
-
-- Hacer obligatorias `ADMIN_USERNAME` y `ADMIN_PASSWORD` en arranque.
-- Fallar el proceso si faltan o si coinciden con valores inseguros conocidos.
-- Exigir longitud minima y complejidad razonable para `ADMIN_PASSWORD`.
-- Documentar configuracion requerida en `.env.example` sin dejar password real reutilizable.
-- Opcionalmente aceptar un hash de password admin en vez de password plano en env.
-
 ## Prioridad Media
 
 ### 6. Token cross-tenant si se comparte `jwtSecret`
