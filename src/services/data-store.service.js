@@ -7,6 +7,7 @@ export class DataStoreService {
     this.searchableFields = {
       proveedores: ['nombre', 'contacto', 'email', 'telefono'],
       tipos: ['nombre', 'desc'],
+      gruposProductos: ['nombre', 'desc'],
       productos: ['nombre', 'desc'],
       metodosPago: ['nombre'],
       stock: ['id'],
@@ -157,7 +158,7 @@ export class DataStoreService {
       query.$or = this.searchableFields[store].map(field => ({ [field]: regex }));
     }
 
-    ['tipoId', 'proveedorId', 'id'].forEach(field => {
+    ['tipoId', 'grupoProductoId', 'proveedorId', 'id'].forEach(field => {
       if (queryParams[field]) query[field] = queryParams[field];
     });
 
@@ -190,6 +191,7 @@ export class DataStoreService {
 
     if (store === 'proveedores') return 'Ya existe un proveedor con ese nombre';
     if (store === 'tipos') return 'Ya existe un tipo de producto con ese nombre';
+    if (store === 'gruposProductos') return 'Ya existe un grupo de productos con ese nombre';
     if (store === 'metodosPago') return 'Ya existe un método de pago con ese nombre';
     if (store === 'peluqueriaTiposPerro') return 'Ya existe un tipo de perro con ese nombre';
     if (store === 'peluqueriaServicios') return 'Ya existe un servicio de peluquería con ese nombre';
@@ -198,7 +200,7 @@ export class DataStoreService {
   }
 
   async validateUniqueName(store, payload) {
-    if (!['proveedores', 'tipos', 'productos', 'metodosPago', 'peluqueriaTiposPerro', 'peluqueriaServicios'].includes(store)) return;
+    if (!['proveedores', 'tipos', 'gruposProductos', 'productos', 'metodosPago', 'peluqueriaTiposPerro', 'peluqueriaServicios'].includes(store)) return;
 
     const nombre = String(payload.nombre || '').trim();
     if (!nombre) return;
@@ -225,6 +227,7 @@ export class DataStoreService {
   buildUpdatePayload(store, payload) {
     const serverPayload = { ...payload };
     if (store === 'productos') {
+      serverPayload.grupoProductoId = String(serverPayload.grupoProductoId || '').trim();
       serverPayload.updatedAt = new Date();
       return serverPayload;
     }

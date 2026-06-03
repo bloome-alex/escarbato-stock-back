@@ -1,5 +1,6 @@
 export { Proveedor } from './proveedor.js';
 export { Tipo } from './tipo.js';
+export { GrupoProducto } from './grupo-producto.js';
 export { Producto } from './producto.js';
 export { Stock } from './stock.js';
 export { Venta } from './venta.js';

@@ -1,10 +1,11 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import mongoose from 'mongoose';
-import { Auditoria, Caja, MetodoPago, PeluqueriaHorario, PeluqueriaServicio, PeluqueriaTipoPerro, PeluqueriaTurno, Producto, Proveedor, Stock, TicketConfig, Tipo, Usuario, Venta } from '../models/index.js';
+import { Auditoria, Caja, GrupoProducto, MetodoPago, PeluqueriaHorario, PeluqueriaServicio, PeluqueriaTipoPerro, PeluqueriaTurno, Producto, Proveedor, Stock, TicketConfig, Tipo, Usuario, Venta } from '../models/index.js';
 
 const TENANT_MODEL_BY_STORE = {
   proveedores: Proveedor,
   tipos: Tipo,
+  gruposProductos: GrupoProducto,
   productos: Producto,
   metodosPago: MetodoPago,
   stock: Stock,

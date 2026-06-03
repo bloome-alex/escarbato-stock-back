@@ -6,9 +6,10 @@ export class BootstrapDataService {
   }
 
   async getData() {
-    const [Proveedor, Tipo, Producto, MetodoPago, Stock, Venta, Caja, PeluqueriaTipoPerro, PeluqueriaServicio, PeluqueriaTurno, PeluqueriaHorario, TicketConfig, Auditoria] = await Promise.all([
+    const [Proveedor, Tipo, GrupoProducto, Producto, MetodoPago, Stock, Venta, Caja, PeluqueriaTipoPerro, PeluqueriaServicio, PeluqueriaTurno, PeluqueriaHorario, TicketConfig, Auditoria] = await Promise.all([
       this.modelRegistry.getActive('proveedores'),
       this.modelRegistry.getActive('tipos'),
+      this.modelRegistry.getActive('gruposProductos'),
       this.modelRegistry.getActive('productos'),
       this.modelRegistry.getActive('metodosPago'),
       this.modelRegistry.getActive('stock'),
@@ -21,9 +22,10 @@ export class BootstrapDataService {
       this.modelRegistry.getActive('ticketConfig'),
       this.modelRegistry.getActive('auditoria')
     ]);
-    const [proveedores, tipos, productos, metodosPago, stockRecords, ventas, cajas, peluqueriaTiposPerro, peluqueriaServicios, peluqueriaTurnos, peluqueriaHorarios, ticketConfig, auditoria] = await Promise.all([
+    const [proveedores, tipos, gruposProductos, productos, metodosPago, stockRecords, ventas, cajas, peluqueriaTiposPerro, peluqueriaServicios, peluqueriaTurnos, peluqueriaHorarios, ticketConfig, auditoria] = await Promise.all([
       Proveedor.find().lean(),
       Tipo.find().lean(),
+      GrupoProducto.find().lean(),
       Producto.find().lean(),
       MetodoPago.find().lean(),
       Stock.find().lean(),
@@ -45,6 +47,7 @@ export class BootstrapDataService {
     return {
       proveedores: Sanitizer.list(proveedores),
       tipos: Sanitizer.list(tipos),
+      gruposProductos: Sanitizer.list(gruposProductos),
       productos: Sanitizer.list(productos),
       metodosPago: Sanitizer.list(metodosPago),
       stock,

@@ -4,6 +4,7 @@ import { ModalManager, NavigationManager, ThemeManager, ToastManager, searchable
 import { DashboardComponent } from './components/dashboard.js';
 import { ProveedoresComponent } from './components/proveedores.js';
 import { TiposComponent } from './components/tipos.js';
+import { GruposProductosComponent } from './components/grupos-productos.js';
 import { ProductosComponent } from './components/productos.js';
 import { StockComponent } from './components/stock.js';
 import { VentasComponent } from './components/ventas.js';
@@ -30,11 +31,12 @@ class PetshopApp {
     this.isOffline = false;
     this.connectionStatusTimer = null;
     this.onWindowScroll = () => this.handleMobileListScroll();
-    this.sectionOrder = ['dashboard', 'proveedores', 'tipos', 'productos', 'stock', 'metodosPago', 'cajas', 'ventas', 'mostrador', 'peluqueria', 'ticketConfig', 'usuarios'];
+    this.sectionOrder = ['dashboard', 'proveedores', 'tipos', 'gruposProductos', 'productos', 'stock', 'metodosPago', 'cajas', 'ventas', 'mostrador', 'peluqueria', 'ticketConfig', 'usuarios'];
     this.sectionMenu = {
       dashboard: { group: 'Principal', icon: '🏠', label: 'Panel' },
       proveedores: { group: 'Gestión', icon: '🚚', label: 'Proveedores' },
       tipos: { group: 'Gestión', icon: '🏷️', label: 'Tipos de Producto' },
+      gruposProductos: { group: 'Gestión', icon: '🧩', label: 'Grupos de productos' },
       productos: { group: 'Gestión', icon: '📦', label: 'Productos' },
       metodosPago: { group: 'Gestión', icon: '💳', label: 'Metodos de pago' },
       cajas: { group: 'Gestión', icon: '💵', label: 'Cajas' },
@@ -51,6 +53,7 @@ class PetshopApp {
       dashboard: new DashboardComponent(this),
       proveedores: new ProveedoresComponent(this),
       tipos: new TiposComponent(this),
+      gruposProductos: new GruposProductosComponent(this),
       productos: new ProductosComponent(this),
       metodosPago: new MetodosPagoComponent(this),
       cajas: new CajasComponent(this),
@@ -157,6 +160,7 @@ class PetshopApp {
     this.components.dashboard.data = null;
     if (this.isSectionEnabled('productos')) {
       this.components.productos.refreshTipoSelects();
+      this.components.productos.refreshGrupoSelects();
       this.components.productos.refreshProveedorSelects();
     }
     this.dataReady = true;
@@ -230,6 +234,7 @@ class PetshopApp {
     const modalTemplates = [
       this.isSectionEnabled('proveedores') ? this.components.proveedores.modalTemplate() : '',
       this.isSectionEnabled('tipos') ? this.components.tipos.modalTemplate() : '',
+      this.isSectionEnabled('gruposProductos') ? this.components.gruposProductos.modalTemplate() : '',
       this.isSectionEnabled('productos') ? this.components.productos.modalTemplate() : '',
       this.isSectionEnabled('metodosPago') ? this.components.metodosPago.modalTemplate() : '',
       this.isSectionEnabled('stock') ? this.components.stock.modalTemplate() : '',
@@ -275,7 +280,13 @@ class PetshopApp {
       if (action === 'save-tipo') return this.runButtonAction(actionButton, () => this.components.tipos.save(), 'Guardando');
       if (action === 'view-tipo') this.components.tipos.view(id);
       if (action === 'edit-tipo') this.components.tipos.edit(id);
+      if (action === 'new-grupo-producto') return this.components.gruposProductos.openNew();
+      if (action === 'save-grupo-producto') return this.runButtonAction(actionButton, () => this.components.gruposProductos.save(), 'Guardando');
+      if (action === 'view-grupo-producto') this.components.gruposProductos.view(id);
+      if (action === 'edit-grupo-producto') this.components.gruposProductos.edit(id);
       if (action === 'new-producto') return this.components.productos.openNew();
+      if (action === 'bulk-increase-productos') return this.components.productos.openBulkIncrease();
+      if (action === 'apply-bulk-increase-productos') return this.runButtonAction(actionButton, () => this.components.productos.applyBulkIncrease(), 'Aumentando');
       if (action === 'save-producto') return this.runButtonAction(actionButton, () => this.components.productos.save(), 'Guardando');
       if (action === 'download-productos-pdf') return this.runButtonAction(actionButton, () => this.components.productos.downloadProviderProductsPdf(), 'Descargando');
       if (action === 'download-productos-xlsx') return this.runButtonAction(actionButton, () => this.components.productos.downloadProviderProductsXlsx(), 'Descargando');
@@ -489,6 +500,16 @@ class PetshopApp {
       if (this.isSectionEnabled('productos')) this.components.productos.refreshTipoSelects();
     }
 
+    if (entity === 'grupo-producto') {
+      const deleted = data.gruposProductos.find(item => item.id === id);
+      await this.store.delete('gruposProductos', id);
+      data.gruposProductos = data.gruposProductos.filter(item => item.id !== id);
+      await this.audit('Eliminación', 'Grupos de productos', deleted ? deleted.nombre : 'Grupo eliminado');
+      this.modals.close('confirm');
+      this.components.gruposProductos.renderList();
+      if (this.isSectionEnabled('productos')) this.components.productos.refreshGrupoSelects();
+    }
+
     if (entity === 'prod') {
       const deleted = data.productos.find(item => item.id === id);
       await this.store.delete('productos', id);
@@ -582,6 +603,7 @@ class PetshopApp {
       this.components.dashboard.data = null;
       if (this.isSectionEnabled('productos')) {
         this.components.productos.refreshTipoSelects();
+        this.components.productos.refreshGrupoSelects();
         this.components.productos.refreshProveedorSelects();
       }
 
@@ -691,10 +713,11 @@ class PetshopApp {
   shouldRealtimeRender(section, changedStores) {
     if (!changedStores.size) return true;
     const dependencies = {
-      dashboard: ['proveedores', 'tipos', 'productos', 'stock', 'ventas', 'cajas', 'auditoria'],
+      dashboard: ['proveedores', 'tipos', 'gruposProductos', 'productos', 'stock', 'ventas', 'cajas', 'auditoria'],
       proveedores: ['proveedores', 'productos'],
       tipos: ['tipos', 'productos'],
-      productos: ['productos', 'stock', 'tipos', 'proveedores', 'ventas'],
+      gruposProductos: ['gruposProductos', 'productos'],
+      productos: ['productos', 'stock', 'tipos', 'gruposProductos', 'proveedores', 'ventas'],
       metodosPago: ['metodosPago'],
       cajas: ['cajas', 'ventas', 'metodosPago'],
       ventas: ['ventas', 'metodosPago'],

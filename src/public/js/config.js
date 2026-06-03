@@ -2,6 +2,7 @@ const defaultSections = {
   dashboard: true,
   proveedores: true,
   tipos: true,
+  gruposProductos: true,
   productos: true,
   metodosPago: true,
   cajas: true,

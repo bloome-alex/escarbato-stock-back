@@ -81,6 +81,7 @@ export class AppConfig {
       dashboard: this.envFlag(env, 'APP_SECTION_DASHBOARD_ENABLED'),
       proveedores: this.envFlag(env, 'APP_SECTION_PROVEEDORES_ENABLED'),
       tipos: this.envFlag(env, 'APP_SECTION_TIPOS_ENABLED'),
+      gruposProductos: this.envFlag(env, 'APP_SECTION_GRUPOS_PRODUCTOS_ENABLED'),
       productos: this.envFlag(env, 'APP_SECTION_PRODUCTOS_ENABLED'),
       metodosPago: this.envFlag(env, 'APP_SECTION_METODOS_PAGO_ENABLED'),
       cajas: this.envFlag(env, 'APP_SECTION_CAJAS_ENABLED'),
