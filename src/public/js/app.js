@@ -286,6 +286,8 @@ class PetshopApp {
       if (action === 'view-metodo-pago') this.components.metodosPago.view(id);
       if (action === 'edit-metodo-pago') this.components.metodosPago.edit(id);
       if (action === 'view-venta') this.components.ventas.view(id);
+      if (action === 'open-stock-adjust') return this.components.stock.openAdjust(id, actionButton.dataset.type);
+      if (action === 'save-stock-adjust') return this.runButtonAction(actionButton, () => this.components.stock.saveAdjust(), 'Guardando');
       if (action === 'open-caja') return this.runButtonAction(actionButton, () => this.components.cajas.open(), 'Abriendo');
       if (action === 'close-caja') return this.runButtonAction(actionButton, () => this.components.cajas.close(id), 'Cerrando');
       if (action === 'view-caja') this.components.cajas.view(id);

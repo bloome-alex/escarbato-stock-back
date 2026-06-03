@@ -16,12 +16,12 @@ export class StockComponent {
   template() {
     return `<section class="section" id="sec-stock">
       <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar producto en stock…" id="searchStock"></div>${searchableSelect.template({ id: 'filterStockTipo', placeholder: 'Todos los tipos', options: [] })}${searchableSelect.template({ id: 'filterStockProveedor', placeholder: 'Todos los proveedores', options: [] })}${searchableSelect.template({ id: 'filterStockStatus', placeholder: 'Todos', options: [{ value: 'ok', label: 'Disponible' }, { value: 'low', label: 'Stock bajo' }, { value: 'out', label: 'Sin stock' }] })}</div>
-      <div class="table-wrap" id="stock-list"><table class="data-table"><thead><tr><th>Producto</th><th>Tipo de producto</th><th>Proveedor</th><th>Mínimo</th><th>Stock</th><th>Estado</th></tr></thead><tbody id="tbl-stock"></tbody></table></div><div id="empty-stock" class="empty-state" style="display:none"><div class="empty-icon">📊</div><p>Agregá productos para gestionar el stock</p></div><div id="pager-stock"></div>
+      <div class="table-wrap" id="stock-list"><table class="data-table"><thead><tr><th>Producto</th><th>Tipo de producto</th><th>Proveedor</th><th>Mínimo</th><th>Stock</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="tbl-stock"></tbody></table></div><div id="empty-stock" class="empty-state" style="display:none"><div class="empty-icon">📊</div><p>Agregá productos para gestionar el stock</p></div><div id="pager-stock"></div>
     </section>`;
   }
 
   modalTemplate() {
-    return '';
+    return `<div class="modal-overlay" id="modal-stock-adjust"><div class="modal" style="max-width:420px"><div class="modal-title"><span id="stock-adjust-title">Ajustar stock</span><button class="modal-close" data-close-modal="stock-adjust">✕</button></div><input type="hidden" id="stock-adjust-id"><input type="hidden" id="stock-adjust-type"><div class="form-group"><label>Producto</label><input type="text" id="stock-adjust-product" readonly></div><div class="form-row"><div class="form-group"><label>Stock actual</label><input type="number" id="stock-adjust-current" readonly></div><div class="form-group"><label>Cantidad *</label><input type="number" id="stock-adjust-amount" min="0" step="any" placeholder="0"></div></div><div class="modal-actions"><button class="btn btn-ghost" data-close-modal="stock-adjust">Cancelar</button><button class="btn btn-primary" data-action="save-stock-adjust">Guardar</button></div></div></div>`;
   }
 
   bind() {
@@ -119,16 +119,45 @@ export class StockComponent {
     }
 
     emptyEl.style.display = 'none';
-    listEl.innerHTML = `<table class="data-table"><thead><tr><th>Producto</th><th>Tipo de producto</th><th>Proveedor</th><th>Mínimo</th><th>Stock</th><th>Estado</th></tr></thead><tbody id="tbl-stock"></tbody></table>`;
+    listEl.innerHTML = `<table class="data-table"><thead><tr><th>Producto</th><th>Tipo de producto</th><th>Proveedor</th><th>Mínimo</th><th>Stock</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="tbl-stock"></tbody></table>`;
     document.getElementById('tbl-stock').innerHTML = pageItems.map(producto => {
       const qty = (data.stock[producto.id] || 0) - (data.reservedStock?.[producto.id] || 0);
       const min = producto.minStock ?? 0;
       const status = this.getStatus(qty, min);
       const tipo = data.tipos.find(item => item.id === producto.tipoId);
       const proveedor = data.proveedores.find(item => item.id === producto.proveedorId);
-      return `<tr><td data-label="Producto"><strong>${escapeHtml(producto.nombre)}</strong></td><td data-label="Tipo">${tipo ? escapeHtml(tipo.nombre) : '—'}</td><td data-label="Proveedor">${proveedor ? escapeHtml(proveedor.nombre) : '—'}</td><td data-label="Mínimo">${min} u.</td><td data-label="Stock"><input class="stock-qty" type="number" min="0" step="any" value="${qty}" data-stock-input data-id="${escapeHtml(producto.id)}" aria-label="Stock de ${escapeHtml(producto.nombre)}"></td><td data-label="Estado"><span class="chip ${this.statusChip[status]}" data-stock-status>${this.statusLabel[status]}</span></td></tr>`;
+      return `<tr><td data-label="Producto"><strong>${escapeHtml(producto.nombre)}</strong></td><td data-label="Tipo">${tipo ? escapeHtml(tipo.nombre) : '—'}</td><td data-label="Proveedor">${proveedor ? escapeHtml(proveedor.nombre) : '—'}</td><td data-label="Mínimo">${min} u.</td><td data-label="Stock"><input class="stock-qty" type="number" min="0" step="any" value="${qty}" data-stock-input data-id="${escapeHtml(producto.id)}" aria-label="Stock de ${escapeHtml(producto.nombre)}"></td><td data-label="Estado"><span class="chip ${this.statusChip[status]}" data-stock-status>${this.statusLabel[status]}</span></td><td data-label="Acciones"><div class="stock-adjust-controls"><button class="btn btn-primary btn-icon" data-action="open-stock-adjust" data-id="${escapeHtml(producto.id)}" data-type="add" aria-label="Añadir stock a ${escapeHtml(producto.nombre)}">+</button><button class="btn btn-danger btn-icon" data-action="open-stock-adjust" data-id="${escapeHtml(producto.id)}" data-type="remove" aria-label="Remover stock de ${escapeHtml(producto.nombre)}">-</button></div></td></tr>`;
     }).join('');
     document.getElementById('pager-stock').innerHTML = paginationTemplate('stock', pageState);
+  }
+
+  openAdjust(id, type) {
+    const product = this.app.store.data.productos.find(item => item.id === id);
+    if (!product) return this.app.toasts.show('Producto no encontrado', 'error');
+    const isRemove = type === 'remove';
+    document.getElementById('stock-adjust-title').textContent = isRemove ? 'Remover stock' : 'Añadir stock';
+    form.set('stock-adjust-id', id);
+    form.set('stock-adjust-type', isRemove ? 'remove' : 'add');
+    form.set('stock-adjust-product', product.nombre);
+    form.set('stock-adjust-current', this.app.store.data.stock[id] || 0);
+    form.set('stock-adjust-amount', '');
+    this.app.modals.open('stock-adjust');
+    document.getElementById('stock-adjust-amount').focus();
+  }
+
+  async saveAdjust() {
+    const id = form.value('stock-adjust-id');
+    const type = form.value('stock-adjust-type');
+    const amount = Number(form.value('stock-adjust-amount'));
+    if (!id) return;
+    if (Number.isNaN(amount) || amount <= 0) return this.app.toasts.show('Ingresá una cantidad válida', 'error');
+
+    const previousQty = this.app.store.data.stock[id] || 0;
+    const newQty = Number((type === 'remove' ? previousQty - amount : previousQty + amount).toFixed(4));
+    if (newQty < 0) return this.app.toasts.show('No se puede remover más stock del disponible', 'error');
+
+    await this.setQuantity(id, newQty, type === 'remove' ? `Remoción de ${amount}` : `Ingreso de ${amount}`);
+    this.app.modals.close('stock-adjust');
   }
 
   scheduleInlineSave(input) {
