@@ -17,7 +17,13 @@ export class UsuariosComponent {
     </section>`;
   }
 
-  bind() {}
+  bind() {
+    document.addEventListener('click', event => {
+      const toggle = event.target.closest('[data-user-password-toggle]');
+      if (!toggle) return;
+      this.togglePassword(toggle);
+    });
+  }
 
   async render() {
     if (this.loading) return;
@@ -60,10 +66,26 @@ export class UsuariosComponent {
       </div>
       <div class="form-group">
         <label>Nueva contraseña</label>
-        <input type="password" id="usuario-${escapeHtml(user.id)}-password" placeholder="Dejar vacía para conservar la actual" autocomplete="new-password">
+        <div class="password-field">
+          <input type="password" id="usuario-${escapeHtml(user.id)}-password" placeholder="Dejar vacía para conservar la actual" autocomplete="new-password">
+          <button type="button" class="password-toggle" data-user-password-toggle="usuario-${escapeHtml(user.id)}-password" aria-label="Mostrar contraseña" aria-pressed="false">
+            <span class="password-eye" aria-hidden="true"></span>
+          </button>
+        </div>
       </div>
       <button class="btn btn-primary user-settings-save" data-action="save-user" data-id="${escapeHtml(user.id)}">Guardar cambios</button>
     </div>`;
+  }
+
+  togglePassword(toggle) {
+    const input = document.getElementById(toggle.dataset.userPasswordToggle);
+    if (!input) return;
+
+    const showPassword = input.type === 'password';
+    input.type = showPassword ? 'text' : 'password';
+    toggle.setAttribute('aria-label', showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña');
+    toggle.setAttribute('aria-pressed', String(showPassword));
+    toggle.classList.toggle('is-visible', showPassword);
   }
 
   async save(id) {
