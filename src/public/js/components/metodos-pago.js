@@ -21,12 +21,12 @@ export class MetodosPagoComponent {
   template() {
     return `<section class="section" id="sec-metodosPago">
       <div class="toolbar"><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Buscar método de pago…" id="searchMetodoPago"></div></div>
-      <div class="table-wrap" id="wrap-metodos-pago"><table class="data-table"><thead><tr><th>Nombre</th><th>Descuento</th><th>Recargo</th><th>Acciones</th></tr></thead><tbody id="tbl-metodos-pago"></tbody></table><div id="empty-metodos-pago" class="empty-state" style="display:none"><div class="empty-icon">💳</div><p>Aún no hay métodos de pago</p></div></div><div id="pager-metodosPago"></div>
+      <div class="table-wrap" id="wrap-metodos-pago"><table class="data-table"><thead><tr><th>Nombre</th><th>Descuento</th><th>Recargo</th><th>Comisión</th><th>Acciones</th></tr></thead><tbody id="tbl-metodos-pago"></tbody></table><div id="empty-metodos-pago" class="empty-state" style="display:none"><div class="empty-icon">💳</div><p>Aún no hay métodos de pago</p></div></div><div id="pager-metodosPago"></div>
     </section>`;
   }
 
   modalTemplate() {
-    return `<div class="modal-overlay" id="modal-metodo-pago"><div class="modal"><div class="modal-title"><span id="modal-metodo-pago-title">Nuevo método de pago</span><button class="modal-close" data-close-modal="metodo-pago">✕</button></div><input type="hidden" id="metodo-pago-id"><div class="form-group"><label>Nombre *</label><input type="text" id="metodo-pago-nombre" placeholder="Ej: Efectivo, Transferencia, Tarjeta"></div><div class="form-row"><div class="form-group"><label>Descuento (%)</label><input type="number" id="metodo-pago-descuento" min="0" step="0.01" value="0"></div><div class="form-group"><label>Recargo (%)</label><input type="number" id="metodo-pago-recargo" min="0" step="0.01" value="0"></div></div><div class="modal-actions"><button class="btn btn-ghost" data-close-modal="metodo-pago">Cancelar</button><button class="btn btn-primary" data-action="save-metodo-pago">💾 Guardar</button></div></div></div>`;
+    return `<div class="modal-overlay" id="modal-metodo-pago"><div class="modal"><div class="modal-title"><span id="modal-metodo-pago-title">Nuevo método de pago</span><button class="modal-close" data-close-modal="metodo-pago">✕</button></div><input type="hidden" id="metodo-pago-id"><div class="form-group"><label>Nombre *</label><input type="text" id="metodo-pago-nombre" placeholder="Ej: Efectivo, Transferencia, Tarjeta"></div><div class="form-row"><div class="form-group"><label>Descuento (%)</label><input type="number" id="metodo-pago-descuento" min="0" step="0.01" value="0"></div><div class="form-group"><label>Recargo (%)</label><input type="number" id="metodo-pago-recargo" min="0" step="0.01" value="0"></div><div class="form-group"><label>Comisión (%)</label><input type="number" id="metodo-pago-comision" min="0" step="0.01" value="0"></div></div><div class="modal-actions"><button class="btn btn-ghost" data-close-modal="metodo-pago">Cancelar</button><button class="btn btn-primary" data-action="save-metodo-pago">💾 Guardar</button></div></div></div>`;
   }
 
   bind() {
@@ -55,7 +55,7 @@ export class MetodosPagoComponent {
     const list = this.app.store.data.metodosPago
       .filter(metodo => metodo.nombre.toLowerCase().includes(q))
       .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
-    document.getElementById('wrap-metodos-pago').innerHTML = `<table class="data-table"><thead><tr><th>Nombre</th><th>Descuento</th><th>Recargo</th><th>Acciones</th></tr></thead><tbody id="tbl-metodos-pago"></tbody></table><div id="empty-metodos-pago" class="empty-state" style="display:none"><div class="empty-icon">💳</div><p>Aún no hay métodos de pago</p></div>`;
+    document.getElementById('wrap-metodos-pago').innerHTML = `<table class="data-table"><thead><tr><th>Nombre</th><th>Descuento</th><th>Recargo</th><th>Comisión</th><th>Acciones</th></tr></thead><tbody id="tbl-metodos-pago"></tbody></table><div id="empty-metodos-pago" class="empty-state" style="display:none"><div class="empty-icon">💳</div><p>Aún no hay métodos de pago</p></div>`;
     const tbody = document.getElementById('tbl-metodos-pago');
     const empty = document.getElementById('empty-metodos-pago');
     const pageState = getResponsivePageItems(list, this.page, DEFAULT_PAGE_SIZE);
@@ -70,7 +70,7 @@ export class MetodosPagoComponent {
     }
 
     empty.style.display = 'none';
-    tbody.innerHTML = pageState.items.map(metodo => `<tr><td data-label="Nombre"><strong>${escapeHtml(metodo.nombre)}</strong></td><td data-label="Descuento"><span class="chip chip-ok">${formatPercent(metodo.descuento)}</span></td><td data-label="Recargo"><span class="chip chip-ok">${formatPercent(metodo.recargo ?? metodo.bonificacion)}</span></td><td data-label="Acciones"><div class="td-actions"><button class="btn btn-ghost btn-sm btn-icon" data-action="view-metodo-pago" data-id="${escapeHtml(metodo.id)}" aria-label="Visualizar método de pago" title="Visualizar">👁️</button><button class="btn btn-ghost btn-sm btn-icon" data-action="edit-metodo-pago" data-id="${escapeHtml(metodo.id)}" aria-label="Editar método de pago" title="Editar">✏️</button><button class="btn btn-danger btn-sm btn-icon" data-action="delete" data-entity="metodo-pago" data-id="${escapeHtml(metodo.id)}" data-name="${escapeHtml(metodo.nombre)}" aria-label="Eliminar método de pago" title="Eliminar">🗑️</button></div></td></tr>`).join('');
+    tbody.innerHTML = pageState.items.map(metodo => `<tr><td data-label="Nombre"><strong>${escapeHtml(metodo.nombre)}</strong></td><td data-label="Descuento"><span class="chip chip-ok">${formatPercent(metodo.descuento)}</span></td><td data-label="Recargo"><span class="chip chip-ok">${formatPercent(metodo.recargo ?? metodo.bonificacion)}</span></td><td data-label="Comisión"><span class="chip chip-ok">${formatPercent(metodo.comision)}</span></td><td data-label="Acciones"><div class="td-actions"><button class="btn btn-ghost btn-sm btn-icon" data-action="view-metodo-pago" data-id="${escapeHtml(metodo.id)}" aria-label="Visualizar método de pago" title="Visualizar">👁️</button><button class="btn btn-ghost btn-sm btn-icon" data-action="edit-metodo-pago" data-id="${escapeHtml(metodo.id)}" aria-label="Editar método de pago" title="Editar">✏️</button><button class="btn btn-danger btn-sm btn-icon" data-action="delete" data-entity="metodo-pago" data-id="${escapeHtml(metodo.id)}" data-name="${escapeHtml(metodo.nombre)}" aria-label="Eliminar método de pago" title="Eliminar">🗑️</button></div></td></tr>`).join('');
     document.getElementById('pager-metodosPago').innerHTML = paginationTemplate('metodosPago', pageState);
   }
 
@@ -78,7 +78,7 @@ export class MetodosPagoComponent {
     const metodo = this.app.store.data.metodosPago.find(item => item.id === id);
     if (!metodo) return this.app.toasts.show('No se encontró el método de pago', 'error');
 
-    this.app.showDetail('Método de pago', `<div class="detail-list"><div><span>Nombre</span><strong>${escapeHtml(metodo.nombre)}</strong></div><div><span>Descuento</span><strong>${formatPercent(metodo.descuento)}</strong></div><div><span>Recargo</span><strong>${formatPercent(metodo.recargo ?? metodo.bonificacion)}</strong></div></div>`);
+    this.app.showDetail('Método de pago', `<div class="detail-list"><div><span>Nombre</span><strong>${escapeHtml(metodo.nombre)}</strong></div><div><span>Descuento</span><strong>${formatPercent(metodo.descuento)}</strong></div><div><span>Recargo</span><strong>${formatPercent(metodo.recargo ?? metodo.bonificacion)}</strong></div><div><span>Comisión</span><strong>${formatPercent(metodo.comision)}</strong></div></div>`);
   }
 
   openNew() {
@@ -86,6 +86,7 @@ export class MetodosPagoComponent {
     form.clear(['metodo-pago-nombre']);
     form.set('metodo-pago-descuento', 0);
     form.set('metodo-pago-recargo', 0);
+    form.set('metodo-pago-comision', 0);
     document.getElementById('modal-metodo-pago-title').textContent = 'Nuevo método de pago';
     this.app.modals.open('metodo-pago');
   }
@@ -97,6 +98,7 @@ export class MetodosPagoComponent {
     form.set('metodo-pago-nombre', metodo.nombre || '');
     form.set('metodo-pago-descuento', metodo.descuento || 0);
     form.set('metodo-pago-recargo', metodo.recargo ?? metodo.bonificacion ?? 0);
+    form.set('metodo-pago-comision', metodo.comision || 0);
     document.getElementById('modal-metodo-pago-title').textContent = 'Editar método de pago';
     this.app.modals.open('metodo-pago');
   }
@@ -109,7 +111,7 @@ export class MetodosPagoComponent {
     const duplicated = this.app.store.data.metodosPago.some(item => item.id !== id && normalizeUniqueName(item.nombre || '') === normalizeUniqueName(nombre));
     if (duplicated) return this.app.toasts.show('Ya existe un método de pago con ese nombre', 'error');
 
-    const metodo = { id, nombre, descuento: parsePercent('metodo-pago-descuento'), recargo: parsePercent('metodo-pago-recargo') };
+    const metodo = { id, nombre, descuento: parsePercent('metodo-pago-descuento'), recargo: parsePercent('metodo-pago-recargo'), comision: parsePercent('metodo-pago-comision') };
     await this.app.store.put('metodosPago', metodo);
     const list = this.app.store.data.metodosPago;
     const index = list.findIndex(item => item.id === id);

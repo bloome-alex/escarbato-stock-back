@@ -11,7 +11,7 @@ export class CajasComponent {
         <div id="caja-status"></div>
         <div id="caja-open-form"></div>
       </div>
-      <div class="table-wrap" id="wrap-cajas" style="margin-top:24px"><table class="data-table"><thead><tr><th>Estado</th><th>Apertura</th><th>Cierre</th><th>Ventas</th><th>Total ingresos</th><th>Acciones</th></tr></thead><tbody id="tbl-cajas"></tbody></table><div id="empty-cajas" class="empty-state" style="display:none"><div class="empty-icon">💵</div><p>Aún no hay cajas registradas</p></div></div>
+      <div class="table-wrap" id="wrap-cajas" style="margin-top:24px"><table class="data-table"><thead><tr><th>Estado</th><th>Apertura</th><th>Cierre</th><th>Ventas</th><th>Ingresos netos</th><th>Acciones</th></tr></thead><tbody id="tbl-cajas"></tbody></table><div id="empty-cajas" class="empty-state" style="display:none"><div class="empty-icon">💵</div><p>Aún no hay cajas registradas</p></div></div>
     </section>`;
   }
 
@@ -23,6 +23,10 @@ export class CajasComponent {
 
   formatDate(value) {
     return value ? new Date(value).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+  }
+
+  formatPercent(value) {
+    return `${Number(value || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })}%`;
   }
 
   getOpenCaja() {
@@ -51,6 +55,12 @@ export class CajasComponent {
     });
   }
 
+  getNetAmount(total, method = {}) {
+    const finalTotal = Number(total || 0);
+    const comision = Number(method.comision || 0);
+    return Number(Math.max(0, finalTotal - (finalTotal * comision) / 100).toFixed(2));
+  }
+
   getPaymentRows(caja) {
     const initialAmounts = caja?.initialAmounts || [];
     const ventas = this.getCajaVentas(caja);
@@ -61,7 +71,8 @@ export class CajasComponent {
         id: amount.metodoPagoId,
         nombre: amount.metodoPagoNombre,
         inicial: Number(amount.monto || 0),
-        ingresos: 0
+        ingresos: 0,
+        neto: 0
       });
     });
 
@@ -69,33 +80,41 @@ export class CajasComponent {
       const method = venta.metodoPago || {};
       const id = method.id || 'sin-metodo';
       if (!methodMap.has(id)) {
-        methodMap.set(id, { id, nombre: method.nombre || 'Sin método', inicial: 0, ingresos: 0 });
+        methodMap.set(id, { id, nombre: method.nombre || 'Sin método', inicial: 0, ingresos: 0, neto: 0 });
       }
-      methodMap.get(id).ingresos += Number(venta.finalTotal || 0);
+      const totalCobrado = Number(venta.finalTotal || 0);
+      const neto = this.getNetAmount(totalCobrado, method);
+      const row = methodMap.get(id);
+      row.ingresos += neto;
+      row.neto += neto;
     });
 
     peluqueriaTurnos.forEach(turno => {
       const method = turno.paidMethod || {};
       const id = method.id || 'sin-metodo';
       if (!methodMap.has(id)) {
-        methodMap.set(id, { id, nombre: method.nombre || 'Sin método', inicial: 0, ingresos: 0 });
+        methodMap.set(id, { id, nombre: method.nombre || 'Sin método', inicial: 0, ingresos: 0, neto: 0 });
       }
       const precioBase = Number(turno.precio || 0);
       const descuento = Number(method.descuento || 0);
       const recargo = Number(method.recargo || 0);
       const finalTotal = precioBase - (precioBase * descuento) / 100 + (precioBase * recargo) / 100;
-      methodMap.get(id).ingresos += finalTotal;
+      const neto = this.getNetAmount(finalTotal, method);
+      const row = methodMap.get(id);
+      row.ingresos += neto;
+      row.neto += neto;
     });
 
     return [...methodMap.values()].map(row => ({
       ...row,
       ingresos: Number(row.ingresos.toFixed(2)),
-      esperado: Number((row.inicial + row.ingresos).toFixed(2))
+      neto: Number(row.neto.toFixed(2)),
+      esperado: Number((row.inicial + row.neto).toFixed(2))
     }));
   }
 
   getCajaIncome(caja) {
-    return this.getPaymentRows(caja).reduce((sum, row) => sum + row.ingresos, 0);
+    return this.getPaymentRows(caja).reduce((sum, row) => sum + row.neto, 0);
   }
 
   render() {
@@ -109,7 +128,7 @@ export class CajasComponent {
     const status = document.getElementById('caja-status');
     if (!status) return;
     status.innerHTML = openCaja
-      ? `<div class="detail-list"><div><span>Estado</span><strong>Abierta</strong></div><div><span>Fecha de apertura</span><strong>${this.formatDate(openCaja.openedAt)}</strong></div><div><span>Ventas registradas</span><strong>${this.getCajaVentas(openCaja).length}</strong></div><div><span>Ingresos</span><strong>${this.formatMoney(this.getCajaIncome(openCaja))}</strong></div></div><div class="modal-actions" style="position:static;margin:16px 0 0;padding:0;background:transparent;border:0"><button class="btn btn-danger" data-action="close-caja" data-id="${openCaja.id}">Cerrar caja</button></div>`
+      ? `<div class="detail-list"><div><span>Estado</span><strong>Abierta</strong></div><div><span>Fecha de apertura</span><strong>${this.formatDate(openCaja.openedAt)}</strong></div><div><span>Ventas registradas</span><strong>${this.getCajaVentas(openCaja).length}</strong></div><div><span>Ingresos netos</span><strong>${this.formatMoney(this.getCajaIncome(openCaja))}</strong></div></div><div class="modal-actions" style="position:static;margin:16px 0 0;padding:0;background:transparent;border:0"><button class="btn btn-danger" data-action="close-caja" data-id="${openCaja.id}">Cerrar caja</button></div>`
       : `<div class="detail-list"><div><span>Estado</span><strong>No hay caja abierta</strong></div><div><span>Ventas</span><strong>Bloqueadas hasta abrir caja</strong></div></div>`;
   }
 
@@ -147,7 +166,7 @@ export class CajasComponent {
     empty.style.display = 'none';
     tbody.innerHTML = cajas.map(caja => {
       const ventas = this.getCajaVentas(caja);
-      return `<tr><td data-label="Estado"><strong>${caja.status === 'abierta' ? 'Abierta' : 'Cerrada'}</strong></td><td data-label="Apertura">${this.formatDate(caja.openedAt)}</td><td data-label="Cierre">${this.formatDate(caja.closedAt)}</td><td data-label="Ventas">${ventas.length}</td><td class="price-value" data-label="Ingresos">${this.formatMoney(this.getCajaIncome(caja))}</td><td data-label="Acciones"><button class="btn btn-ghost btn-sm btn-icon" data-action="view-caja" data-id="${caja.id}" aria-label="Visualizar caja" title="Visualizar">👁️</button></td></tr>`;
+      return `<tr><td data-label="Estado"><strong>${caja.status === 'abierta' ? 'Abierta' : 'Cerrada'}</strong></td><td data-label="Apertura">${this.formatDate(caja.openedAt)}</td><td data-label="Cierre">${this.formatDate(caja.closedAt)}</td><td data-label="Ventas">${ventas.length}</td><td class="price-value" data-label="Ingresos netos">${this.formatMoney(this.getCajaIncome(caja))}</td><td data-label="Acciones"><button class="btn btn-ghost btn-sm btn-icon" data-action="view-caja" data-id="${caja.id}" aria-label="Visualizar caja" title="Visualizar">👁️</button></td></tr>`;
     }).join('');
   }
 
@@ -196,18 +215,21 @@ export class CajasComponent {
     const rows = this.getPaymentRows(caja);
     const ventas = this.getCajaVentas(caja);
     const peluqueriaTurnos = this.getCajaPeluqueriaTurnos(caja);
-    const paymentRows = rows.map(row => `<tr><td data-label="Método"><strong>${escapeHtml(row.nombre)}</strong></td><td class="price-value" data-label="Inicio">${this.formatMoney(row.inicial)}</td><td class="price-value" data-label="Ingresos">${this.formatMoney(row.ingresos)}</td><td class="price-value" data-label="Debería haber">${this.formatMoney(row.esperado)}</td></tr>`).join('');
-    const salesRows = ventas.map(venta => `<tr><td data-label="Fecha">${this.formatDate(venta.createdAt)}</td><td data-label="Cliente">${escapeHtml(venta.cliente || 'Cliente mostrador')}</td><td data-label="Método">${escapeHtml(venta.metodoPago?.nombre || 'Sin método')}</td><td class="price-value" data-label="Total">${this.formatMoney(venta.finalTotal)}</td></tr>`).join('') || '<tr><td colspan="4">No hubo ventas durante esta caja.</td></tr>';
+    const paymentRows = rows.map(row => `<tr><td data-label="Método"><strong>${escapeHtml(row.nombre)}</strong></td><td class="price-value" data-label="Inicio">${this.formatMoney(row.inicial)}</td><td class="price-value" data-label="Ingresos netos">${this.formatMoney(row.ingresos)}</td><td class="price-value" data-label="Debería tener">${this.formatMoney(row.esperado)}</td></tr>`).join('');
+    const salesRows = ventas.map(venta => {
+      const method = venta.metodoPago || {};
+      return `<tr><td data-label="Fecha">${this.formatDate(venta.createdAt)}</td><td data-label="Cliente">${escapeHtml(venta.cliente || 'Cliente mostrador')}</td><td data-label="Método">${escapeHtml(method.nombre || 'Sin método')}</td><td class="price-value" data-label="Total cobrado">${this.formatMoney(venta.finalTotal)}</td><td data-label="Comisión">${this.formatPercent(method.comision)}</td><td class="price-value" data-label="Neto caja">${this.formatMoney(this.getNetAmount(venta.finalTotal, method))}</td></tr>`;
+    }).join('') || '<tr><td colspan="6">No hubo ventas durante esta caja.</td></tr>';
     const peluqueriaRows = peluqueriaTurnos.map(turno => {
       const method = turno.paidMethod || {};
       const precioBase = Number(turno.precio || 0);
       const descuento = Number(method.descuento || 0);
       const recargo = Number(method.recargo || 0);
       const finalTotal = precioBase - (precioBase * descuento) / 100 + (precioBase * recargo) / 100;
-      return `<tr><td data-label="Fecha turno">${this.formatDate(turno.fecha)}</td><td data-label="Cliente">${escapeHtml(turno.cliente)}</td><td data-label="Servicio">${escapeHtml(turno.servicioNombre)}</td><td data-label="Método">${escapeHtml(method.nombre || 'Sin método')}</td><td class="price-value" data-label="Total">${this.formatMoney(finalTotal)}</td></tr>`;
-    }).join('') || '<tr><td colspan="5">No hubo turnos de peluquería pagados durante esta caja.</td></tr>';
-    const totalIngresos = rows.reduce((sum, row) => sum + row.ingresos, 0);
+      return `<tr><td data-label="Fecha turno">${this.formatDate(turno.fecha)}</td><td data-label="Cliente">${escapeHtml(turno.cliente)}</td><td data-label="Servicio">${escapeHtml(turno.servicioNombre)}</td><td data-label="Método">${escapeHtml(method.nombre || 'Sin método')}</td><td class="price-value" data-label="Total cobrado">${this.formatMoney(finalTotal)}</td><td data-label="Comisión">${this.formatPercent(method.comision)}</td><td class="price-value" data-label="Neto caja">${this.formatMoney(this.getNetAmount(finalTotal, method))}</td></tr>`;
+    }).join('') || '<tr><td colspan="7">No hubo turnos de peluquería pagados durante esta caja.</td></tr>';
+    const totalIngresos = rows.reduce((sum, row) => sum + row.neto, 0);
     const totalEsperado = rows.reduce((sum, row) => sum + row.esperado, 0);
-    this.app.showDetail('Detalle de caja', `<div class="sale-detail-grid"><div><span>Fecha de apertura</span><strong>${this.formatDate(caja.openedAt)}</strong></div><div><span>Fecha de cierre</span><strong>${this.formatDate(caja.closedAt)}</strong></div><div><span>Estado</span><strong>${caja.status === 'abierta' ? 'Abierta' : 'Cerrada'}</strong></div><div><span>Total ingresos</span><strong class="price-value">${this.formatMoney(totalIngresos)}</strong></div><div><span>Total esperado</span><strong class="price-value">${this.formatMoney(totalEsperado)}</strong></div></div><h3 style="margin:18px 0 10px">Montos por método de pago</h3><div class="table-wrap sale-cart-wrap"><table><thead><tr><th>Método</th><th>Inicio</th><th>Ingresos</th><th>Debería haber</th></tr></thead><tbody>${paymentRows}</tbody></table></div><h3 style="margin:18px 0 10px">Ventas de la caja</h3><div class="table-wrap sale-cart-wrap"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>Método</th><th>Total</th></tr></thead><tbody>${salesRows}</tbody></table></div><h3 style="margin:18px 0 10px">Peluquería</h3><div class="table-wrap sale-cart-wrap"><table><thead><tr><th>Fecha turno</th><th>Cliente</th><th>Servicio</th><th>Método</th><th>Total</th></tr></thead><tbody>${peluqueriaRows}</tbody></table></div>`);
+    this.app.showDetail('Detalle de caja', `<div class="sale-detail-grid"><div><span>Fecha de apertura</span><strong>${this.formatDate(caja.openedAt)}</strong></div><div><span>Fecha de cierre</span><strong>${this.formatDate(caja.closedAt)}</strong></div><div><span>Estado</span><strong>${caja.status === 'abierta' ? 'Abierta' : 'Cerrada'}</strong></div><div><span>Total ingresos netos</span><strong class="price-value">${this.formatMoney(totalIngresos)}</strong></div><div><span>Total esperado</span><strong class="price-value">${this.formatMoney(totalEsperado)}</strong></div></div><h3 style="margin:18px 0 10px">Montos por método de pago</h3><div class="table-wrap sale-cart-wrap"><table><thead><tr><th>Método</th><th>Inicio</th><th>Ingresos netos</th><th>Debería tener</th></tr></thead><tbody>${paymentRows}</tbody></table></div><h3 style="margin:18px 0 10px">Ventas de la caja</h3><div class="table-wrap sale-cart-wrap"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>Método</th><th>Total cobrado</th><th>Comisión</th><th>Neto caja</th></tr></thead><tbody>${salesRows}</tbody></table></div><h3 style="margin:18px 0 10px">Peluquería</h3><div class="table-wrap sale-cart-wrap"><table><thead><tr><th>Fecha turno</th><th>Cliente</th><th>Servicio</th><th>Método</th><th>Total cobrado</th><th>Comisión</th><th>Neto caja</th></tr></thead><tbody>${peluqueriaRows}</tbody></table></div>`);
   }
 }

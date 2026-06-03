@@ -26,6 +26,25 @@ export class ProductReportService {
     res.end();
   }
 
+  async writeStockRepositionPdf(res, payload = {}) {
+    const rows = this.normalizeStockRepositionRows(payload.rows).filter(row => row.cantidad > 0);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="reposicion-stock-${this.reportTimestamp()}.pdf"`);
+    const doc = new PDFDocument({ size: [612, 936], margin: 36, bufferPages: false });
+    doc.pipe(res);
+    this.drawStockRepositionPdf(doc, rows);
+    doc.end();
+  }
+
+  async writeStockRepositionXlsx(res, payload = {}) {
+    const rows = this.normalizeStockRepositionRows(payload.rows).filter(row => row.cantidad > 0);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="reposicion-stock-${this.reportTimestamp()}.xlsx"`);
+    const workbook = this.buildStockRepositionXlsx(rows);
+    await workbook.xlsx.write(res);
+    res.end();
+  }
+
   getReportData() {
     return Promise.all([
       this.modelRegistry.getActive('productos'),
@@ -46,6 +65,10 @@ export class ProductReportService {
     return value || value === 0 ? Number(value).toLocaleString('es-AR') + '%' : '-';
   }
 
+  formatQty(value) {
+    return Number(value || 0).toLocaleString('es-AR', { maximumFractionDigits: 4 });
+  }
+
   reportTimestamp(date = new Date()) {
     const pad = value => String(value).padStart(2, '0');
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}-${pad(date.getHours())}-${pad(date.getMinutes())}`;
@@ -63,6 +86,115 @@ export class ProductReportService {
     if (doc.y + neededHeight <= doc.page.height - doc.page.margins.bottom) return;
     doc.addPage();
     if (includeHeader) doc.y = this.drawProductsTableHeader(doc, columns, doc.y);
+  }
+
+  normalizeStockRepositionRows(rows) {
+    if (!Array.isArray(rows)) return [];
+    return rows.slice(0, 5000).map(row => ({
+      producto: String(row.producto || '-').slice(0, 180),
+      tipo: String(row.tipo || '-').slice(0, 120),
+      grupo: String(row.grupo || '-').slice(0, 120),
+      proveedor: String(row.proveedor || 'Sin proveedor').slice(0, 120),
+      stock: Number(row.stock || 0),
+      estado: String(row.estado || '-').slice(0, 40),
+      cantidad: Math.max(Number(row.cantidad || 0), 0)
+    }));
+  }
+
+  normalizeFilters(filters = {}) {
+    return {
+      busqueda: String(filters.busqueda || 'Todas').slice(0, 120),
+      tipo: String(filters.tipo || 'Todos').slice(0, 120),
+      grupo: String(filters.grupo || 'Todos').slice(0, 120),
+      proveedor: String(filters.proveedor || 'Todos').slice(0, 120),
+      stock: String(filters.stock || 'Todos').slice(0, 120)
+    };
+  }
+
+  drawStockRepositionPdf(doc, rows) {
+    const columns = [
+      { label: 'Producto', x: 36, width: 390 },
+      { label: 'Cantidad', x: 446, width: 90, align: 'right' }
+    ];
+
+    if (!rows.length) {
+      doc.font('Helvetica').fontSize(11).fillColor('#666').text('No hay productos para mostrar.');
+      return;
+    }
+
+    this.getStockRepositionRowsByProvider(rows).forEach(({ providerName, providerRows }, groupIndex) => {
+      if (groupIndex > 0) doc.addPage();
+      doc.font('Helvetica-Bold').fontSize(14).fillColor('#4E8055').text(providerName, doc.page.margins.left, doc.y);
+      doc.moveTo(doc.page.margins.left, doc.y + 2).lineTo(doc.page.width - doc.page.margins.right, doc.y + 2).strokeColor('#4E8055').lineWidth(1).stroke();
+      doc.y += 8;
+      doc.y = this.drawProductsTableHeader(doc, columns, doc.y);
+
+      providerRows.forEach(rowData => {
+        const row = [rowData.producto, this.formatQty(rowData.cantidad)];
+        const cellPaddingX = 5;
+        const cellPaddingY = 9;
+        const rowHeight = Math.max(28, doc.heightOfString(row[0], { width: columns[0].width - (cellPaddingX * 2) }) + (cellPaddingY * 2));
+        this.ensureReportSpace(doc, rowHeight, columns);
+        const y = doc.y;
+        doc.rect(doc.page.margins.left, y, doc.page.width - doc.page.margins.left - doc.page.margins.right, rowHeight).strokeColor('#DDD').lineWidth(0.5).stroke();
+        doc.font('Helvetica').fontSize(8).fillColor('#222');
+        row.forEach((value, index) => doc.text(value, columns[index].x + cellPaddingX, y + cellPaddingY, { width: columns[index].width - (cellPaddingX * 2), align: columns[index].align || 'left' }));
+        doc.y = y + rowHeight;
+      });
+    });
+  }
+
+  buildStockRepositionXlsx(rows) {
+    const workbook = new ExcelJS.Workbook();
+    const tenant = this.modelRegistry.connectionManager?.getActiveTenant();
+    const usedSheetNames = new Set();
+    workbook.creator = [tenant?.name, tenant?.businessType].filter(Boolean).join(' ') || 'Escarbato Stock';
+    workbook.created = new Date();
+
+    const groups = this.getStockRepositionRowsByProvider(rows);
+    if (!groups.length) {
+      const sheet = workbook.addWorksheet('Reposicion de stock');
+      sheet.addRow(['No hay productos para mostrar.']);
+      return workbook;
+    }
+
+    groups.forEach(({ providerName, providerRows }) => {
+      const sheet = workbook.addWorksheet(this.getUniqueSheetName(providerName, usedSheetNames));
+      sheet.columns = [
+        { key: 'producto', width: 48 },
+        { key: 'cantidad', width: 18 }
+      ];
+      sheet.mergeCells('A1:B1');
+      sheet.getCell('A1').value = providerName;
+      sheet.getCell('A1').font = { bold: true, size: 15, color: { argb: 'FF4E8055' } };
+      sheet.addRow(['Producto', 'Cantidad']);
+      const headerRow = sheet.getRow(2);
+      headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4E8055' } };
+      headerRow.alignment = { vertical: 'middle' };
+      providerRows.forEach(row => sheet.addRow({ producto: row.producto, cantidad: row.cantidad }));
+      sheet.getColumn('cantidad').numFmt = '#,##0.####';
+      sheet.views = [{ state: 'frozen', ySplit: 2 }];
+      sheet.autoFilter = { from: 'A2', to: 'B2' };
+    });
+
+    return workbook;
+  }
+
+  getStockRepositionRowsByProvider(rows) {
+    const groups = new Map();
+    rows.forEach(row => {
+      const providerName = row.proveedor || 'Sin proveedor';
+      if (!groups.has(providerName)) groups.set(providerName, []);
+      groups.get(providerName).push(row);
+    });
+
+    return [...groups.entries()]
+      .sort(([nameA], [nameB]) => nameA.localeCompare(nameB, 'es', { sensitivity: 'base' }))
+      .map(([providerName, providerRows]) => ({
+        providerName,
+        providerRows: providerRows.sort((a, b) => (a.producto || '').localeCompare(b.producto || '', 'es', { sensitivity: 'base' }))
+      }));
   }
 
   drawProductsPdf(doc, productos, proveedores, tipos) {

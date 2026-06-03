@@ -941,6 +941,7 @@ export class PeluqueriaComponent {
     }
     const descuento = Number(metodo.descuento || 0);
     const recargo = Number(metodo.recargo || metodo.bonificacion || 0);
+    const comision = Number(metodo.comision || 0);
     const precioBase = Number(turno.precio || 0);
     const montoDescuento = (precioBase * descuento) / 100;
     const montoRecargo = (precioBase * recargo) / 100;
@@ -948,6 +949,7 @@ export class PeluqueriaComponent {
     const rows = [];
     if (descuento > 0) rows.push(`<div><span>Descuento (${descuento}%)</span><span class="text-success">- ${formatMoney(montoDescuento)}</span></div>`);
     if (recargo > 0) rows.push(`<div><span>Recargo (${recargo}%)</span><span class="text-danger">+ ${formatMoney(montoRecargo)}</span></div>`);
+    if (comision > 0) rows.push(`<div><span>Comisión (${comision}%)</span><span>Se descuenta en caja</span></div>`);
     rows.push(`<div class="total-row"><span>Total a pagar</span><strong>${formatMoney(finalTotal)}</strong></div>`);
     document.getElementById('peluqueria-pago-resumen').innerHTML = `<div class="detail-list">${rows.join('')}</div>`;
   }
@@ -966,6 +968,7 @@ export class PeluqueriaComponent {
     const precioBase = Number(turno.precio || 0);
     const descuento = Number(metodo.descuento || 0);
     const recargo = Number(metodo.recargo || 0);
+    const comision = Number(metodo.comision || 0);
     const finalTotal = precioBase - (precioBase * descuento) / 100 + (precioBase * recargo) / 100;
     const updatedTurno = {
       ...turno,
@@ -975,7 +978,8 @@ export class PeluqueriaComponent {
         id: metodo.id,
         nombre: metodo.nombre,
         descuento,
-        recargo
+        recargo,
+        comision
       }
     };
     await this.app.store.put('peluqueriaTurnos', updatedTurno);

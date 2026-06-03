@@ -30,6 +30,15 @@ export class VentasComponent {
     return venta.metodoPago?.nombre || 'Sin método';
   }
 
+  getAdjustedItemValues(venta, item) {
+    const baseSubtotal = Number(item.subtotal ?? item.qty * item.price);
+    const calculatedTotal = Number(venta.calculatedTotal || 0);
+    const factor = calculatedTotal > 0 ? Number(venta.finalTotal || 0) / calculatedTotal : 1;
+    const subtotal = Number(Math.max(0, baseSubtotal * factor).toFixed(2));
+    const price = Number(item.qty ? (subtotal / Number(item.qty)).toFixed(2) : item.price || 0);
+    return { price, subtotal };
+  }
+
   refreshPaymentMethodFilter() {
     const methods = [...(this.app.store.data.metodosPago || [])].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
     searchableSelect.refresh('filterVentaMetodoPago', methods.map(method => ({ value: method.id, label: method.nombre })), 'Todos los métodos');
@@ -110,7 +119,10 @@ export class VentasComponent {
     const venta = this.app.store.data.ventas.find(item => item.id === id);
     if (!venta) return this.app.toasts.show('No se encontró la venta', 'error');
 
-    const rows = venta.items.map(item => `<tr><td data-label="Producto"><strong>${escapeHtml(item.productName)}</strong></td><td data-label="Cantidad">${this.formatQty(item.qty)}</td><td class="price-value" data-label="Precio">${this.formatMoney(item.price)}</td><td class="price-value" data-label="Subtotal">${this.formatMoney(item.subtotal ?? item.qty * item.price)}</td></tr>`).join('');
+    const rows = venta.items.map(item => {
+      const adjusted = this.getAdjustedItemValues(venta, item);
+      return `<tr><td data-label="Producto"><strong>${escapeHtml(item.productName)}</strong></td><td data-label="Cantidad">${this.formatQty(item.qty)}</td><td class="price-value" data-label="Precio">${this.formatMoney(adjusted.price)}</td><td class="price-value" data-label="Subtotal">${this.formatMoney(adjusted.subtotal)}</td></tr>`;
+    }).join('');
     const method = venta.metodoPago || {};
     const paymentDetail = method.nombre ? `<div><span>Método de pago</span><strong>${escapeHtml(method.nombre)}</strong></div><div><span>Descuento</span><strong>${this.formatPercent(method.descuento)}</strong></div><div><span>Recargo</span><strong>${this.formatPercent(method.recargo ?? method.bonificacion)}</strong></div>` : '<div><span>Método de pago</span><strong>Sin método</strong></div>';
     const ticketConfig = normalizeTicketConfig(this.app.store.data.ticketConfig?.[0]);

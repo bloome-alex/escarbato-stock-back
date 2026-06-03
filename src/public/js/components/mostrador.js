@@ -38,7 +38,7 @@ export class MostradorComponent {
         <div class="cart-drawer-header"><div><span>Carrito</span><strong>Nueva venta</strong></div><button class="modal-close" data-action="close-counter-cart" aria-label="Cerrar carrito">✕</button></div>
         <div class="cart-drawer-list" id="counter-cart-list"></div>
         <div class="empty-state sale-empty" id="empty-counter-cart"><p>Agregá productos al carrito</p></div>
-        <div class="cart-drawer-footer"><div class="form-group"><label>Método de pago *</label>${searchableSelect.template({ id: 'counter-payment-method', placeholder: 'Seleccionar método', options: [] })}</div><div id="counter-payment-summary"></div><div class="cart-total"><span>Total final</span><strong id="counter-cart-total">$0</strong></div><button class="btn btn-primary" data-action="finish-counter-sale">Finalizar compra</button></div>
+        <div class="cart-drawer-footer"><div class="form-group"><label>Método de pago *</label>${searchableSelect.template({ id: 'counter-payment-method', placeholder: 'Seleccionar método', options: [] })}</div><div id="counter-payment-summary"></div><div class="cart-total"><span>Total final</span><strong id="counter-cart-total">$0</strong></div><button class="btn btn-primary" data-action="finish-counter-sale">Finalizar venta</button></div>
       </aside>
     </section>`;
   }
@@ -223,10 +223,11 @@ export class MostradorComponent {
     const subtotal = this.getTotal();
     const descuento = Number(method?.descuento || 0);
     const recargo = Number(method?.recargo ?? method?.bonificacion ?? 0);
+    const comision = Number(method?.comision || 0);
     const discountAmount = Number((subtotal * descuento / 100).toFixed(2));
     const surchargeAmount = Number((subtotal * recargo / 100).toFixed(2));
     const finalTotal = Number(Math.max(0, subtotal - discountAmount + surchargeAmount).toFixed(2));
-    return { subtotal, descuento, recargo, discountAmount, surchargeAmount, finalTotal };
+    return { subtotal, descuento, recargo, comision, discountAmount, surchargeAmount, finalTotal };
   }
 
   refreshPaymentMethods() {
@@ -488,7 +489,8 @@ export class MostradorComponent {
         id: method.id,
         nombre: method.nombre,
         descuento: totals.descuento,
-        recargo: totals.recargo
+        recargo: totals.recargo,
+        comision: totals.comision
       },
       cajaId: openCaja.id,
       calculatedTotal: totals.subtotal,

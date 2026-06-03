@@ -16,7 +16,8 @@ const ventaSchema = new mongoose.Schema({
     id: { type: String, default: '' },
     nombre: { type: String, default: '' },
     descuento: { type: Number, default: 0, min: 0 },
-    recargo: { type: Number, default: 0, min: 0 }
+    recargo: { type: Number, default: 0, min: 0 },
+    comision: { type: Number, default: 0, min: 0 }
   },
   cajaId: { type: String, default: '', index: true },
   calculatedTotal: { type: Number, required: true, min: 0 },

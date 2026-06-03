@@ -10,6 +10,7 @@ const defaultSections = {
   mostrador: true,
   peluqueria: true,
   stock: true,
+  reposicionStock: true,
   ticketConfig: true,
   usuarios: true
 };

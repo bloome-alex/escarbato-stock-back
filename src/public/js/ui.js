@@ -293,6 +293,7 @@ export class NavigationManager {
       metodosPago: 'Metodos de pago',
       cajas: 'Cajas',
       stock: 'Stock',
+      reposicionStock: 'Reposicion de stock',
       ventas: 'Ventas',
       ticketConfig: 'Ticket de compra',
       mostrador: 'Mostrador',
@@ -303,6 +304,7 @@ export class NavigationManager {
       tipos: '<button class="btn btn-primary" data-action="new-tipo">+ Nuevo tipo</button>',
       gruposProductos: '<button class="btn btn-primary" data-action="new-grupo-producto">+ Nuevo grupo</button>',
       productos: '<div class="download-menu"><button class="btn btn-ghost" type="button" aria-haspopup="true">⬇️ Descargar ▾</button><div class="download-menu-list"><button type="button" data-action="download-productos-pdf">Descargar reporte PDF</button><button type="button" data-action="download-productos-xlsx">Descargar reporte XLSX</button></div></div><button class="btn btn-ghost" data-action="bulk-increase-productos">Aumento grupal</button><button class="btn btn-primary" data-action="new-producto">+ Nuevo producto</button>',
+      reposicionStock: '<div class="download-menu"><button class="btn btn-ghost" type="button" aria-haspopup="true">⬇️ Descargar ▾</button><div class="download-menu-list"><button type="button" data-action="download-reposicion-stock-pdf">Descargar PDF</button><button type="button" data-action="download-reposicion-stock-xlsx">Descargar XLSX</button></div></div>',
       metodosPago: '<button class="btn btn-primary" data-action="new-metodo-pago">+ Nuevo método</button>'
     };
   }

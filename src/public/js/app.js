@@ -7,6 +7,7 @@ import { TiposComponent } from './components/tipos.js';
 import { GruposProductosComponent } from './components/grupos-productos.js';
 import { ProductosComponent } from './components/productos.js';
 import { StockComponent } from './components/stock.js';
+import { ReposicionStockComponent } from './components/reposicion-stock.js';
 import { VentasComponent } from './components/ventas.js';
 import { MostradorComponent } from './components/mostrador.js?v=20260519-2';
 import { MetodosPagoComponent } from './components/metodos-pago.js';
@@ -31,7 +32,7 @@ class PetshopApp {
     this.isOffline = false;
     this.connectionStatusTimer = null;
     this.onWindowScroll = () => this.handleMobileListScroll();
-    this.sectionOrder = ['dashboard', 'proveedores', 'tipos', 'gruposProductos', 'productos', 'stock', 'metodosPago', 'cajas', 'ventas', 'mostrador', 'peluqueria', 'ticketConfig', 'usuarios'];
+    this.sectionOrder = ['dashboard', 'proveedores', 'tipos', 'gruposProductos', 'productos', 'stock', 'reposicionStock', 'metodosPago', 'cajas', 'ventas', 'mostrador', 'peluqueria', 'ticketConfig', 'usuarios'];
     this.sectionMenu = {
       dashboard: { group: 'Principal', icon: '🏠', label: 'Panel' },
       proveedores: { group: 'Gestión', icon: '🚚', label: 'Proveedores' },
@@ -44,6 +45,7 @@ class PetshopApp {
       mostrador: { group: 'Gestión', icon: '🛒', label: 'Mostrador' },
       peluqueria: { group: 'Gestión', icon: '✂️', label: 'Peluquería' },
       stock: { group: 'Gestión', icon: '📊', label: 'Stock' },
+      reposicionStock: { group: 'Gestión', icon: '📋', label: 'Reposicion de stock' },
       ticketConfig: { group: 'Configuración', icon: '🖨️', label: 'Ticket de compra' },
       usuarios: { group: 'Configuración', icon: '🔐', label: 'Usuario' }
     };
@@ -58,6 +60,7 @@ class PetshopApp {
       metodosPago: new MetodosPagoComponent(this),
       cajas: new CajasComponent(this),
       stock: new StockComponent(this),
+      reposicionStock: new ReposicionStockComponent(this),
       ventas: new VentasComponent(this),
       mostrador: new MostradorComponent(this),
       peluqueria: new PeluqueriaComponent(this),
@@ -163,6 +166,7 @@ class PetshopApp {
       this.components.productos.refreshGrupoSelects();
       this.components.productos.refreshProveedorSelects();
     }
+    if (this.isSectionEnabled('reposicionStock')) this.components.reposicionStock.refreshFilters();
     this.dataReady = true;
     this.setMenuDisabled(false);
     this.updateBadge();
@@ -290,6 +294,8 @@ class PetshopApp {
       if (action === 'save-producto') return this.runButtonAction(actionButton, () => this.components.productos.save(), 'Guardando');
       if (action === 'download-productos-pdf') return this.runButtonAction(actionButton, () => this.components.productos.downloadProviderProductsPdf(), 'Descargando');
       if (action === 'download-productos-xlsx') return this.runButtonAction(actionButton, () => this.components.productos.downloadProviderProductsXlsx(), 'Descargando');
+      if (action === 'download-reposicion-stock-pdf') return this.runButtonAction(actionButton, () => this.components.reposicionStock.downloadPdf(), 'Descargando');
+      if (action === 'download-reposicion-stock-xlsx') return this.runButtonAction(actionButton, () => this.components.reposicionStock.downloadXlsx(), 'Descargando');
       if (action === 'view-producto') this.components.productos.view(id);
       if (action === 'edit-producto') this.components.productos.edit(id);
       if (action === 'new-metodo-pago') return this.components.metodosPago.openNew();
@@ -588,6 +594,7 @@ class PetshopApp {
       this.components.mostrador.renderCart();
     }
     if (activeSection === 'stock') this.components.stock.renderList();
+    if (activeSection === 'reposicionStock') this.components.reposicionStock.renderList();
     if (activeSection === 'productos') this.components.productos.renderList();
     this.updateBadge();
   }
@@ -718,6 +725,7 @@ class PetshopApp {
       tipos: ['tipos', 'productos'],
       gruposProductos: ['gruposProductos', 'productos'],
       productos: ['productos', 'stock', 'tipos', 'gruposProductos', 'proveedores', 'ventas'],
+      reposicionStock: ['productos', 'stock', 'tipos', 'gruposProductos', 'proveedores', 'ventas'],
       metodosPago: ['metodosPago'],
       cajas: ['cajas', 'ventas', 'metodosPago'],
       ventas: ['ventas', 'metodosPago'],

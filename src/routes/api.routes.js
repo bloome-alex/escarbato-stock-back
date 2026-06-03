@@ -23,6 +23,8 @@ export class ApiRoutes {
     this.app.get('/api/data', this.bootstrapDataController.getData);
     this.app.get('/api/reportes/productos.pdf', this.reportController.productsPdf);
     this.app.get('/api/reportes/productos.xlsx', this.reportController.productsXlsx);
+    this.app.post('/api/reportes/reposicion-stock.pdf', this.reportController.stockRepositionPdf);
+    this.app.post('/api/reportes/reposicion-stock.xlsx', this.reportController.stockRepositionXlsx);
     this.app.get('/api/:store', this.dataStoreController.list);
     this.app.get('/api/:store/:id', this.dataStoreController.getById);
     this.app.put('/api/:store/:id', this.dataStoreController.upsert);

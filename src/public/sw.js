@@ -1,4 +1,4 @@
-const CACHE_NAME = 'escarbato-pwa-v20';
+const CACHE_NAME = 'escarbato-pwa-v21';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -21,6 +21,7 @@ const APP_SHELL = [
   '/js/components/cajas.js',
   '/js/components/proveedores.js',
   '/js/components/stock.js',
+  '/js/components/reposicion-stock.js',
   '/js/components/tipos.js',
   '/js/components/grupos-productos.js',
   '/js/components/ventas.js',

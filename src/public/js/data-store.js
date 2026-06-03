@@ -388,6 +388,45 @@ class BackendStore {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
+  async downloadReport(path, payload, filename, retry = true) {
+    await this.ensureToken();
+    const response = await fetch(`${this.baseUrl}${path}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Client-Id': this.clientId,
+        Authorization: `Bearer ${this.token}`
+      },
+      body: JSON.stringify(payload)
+    });
+    if (response.status === 401 && retry) {
+      await this.handleAuthRejected();
+      return this.downloadReport(path, payload, filename, false);
+    }
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({}));
+      throw new Error(result.error || 'No se pudo descargar el reporte');
+    }
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  async downloadStockRepositionPdf(payload) {
+    await this.downloadReport('/api/reportes/reposicion-stock.pdf', payload, `reposicion-stock-${reportTimestamp()}.pdf`);
+  }
+
+  async downloadStockRepositionXlsx(payload) {
+    await this.downloadReport('/api/reportes/reposicion-stock.xlsx', payload, `reposicion-stock-${reportTimestamp()}.xlsx`);
+  }
+
   createId() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   }

@@ -53,7 +53,7 @@ export class ServerApplication {
     proxyHeaderMiddleware.configure(this.app);
     this.app.use(proxyHeaderMiddleware.rejectUntrustedForwardedHeaders);
     this.app.use(cors({ origin: this.config.corsOrigin === '*' ? true : this.config.corsOrigin }));
-    this.app.use(express.json({ limit: '1mb' }));
+    this.app.use(express.json({ limit: '5mb' }));
 
     new PublicRoutes(this.app, new PublicController(this.config)).register();
     this.app.use(express.static(this.config.publicDir, { index: false }));
