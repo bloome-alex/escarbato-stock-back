@@ -528,7 +528,7 @@ class BackendStore {
     const socket = this.socket;
     this.socket = null;
     this.stopRealtimeHeartbeatMonitor();
-    socket.close(1008, 'auth');
+    socket.close(4001, 'auth');
   }
 
   sendRealtime(message) {
@@ -587,6 +587,35 @@ class BackendStore {
         db.close();
         reject(transaction.error);
       };
+    });
+  }
+
+  async clearLocalStorageAndIndexedDb() {
+    try {
+      this.disconnectRealtime();
+    } catch {}
+    localStorage.clear();
+    sessionStorage.clear();
+    this.token = '';
+    this.currentUser = null;
+    this.data = emptyData();
+    this.offlineQueue = [];
+
+    if (!('indexedDB' in window)) return;
+
+    const databases = typeof indexedDB.databases === 'function'
+      ? await indexedDB.databases()
+      : [{ name: DB_NAME }];
+    const databaseNames = [...new Set(databases.map(database => database.name).filter(Boolean))];
+    await Promise.all(databaseNames.map(name => this.deleteIndexedDbDatabase(name)));
+  }
+
+  deleteIndexedDbDatabase(name) {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.deleteDatabase(name);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+      request.onblocked = () => reject(new Error('No se pudo borrar IndexedDB porque la base local está en uso'));
     });
   }
 

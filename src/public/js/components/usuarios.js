@@ -74,6 +74,7 @@ export class UsuariosComponent {
         </div>
       </div>
       <button class="btn btn-primary user-settings-save" data-action="save-user" data-id="${escapeHtml(user.id)}">Guardar cambios</button>
+      <button class="btn btn-danger user-settings-reset" data-action="reset-app-cache">Borrar caché y reiniciar</button>
     </div>`;
   }
 
@@ -101,6 +102,17 @@ export class UsuariosComponent {
 
     if (invalidatesCurrentSession) {
       await this.app.store.handleAuthRejected('Volvé a iniciar sesión con la nueva contraseña');
+    }
+  }
+
+  async resetAppCache() {
+    const confirmed = window.confirm('Se va a borrar el localStorage y la base local de IndexedDB. La aplicación se reiniciará y vas a tener que iniciar sesión nuevamente. ¿Continuar?');
+    if (!confirmed) return;
+
+    try {
+      await this.app.store.clearLocalStorageAndIndexedDb();
+    } finally {
+      window.location.reload();
     }
   }
 }

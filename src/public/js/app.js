@@ -315,6 +315,7 @@ class PetshopApp {
       if (action === 'finish-counter-sale') return this.runButtonAction(actionButton, () => this.components.mostrador.finishSale(), 'Guardando');
       if (action === 'refresh-users') return this.runButtonAction(actionButton, () => this.components.usuarios.render(), 'Actualizando');
       if (action === 'save-user') return this.runButtonAction(actionButton, () => this.components.usuarios.save(id), 'Guardando');
+      if (action === 'reset-app-cache') return this.runButtonAction(actionButton, () => this.components.usuarios.resetAppCache(), 'Reiniciando');
       if (action === 'save-ticket-config') return this.runButtonAction(actionButton, () => this.components.ticketConfig.save(), 'Guardando');
       if (action === 'reset-ticket-config') return this.runButtonAction(actionButton, () => this.components.ticketConfig.reset(), 'Restaurando');
       if (action === 'print-sale-ticket') return this.runButtonAction(actionButton, () => this.components.ventas.printTicket(id), 'Preparando');
