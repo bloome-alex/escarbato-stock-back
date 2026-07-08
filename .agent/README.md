@@ -1,6 +1,6 @@
 # Skills Para Replicar La Aplicacion
 
-Esta carpeta documenta las skills que debe seguir un agente para crear una aplicacion con el mismo estilo, arquitectura y forma de trabajo que este proyecto, cambiando solo dominio, entidades y secciones.
+Esta carpeta documenta las skills que debe seguir un agente para crear una aplicacion con el mismo estilo, arquitectura y forma de trabajo que este proyecto, cambiando solo dominio, entidades y secciones..
 
 ## Orden recomendado
 
